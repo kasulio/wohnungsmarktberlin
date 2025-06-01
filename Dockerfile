@@ -1,15 +1,22 @@
-FROM node:20-alpine
+# Building the app #
+FROM oven/bun:alpine AS builder
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package.json ./
+COPY bun.lock ./
 
-RUN npm ci
+RUN bun install
 
 COPY . .
+RUN bun run build
+
+# Running the app #
+FROM oven/bun:alpine
+WORKDIR /app
+
+COPY --from=builder /app/.output ./
 
 EXPOSE 3000
 
-RUN npm run build
-
-CMD [ "node", ".output/server/index.mjs" ]‚
+ENTRYPOINT [ "bun", "./server/index.mjs" ]
