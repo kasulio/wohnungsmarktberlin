@@ -82,21 +82,5 @@ export default defineNuxtConfig({
       googleMapsId: env.NUXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
     },
   },
-
-  image: {
-    // this default is not really used, because it only works with NuxtPicture
-    format: ["avif", "webp", "jpg"],
-    domains: [deploymentUrl],
-    ipx: {
-      http: {
-        maxAge: 60 * 60 * 24 * 30,
-      },
-      fs: {
-        maxAge: 60 * 60 * 24 * 7,
-      },
-      maxAge: 60 * 60 * 24 * 30,
-    },
-  },
-
   css: ["~/assets/global.css"],
 });
