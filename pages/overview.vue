@@ -138,6 +138,7 @@ const sortOrders = computed(() => {
               >
                 {{ header.title }}
                 <lord-icon
+                  icon="arrow"
                   src="/icons/arrow.json"
                   state="hover-ternd-flat-3"
                   class="-mr-[20px] -rotate-90 transition-all duration-500"

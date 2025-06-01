@@ -14,6 +14,7 @@ watch(modalOpen, (newValue) => {
   <div class="favorites relative cursor-pointer">
     <lord-icon
       ref="icon"
+      icon="heart"
       src="/icons/heart.json"
       state="morph-heart"
       class="hover:animate-zoombounce"

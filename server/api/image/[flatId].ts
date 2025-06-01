@@ -27,6 +27,11 @@ export default defineEventHandler(async (e) => {
         2,
       ),
     );
+
+    // make sure imageCache does not get too big
+    if (imagesCache.size > 100) {
+      imagesCache.delete(imagesCache.keys().next().value);
+    }
   }
 
   const cache = imagesCache.get(flatId)!;

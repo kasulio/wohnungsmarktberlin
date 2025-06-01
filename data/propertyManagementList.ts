@@ -1,4 +1,4 @@
-import type { Browser } from "puppeteer";
+import type { Browser } from "puppeteer-core";
 import { z } from "zod";
 import { insertAddressSchema } from "./address";
 import { tagsSchema } from "./tags";

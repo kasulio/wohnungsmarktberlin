@@ -1,8 +1,5 @@
 <script setup lang="ts">
-const siteMenuVisibility = ref({
-  visible: false,
-  closing: true,
-});
+const siteMenuVisibility = ref({ visible: false, closing: true });
 
 const iconsContainer = ref<HTMLElement | null>(null);
 
@@ -55,14 +52,14 @@ const handleLinkClick = (e: PointerEvent) => {
 </script>
 
 <template>
-  <nav class="flex min-h-12 items-center gap-4 md:justify-between">
+  <nav class="flex items-center gap-4 min-h-12 md:justify-between">
     <NuxtLink
       to="/"
       title="Startseite"
       class="logo text-[24px] font-medium text-main md:flex-1"
     >
       <span
-        class="-mb-6 inline-flex max-w-40 flex-wrap leading-none tracking-tighter xs:flex-nowrap md:flex-col lg:flex-row"
+        class="inline-flex flex-wrap -mb-6 leading-none tracking-tighter max-w-40 xs:flex-nowrap md:flex-col lg:flex-row"
       >
         <span class="text-accent">Wohnungs</span>
         <span class="text-primary">Markt</span>
@@ -70,12 +67,12 @@ const handleLinkClick = (e: PointerEvent) => {
       </span>
     </NuxtLink>
     <h2
-      class="tagline hidden whitespace-nowrap text-center text-l font-light opacity-50 md:block md:flex-1"
+      class="hidden font-light text-center opacity-50 tagline whitespace-nowrap text-l md:block md:flex-1"
     >
       What's a housing crisis?
     </h2>
     <div
-      class="nav_links ml-auto items-baseline gap-4 text-right md:ml-0 md:flex md:flex-1 md:justify-end"
+      class="items-baseline gap-4 ml-auto text-right nav_links md:ml-0 md:flex md:flex-1 md:justify-end"
     >
       <NuxtLink
         to="/"
@@ -83,6 +80,7 @@ const handleLinkClick = (e: PointerEvent) => {
         class="hidden md:block"
       >
         <lord-icon
+          icon="home"
           src="/icons/home.json"
           trigger="hover"
           style="width: 32px; height: 32px"
@@ -94,6 +92,7 @@ const handleLinkClick = (e: PointerEvent) => {
         class="hidden md:block"
       >
         <lord-icon
+          icon="overview"
           src="/icons/overview.json"
           trigger="hover"
           style="width: 32px; height: 32px"
@@ -105,6 +104,7 @@ const handleLinkClick = (e: PointerEvent) => {
         class="hidden md:block"
       >
         <lord-icon
+          icon="map"
           src="/icons/map.json"
           trigger="hover"
           style="width: 32px; height: 32px"
@@ -114,7 +114,7 @@ const handleLinkClick = (e: PointerEvent) => {
     </div>
     <HamburgerMenu @click="() => showSiteMenu(true)" />
     <div
-      class="fixed left-0 top-0 z-40 flex h-screen w-full flex-col items-center bg-background px-4 pb-16 pt-4 transition-opacity duration-300"
+      class="fixed top-0 left-0 z-40 flex flex-col items-center w-full h-screen px-4 pt-4 pb-16 transition-opacity duration-300 bg-background"
       :class="{
         'opacity-0': siteMenuVisibility.closing,
         'opacity-100':
@@ -122,9 +122,9 @@ const handleLinkClick = (e: PointerEvent) => {
         invisible: !siteMenuVisibility.visible,
       }"
     >
-      <div class="ml-auto flex items-center">
+      <div class="flex items-center ml-auto">
         <div
-          class="relative h-12 w-8 cursor-pointer"
+          class="relative w-8 h-12 cursor-pointer"
           @click="() => showSiteMenu(false)"
         >
           <span
@@ -137,25 +137,13 @@ const handleLinkClick = (e: PointerEvent) => {
       </div>
       <div
         ref="iconsContainer"
-        class="my-auto flex flex-col gap-4 text-right"
+        class="flex flex-col gap-4 my-auto text-right"
       >
         <NuxtLink
           v-for="link in [
-            {
-              name: 'Home',
-              path: '/',
-              iconSrc: '/icons/home.json',
-            },
-            {
-              name: 'Alle Wohnungen',
-              path: '/overview',
-              iconSrc: '/icons/overview.json',
-            },
-            {
-              name: 'Karte',
-              path: '/map',
-              iconSrc: '/icons/map.json',
-            },
+            { name: 'Home', path: '/', icon: 'home' },
+            { name: 'Alle Wohnungen', path: '/overview', icon: 'overview' },
+            { name: 'Karte', path: '/map', icon: 'map' },
           ]"
           :key="link.path"
           :to="link.path"
@@ -168,7 +156,8 @@ const handleLinkClick = (e: PointerEvent) => {
         >
           {{ link.name }}
           <lord-icon
-            :src="link.iconSrc"
+            :icon="link.icon"
+            :src="`/icons/${link.icon}.json`"
             style="width: 42px; height: 42px"
             stroke="bold"
             class="current-color"

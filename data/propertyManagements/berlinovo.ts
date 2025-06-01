@@ -1,4 +1,4 @@
-import type { Browser } from "puppeteer";
+import type { Browser } from "puppeteer-core";
 import {
   flatSchema,
   type Flat,

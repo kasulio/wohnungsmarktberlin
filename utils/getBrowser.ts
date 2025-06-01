@@ -1,4 +1,4 @@
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { env } from "~/env";
 
 export const getBrowser = async () => {
@@ -18,7 +18,7 @@ export const getBrowser = async () => {
   } catch (error) {
     console.log("No running browser found. Launching a new one...");
     return await puppeteer.launch({
-      headless: process.env.NODE_ENV === "development" ? false : "new",
+      headless: process.env.NODE_ENV === "development" ? false : "shell",
       args: ["--remote-debugging-port=9222"],
     });
   }

@@ -1,19 +1,12 @@
 <script setup lang="ts">
-useHead({
-  title: "Admin Dashboard",
-});
-definePageMeta({
-  middleware: ["auth"],
-});
+useHead({ title: "Admin Dashboard" });
+definePageMeta({ middleware: ["auth"] });
 const { $client } = useNuxtApp();
 const NuxtLink = resolveComponent("NuxtLink");
 
 const propertyManagements = await $client.propertyManagement.getAll.useQuery();
 
-const scrapingStatus = ref<{
-  slugs?: string[];
-  isActive: boolean;
-}>({
+const scrapingStatus = ref<{ slugs?: string[]; isActive: boolean }>({
   isActive: false,
 });
 
@@ -22,17 +15,12 @@ const updatePropertyManagements = async (slugs?: string[]) => {
     return;
   }
 
-  scrapingStatus.value = {
-    slugs,
-    isActive: true,
-  };
+  scrapingStatus.value = { slugs, isActive: true };
 
   await $client.propertyManagement.update.mutate({ slugs });
   propertyManagements.refresh();
 
-  scrapingStatus.value = {
-    isActive: false,
-  };
+  scrapingStatus.value = { isActive: false };
 };
 
 const allFlats = computed(() =>
@@ -45,18 +33,20 @@ const allFlats = computed(() =>
     <div class="flex flex-col gap-4">
       <div class="mb-4 flex flex-col gap-4 md:flex-row">
         <table class="-mx-2 mr-auto border-separate border-spacing-2">
-          <tr>
-            <td>Wohnungen (aktiv):</td>
-            <td>
-              {{ allFlats?.filter((flat) => flat.isActive).length ?? 0 }}
-            </td>
-          </tr>
-          <tr>
-            <td>Wohnungen (gesamt):</td>
-            <td>
-              {{ allFlats?.length ?? 0 }}
-            </td>
-          </tr>
+          <tbody>
+            <tr>
+              <td>Wohnungen (aktiv):</td>
+              <td>
+                {{ allFlats?.filter((flat) => flat.isActive).length ?? 0 }}
+              </td>
+            </tr>
+            <tr>
+              <td>Wohnungen (gesamt):</td>
+              <td>
+                {{ allFlats?.length ?? 0 }}
+              </td>
+            </tr>
+          </tbody>
         </table>
         <FatButton
           :action="() => void updatePropertyManagements()"
@@ -84,19 +74,21 @@ const allFlats = computed(() =>
           </component>
 
           <table class="-mx-2 mr-auto border-separate border-spacing-2">
-            <tr>
-              <td>Wohnungen (aktiv):</td>
-              <td>
-                {{
-                  propertyManagement.flats.filter((flat) => flat.isActive)
-                    .length
-                }}
-              </td>
-            </tr>
-            <tr>
-              <td>Wohnungen (gesamt):</td>
-              <td>{{ propertyManagement.flats.length }}</td>
-            </tr>
+            <tbody>
+              <tr>
+                <td>Wohnungen (aktiv):</td>
+                <td>
+                  {{
+                    propertyManagement.flats.filter((flat) => flat.isActive)
+                      .length
+                  }}
+                </td>
+              </tr>
+              <tr>
+                <td>Wohnungen (gesamt):</td>
+                <td>{{ propertyManagement.flats.length }}</td>
+              </tr>
+            </tbody>
           </table>
           <FatButton
             :action="
