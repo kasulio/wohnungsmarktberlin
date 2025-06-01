@@ -40,7 +40,7 @@
     "@hebilicious/authjs-nuxt": "^0.3.5",
     "@libsql/client": "^0.15.7",
     "@lordicon/element": "^1.11.0",
-    "@nuxt/image": "^1.10.0",
+    "@nuxt/image": "^2.0.0-alpha.1",
     "@t3-oss/env-nuxt": "^0.13.4",
     "@trpc/client": "^10.45.0",
     "@trpc/server": "^10.45.0",
@@ -49,7 +49,6 @@
     "lottie-web": "^5.13.0",
     "openai": "^4.25.0",
     "puppeteer-core": "^24.9.0",
-    "sharp": "^0.32.2",
     "trpc-nuxt": "^0.10.17",
     "vue3-google-map": "^0.22.0",
     "zod": "^3.25.46"
