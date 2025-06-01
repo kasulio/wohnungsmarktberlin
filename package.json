@@ -49,7 +49,7 @@
     "lottie-web": "^5.13.0",
     "openai": "^4.25.0",
     "puppeteer-core": "^24.9.0",
-    "sharp": "^0.34.2",
+    "sharp": "^0.32.2",
     "trpc-nuxt": "^0.10.17",
     "vue3-google-map": "^0.22.0",
     "zod": "^3.25.46"
