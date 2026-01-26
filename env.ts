@@ -24,7 +24,7 @@ export const env = createEnv({
       .string()
       .min(1)
       .optional()
-      .default("http://localhost:3000"),
+      .prefault("http://localhost:3000"),
   },
   client: {
     NUXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().min(1),

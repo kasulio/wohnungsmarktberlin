@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const mailingListSignUpSchema = z.object({
-  email: z.string().email("Die E-Mail Adresse ist nicht gültig"),
+  email: z.email("Die E-Mail Adresse ist nicht gültig"),
   district: z.array(z.string()),
-  rooms: z.number().int(),
-  price: z.number().int(),
+  rooms: z.int(),
+  price: z.int(),
 });

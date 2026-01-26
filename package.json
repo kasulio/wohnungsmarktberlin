@@ -28,7 +28,7 @@
     "drizzle-kit": "^0.31.1",
     "eslint": "^9.27.0",
     "eslint-plugin-vue": "^10.1.0",
-    "nuxt": "3.17.4",
+    "nuxt": "^4.3.0",
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tsx": "^4.19.4",
@@ -54,6 +54,6 @@
     "puppeteer-core": "^24.9.0",
     "trpc-nuxt": "^0.10.17",
     "vue3-google-map": "^0.22.0",
-    "zod": "^3.25.46"
+    "zod": "^4.3.6"
   }
 }

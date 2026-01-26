@@ -55,7 +55,7 @@ export const flatRouter = router({
   getFeatured: publicProcedure
     .input(
       z.object({
-        limit: z.number().optional().default(8),
+        limit: z.number().optional().prefault(8),
       }),
     )
     .query(async ({ input }) => {
