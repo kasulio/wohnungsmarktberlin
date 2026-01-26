@@ -7,6 +7,10 @@ import { gewobag } from "./propertyManagements/gewobag";
 import { deutschewohnen } from "./propertyManagements/deutschewohnen";
 import { berlinovo } from "./propertyManagements/berlinovo";
 import { allod } from "./propertyManagements/allod";
+import { vonovia } from "./propertyManagements/vonovia";
+import { wbm } from "./propertyManagements/wbm";
+import { howoge } from "./propertyManagements/howoge";
+import { degewo } from "./propertyManagements/degewo";
 
 export const flatSchema = z.object({
   id: z.string(),
@@ -40,4 +44,8 @@ export const propertyManagementList = [
   deutschewohnen,
   berlinovo,
   allod,
+  vonovia,
+  wbm,
+  howoge,
+  degewo,
 ] satisfies Readonly<PropertyManagement[]>;
