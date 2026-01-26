@@ -32,6 +32,7 @@
     "prettier": "^3.5.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tsx": "^4.19.4",
+    "typescript": "^5.9.3",
     "vue": "^3.5.14",
     "vue-router": "^4.5.1"
   },
@@ -46,7 +47,9 @@
     "@trpc/server": "^10.45.0",
     "drizzle-orm": "^0.44.1",
     "drizzle-zod": "^0.5.1",
+    "ky": "^1.14.3",
     "lottie-web": "^5.13.0",
+    "node-html-parser": "^7.0.2",
     "openai": "^4.25.0",
     "puppeteer-core": "^24.9.0",
     "trpc-nuxt": "^0.10.17",

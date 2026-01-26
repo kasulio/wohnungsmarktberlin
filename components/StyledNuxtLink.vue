@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { NuxtLinkProps } from "nuxt/app";
+import type { NuxtLinkProps } from "#app";
 
 const props = defineProps<
   NuxtLinkProps & {

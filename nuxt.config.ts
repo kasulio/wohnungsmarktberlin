@@ -71,7 +71,7 @@ export default defineNuxtConfig({
     guestRedirectTo: "/api/auth/signin",
     authenticatedRedirectTo: "/admin/dashboard",
   },
-  build: { transpile: ["trpc-nuxt"] },
+  build: { transpile: ["trpc-nuxt", "zod"] },
   experimental: { clientFallback: true },
   runtimeConfig: {
     authJs: { secret: env.NUXT_NEXTAUTH_SECRET },

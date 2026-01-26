@@ -1,117 +1,109 @@
 import type { Browser } from "puppeteer-core";
-import {
-  flatSchema,
-  type Flat,
-  type PropertyManagement,
-} from "../propertyManagementList";
+import ky from "ky";
+import { parse } from "node-html-parser";
+import type { PropertyManagement, Flat } from "../propertyManagementList";
+import { flatSchema } from "../propertyManagementList";
 import { getAddress } from "../address";
-import { getApartmentTagsLocally } from "../tags";
-import { parseUncleanFloat, parseUncleanInt } from "~/utils/util";
 import { hashString } from "~/server/util";
+import { getApartmentTagsLocally } from "../tags";
 import { getApartmentTagsViaAI } from "~/server/aiTagRetriever";
 import { env } from "~/env";
+import { parseGermanNumberString, cleanAddress } from "../shared/utils";
 
 export const gewobag: PropertyManagement = {
   slug: "gewobag",
   name: "Gewobag",
   website: "https://www.gewobag.de/",
-  getFlats: async (browser: Browser) => {
+  getFlats: async () => {
     const url =
       "https://www.gewobag.de/fuer-mieter-und-mietinteressenten/mietangebote/?bezirke_all=1&objekttyp%5B%5D=wohnung&gesamtmiete_von=&gesamtmiete_bis=&gesamtflaeche_von=&gesamtflaeche_bis=&zimmer_von=&zimmer_bis=&sort-by=recent";
-    const page = await browser.newPage();
-    await page.goto(url);
 
     try {
-      await page
-        .waitForSelector("#CookieBoxSaveButton", {
-          timeout: 300,
-        })
-        .then(() => page.click("#CookieBoxSaveButton"));
-    } catch (e) {
-      console.log("no cookie banner");
-    }
+      const response = await ky.get(url);
+      const html = await response.text();
+      const root = parse(html);
 
-    const readPage = async () => {
-      const isEmpty = await Promise.race([
-        page.waitForSelector(".empty-mietangebote"),
-        page.waitForSelector(".site-footer"),
-      ]).then((el) =>
-        el?.evaluate((el) => el.classList.contains("empty-mietangebote")),
-      );
-      if (isEmpty) return [];
+      const listings = root.querySelectorAll("article.angebot-big-layout");
 
-      const els = await page.$$("article.angebot-big-layout");
+      const flats = await Promise.all(
+        listings.map(async (listing) => {
+          try {
+            // Extract title and URL
+            const titleEl = listing.querySelector(".angebot-title");
+            const title = titleEl?.text?.trim() || "";
 
-      return await Promise.all(
-        els.map(async (el) => {
-          const title = await el.$eval(
-            ".angebot-title",
-            (htmlTitle) => htmlTitle.textContent?.trim() ?? "",
-          );
-          const idSource = await el.$eval(
-            ".read-more-link",
-            (link) => (link as HTMLAnchorElement).href,
-          );
-          const addressRaw = await el.$eval(
-            "address",
-            (addressEl) => addressEl.textContent,
-          );
-          const availSpaceText = await el.$eval(
-            ".angebot-area td",
-            (spaceEl) => spaceEl.textContent,
-          ); // <td> 1 Zimmer | 47,99 m² </td>
-          const availSpace = availSpaceText ? availSpaceText.split("|") : [];
-          const rooms = availSpace[0]?.trim() ?? "";
-          const usableArea = availSpace[1]?.trim() ?? "";
-          const warmRentPriceText = await el.$eval(
-            ".angebot-kosten td",
-            (rentText) => rentText.textContent,
-          );
-          const warmRentPrice = warmRentPriceText
-            ? warmRentPriceText.substring(3) // ab 841,75€
-            : "";
+            const linkEl = listing.querySelector(".read-more-link");
+            const url = linkEl?.getAttribute("href") || "";
 
-          const imageEl = await el.$("img[alt='Hausansicht");
-          const imageUrl = imageEl
-            ? await imageEl.evaluate((img) => img.src)
-            : await el.$eval("img", (img) => img.src);
+            // Extract address
+            const addressEl = listing.querySelector("address");
+            const address = cleanAddress(addressEl?.text) || "";
 
-          if (!addressRaw) {
-            return false;
-          }
-          const id = await hashString(idSource);
-          const addressPretty = await getAddress(id, addressRaw);
+            // Extract data from tables
+            const areaCell = listing.querySelector(".angebot-area td");
+            const areaText = areaCell?.text?.trim() || "";
+            // Format: "1 Zimmer | 47,99 m²"
+            const areaParts = areaText.split("|");
 
-          if (!addressPretty || !warmRentPrice || !title) {
-            return false;
-          }
+            const rooms = parseGermanNumberString(areaParts[0]);
+            const area = parseGermanNumberString(areaParts[1]);
 
-          const returnFlat = {
-            address: addressPretty,
-            title,
-            id,
-            roomCount: parseUncleanInt(rooms),
-            coldRentPrice: null, // nicht auf der Übersichtsseite verfügbar. wenn dann jede angebotsseite aufrufen...
-            warmRentPrice: parseUncleanInt(warmRentPrice),
-            usableArea: parseUncleanFloat(usableArea),
-            tags: env.OPENAI_API_KEY
+            const costCell = listing.querySelector(".angebot-kosten td");
+            const costText = costCell?.text?.trim() || "";
+            // Format: "ab 841,75€"
+            const warmRent = parseGermanNumberString(costText);
+
+            // Image
+            const imageEl =
+              listing.querySelector("img[alt='Hausansicht']") ||
+              listing.querySelector("img");
+            const imageUrl =
+              imageEl?.getAttribute("src") ||
+              imageEl?.getAttribute("data-src") ||
+              null;
+
+            if (!title || !url || !address) {
+              return false;
+            }
+
+            const id = await hashString(url);
+            const cleanedAddress = await getAddress(id, address);
+
+            if (!cleanedAddress) {
+              return false;
+            }
+
+            const tags = env.OPENAI_API_KEY
               ? await getApartmentTagsViaAI(id, title)
-              : getApartmentTagsLocally(title),
-            url: idSource,
-            imageUrl,
-          } satisfies Flat;
-          const result = flatSchema.safeParse(returnFlat);
-          if (result.success) {
-            return result.data;
+              : getApartmentTagsLocally(title);
+
+            const flat = {
+              id,
+              title,
+              coldRentPrice: null, // Cold rent not available on overview
+              warmRentPrice: warmRent,
+              roomCount: rooms,
+              usableArea: area,
+              address: cleanedAddress,
+              floor: null,
+              tags,
+              imageUrl,
+              url,
+            } satisfies Flat;
+
+            const result = flatSchema.safeParse(flat);
+            return result.success ? result.data : false;
+          } catch (error) {
+            console.error("Error parsing Gewobag listing:", error);
+            return false;
           }
-          return false;
         }),
       );
-    };
 
-    const pagesData = await readPage();
-
-    await page.close();
-    return pagesData;
+      return flats.filter((flat): flat is Flat => flat !== false);
+    } catch (error) {
+      console.error("Error scraping Gewobag:", error);
+      return [];
+    }
   },
 };
