@@ -3,7 +3,7 @@
 FROM oven/bun:slim
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl build-essential
 
 COPY package.json ./
 COPY bun.lock ./
