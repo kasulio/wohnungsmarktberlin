@@ -73,7 +73,7 @@ export function simpleImageCache(
         // check if the cache is too big
         const keys = typedObjectKeys(cache.sizes);
         if (keys.length >= maxCachedSizes) {
-          delete cache.sizes[keys[0]];
+          delete cache.sizes[keys[0]!];
         }
 
         cache.sizes[sizeKey] = {

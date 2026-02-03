@@ -1,8 +1,6 @@
 {
-  "version": "5",
+  "version": "6",
   "dialect": "sqlite",
-  "id": "0a93c31b-3120-46df-b694-027e48e6c7c0",
-  "prevId": "02760516-e7f0-41d3-9986-c0b441e2e1bd",
   "tables": {
     "address": {
       "name": "address",
@@ -60,7 +58,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "flat": {
       "name": "flat",
@@ -174,7 +173,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "propertyManagement": {
       "name": "propertyManagement",
@@ -204,7 +204,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "signups": {
       "name": "signups",
@@ -255,13 +256,16 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
   "enums": {},
   "_meta": {
-    "schemas": {},
     "tables": {},
     "columns": {}
-  }
+  },
+  "id": "0a93c31b-3120-46df-b694-027e48e6c7c0",
+  "prevId": "02760516-e7f0-41d3-9986-c0b441e2e1bd",
+  "views": {}
 }

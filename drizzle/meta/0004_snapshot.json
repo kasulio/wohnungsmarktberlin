@@ -1,8 +1,6 @@
 {
-  "version": "5",
+  "version": "6",
   "dialect": "sqlite",
-  "id": "d1308aa8-a7ed-4c79-a0ea-52f5e09793d6",
-  "prevId": "0a93c31b-3120-46df-b694-027e48e6c7c0",
   "tables": {
     "address": {
       "name": "address",
@@ -60,7 +58,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "flat": {
       "name": "flat",
@@ -174,7 +173,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "flatToTag": {
       "name": "flatToTag",
@@ -197,7 +197,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "propertyManagement": {
       "name": "propertyManagement",
@@ -227,7 +228,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "signups": {
       "name": "signups",
@@ -278,7 +280,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "tag": {
       "name": "tag",
@@ -301,13 +304,16 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
   "enums": {},
   "_meta": {
-    "schemas": {},
     "tables": {},
     "columns": {}
-  }
+  },
+  "id": "d1308aa8-a7ed-4c79-a0ea-52f5e09793d6",
+  "prevId": "0a93c31b-3120-46df-b694-027e48e6c7c0",
+  "views": {}
 }

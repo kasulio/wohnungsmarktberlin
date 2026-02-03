@@ -1,6 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
+  "id": "0e7a0301-1011-4bc1-8d3e-1695b062957a",
+  "prevId": "2a67f866-743d-4745-9e37-aff3b7aeb5aa",
   "tables": {
     "address": {
       "name": "address",
@@ -82,7 +84,7 @@
           "name": "coldRentPrice",
           "type": "integer",
           "primaryKey": false,
-          "notNull": true,
+          "notNull": false,
           "autoincrement": false
         },
         "warmRentPrice": {
@@ -127,6 +129,14 @@
           "notNull": true,
           "autoincrement": false
         },
+        "addressText": {
+          "name": "addressText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "''"
+        },
         "propertyManagementId": {
           "name": "propertyManagementId",
           "type": "text",
@@ -161,18 +171,52 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "flatToTag": {
+      "name": "flatToTag",
+      "columns": {
+        "flatId": {
+          "name": "flatId",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         },
-        "tags": {
-          "name": "tags",
+        "tagId": {
+          "name": "tagId",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "flatToTag_flatId_tagId_unique": {
+          "name": "flatToTag_flatId_tagId_unique",
+          "columns": [
+            "flatId",
+            "tagId"
+          ],
+          "isUnique": true
+        }
+      },
       "foreignKeys": {},
-      "compositePrimaryKeys": {},
+      "compositePrimaryKeys": {
+        "flatToTag_flatId_tagId_pk": {
+          "columns": [
+            "flatId",
+            "tagId"
+          ],
+          "name": "flatToTag_flatId_tagId_pk"
+        }
+      },
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
@@ -258,14 +302,40 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
+    },
+    "tag": {
+      "name": "tag",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
+  "views": {},
   "enums": {},
   "_meta": {
+    "schemas": {},
     "tables": {},
     "columns": {}
   },
-  "id": "02760516-e7f0-41d3-9986-c0b441e2e1bd",
-  "prevId": "aee34726-d3a2-455e-8775-906dc1b4ac0f",
-  "views": {}
+  "internal": {
+    "indexes": {}
+  }
 }

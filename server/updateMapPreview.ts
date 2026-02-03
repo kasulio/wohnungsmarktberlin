@@ -1,8 +1,6 @@
-import fs from "fs";
 import path from "path";
 import { and, isNotNull, isNull } from "drizzle-orm";
 import { mapPreviewCache } from "./api/image/map-preview";
-import { createCaller } from "./trpc/routers";
 import { db } from "~/db/db";
 import { flat } from "~/db/schema";
 import { env } from "~/env";
@@ -14,9 +12,7 @@ export const mapPreviewImagePath = path.join(
   "map-preview.png",
 );
 
-export async function updateMapPreview() {
-  const config = useRuntimeConfig();
-
+export async function updateMapPreview(previewHash: string) {
   const url = new URL("https://maps.googleapis.com/maps/api/staticmap");
   url.searchParams.set(
     "center",
@@ -37,10 +33,10 @@ export async function updateMapPreview() {
   });
 
   const markers = flats
-    .map((f) => `${f.address.latitude},${f.address.longitude}`)
+    .map((f) => `${f.address!.latitude},${f.address!.longitude}`)
     .join("|");
 
-  const markerFileUrl = `${config.public.deploymentUrl !== "http://localhost:3000" ? config.public.deploymentUrl : "https://wohnungsmarktberlin.de"}/marker.png?v=1.0`;
+  const markerFileUrl = `https://wohnungsmarktberlin.de/marker.png?v=1.0`;
 
   url.searchParams.set("markers", `icon:${markerFileUrl}|${markers}`);
   // load image and save it to disk
@@ -49,13 +45,8 @@ export async function updateMapPreview() {
 
   const image = Buffer.from(buffer);
 
-  fs.writeFileSync(mapPreviewImagePath, image);
+  await Bun.file(mapPreviewImagePath).write(image);
 
-  const caller = createCaller({
-    user: "admin",
-  });
-
-  const previewHash = await caller.flat.getMapPreviewHash();
   mapPreviewCache({ v: previewHash, w: 512, h: 512 });
   mapPreviewCache({ v: previewHash, w: 1024, h: 1024 });
 

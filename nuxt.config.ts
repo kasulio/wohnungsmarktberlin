@@ -6,7 +6,8 @@ export const deploymentUrl = env.DEPLOYMENT_URL;
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: "2025-06-01",
+  compatibilityDate: "2026-02-03",
+  typescript: { typeCheck: true },
   app: {
     head: {
       charset: "utf-8",
@@ -46,6 +47,13 @@ export default defineNuxtConfig({
   },
   nitro: {
     esbuild: { options: { target: "esnext" } },
+    experimental: {
+      tasks: true,
+    },
+    scheduledTasks: {
+      "* * * * *": ["address-improvement", "clean-caches"],
+      "*/3 * * * *": ["update-flats"],
+    },
     preset: "bun",
   },
   alias: { cookie: resolve(__dirname, "node_modules/cookie") },

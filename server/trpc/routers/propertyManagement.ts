@@ -5,11 +5,12 @@ import { createInsertSchema } from "drizzle-zod";
 import { protectedProcedure, publicProcedure, router } from "../trpc";
 import { db } from "~/db/db";
 import { propertyManagementList } from "~/data/propertyManagementList";
-import { address, flat, flatToTag, propertyManagement, tag } from "~/db/schema";
-import { getBrowser } from "~/utils/getBrowser";
+import { flat, flatToTag, propertyManagement, tag } from "~/db/schema";
 import { isFulfilled, isRejected } from "~/utils/typeHelper";
 import { tags } from "~/data/tags";
-import { updateMapPreview } from "~/server/updateMapPreview";
+import { fetchHtml } from "~/lib/http";
+import { processWithQueue } from "~/lib/utils";
+import { Flat, PropertyManagement } from "~/data/schemas";
 const insertFlatSchema = createInsertSchema(flat);
 
 export const propertyManagementRouter = router({
@@ -57,39 +58,32 @@ export const propertyManagementRouter = router({
           where: sql`propertyManagement.slug = excluded.slug`,
         });
 
-      const browser = await getBrowser();
-      try {
-        const scrapedData = (
-          await Promise.all(
-            propertyManagements.map(async ({ getFlats, slug }) => {
-              let data = null;
-              try {
-                // get number of existing (non deleted) flats
-                const existingFlatCount = await db
-                  .select()
-                  .from(flat)
-                  .where(
-                    and(
-                      isNull(flat.deleted),
-                      eq(flat.propertyManagementId, slug),
-                    ),
-                  )
-                  .execute();
-                data = await getFlats(browser, existingFlatCount.length + 15);
-              } catch (e) {
-                return false;
-              }
+      const propertyManagementUrls = await Promise.allSettled(
+        propertyManagements.map(async (p) => ({
+          urls: await p.extractUrls(),
+          propertyManagement: p,
+        })),
+      ).then((results) => results.filter(isFulfilled).map((p) => p.value));
 
-              return {
-                slug,
-                flats: data.filter(Boolean),
-              };
-            }),
-          )
-        ).filter(Boolean);
+      const scrapedData: { slug: PropertyManagement["slug"]; flats: Flat[] }[] =
+        [];
+
+      for (const { propertyManagement, urls } of propertyManagementUrls) {
+        const { results, errors } = await processWithQueue(
+          urls,
+          async (url) => {
+            const html = await fetchHtml(url!);
+            return propertyManagement.extractDataFromHtml(html, url!);
+          },
+          {
+            concurrency: 3,
+            wait: 1000,
+          },
+        );
+
+        scrapedData.push({ slug: propertyManagement.slug, flats: results });
 
         const dbPromises = scrapedData.map(async ({ slug, flats }) => {
-          const addresses = flats.map((f) => f.address).filter(Boolean);
           const tagKeys = Array.from(new Set(flats.map((f) => f.tags).flat()));
           const tagsToInsert = tagKeys
             // make sure this tag exists in the tags object
@@ -102,24 +96,6 @@ export const propertyManagementRouter = router({
               .values(tagsToInsert)
               .onConflictDoNothing()
               .execute());
-
-          // upsert addresses
-          addresses.length &&
-            (await db
-              .insert(address)
-              .values(addresses)
-              .onConflictDoUpdate({
-                target: address.id,
-                set: {
-                  street: sql`excluded.street`,
-                  city: sql`excluded.city`,
-                  streetNumber: sql`excluded.streetNumber`,
-                  postalCode: sql`excluded.postalCode`,
-                  longitude: sql`excluded.longitude`,
-                  latitude: sql`excluded.latitude`,
-                },
-                where: sql`address.id = excluded.id`,
-              }));
 
           // upsert flats
           const flatsToInsert = (
@@ -142,7 +118,7 @@ export const propertyManagementRouter = router({
                 }
 
                 return {
-                  addressId: f.address.id,
+                  addressText: f.addressText,
                   coldRentPrice: f.coldRentPrice,
                   floor: f.floor,
                   propertyManagementId: slug,
@@ -227,15 +203,10 @@ export const propertyManagementRouter = router({
             console.error(p);
           });
 
-        // start map preview update
-        updateMapPreview();
-
         if (input?.return) {
           return scrapedData;
         }
         return null;
-      } finally {
-        await browser.close();
       }
     }),
 });

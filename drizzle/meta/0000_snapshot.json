@@ -1,8 +1,6 @@
 {
-  "version": "5",
+  "version": "6",
   "dialect": "sqlite",
-  "id": "f25898be-cda8-414d-b701-d7a05f4f6d79",
-  "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "address": {
       "name": "address",
@@ -60,7 +58,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "flat": {
       "name": "flat",
@@ -167,7 +166,8 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     },
     "propertyManagement": {
       "name": "propertyManagement",
@@ -197,13 +197,16 @@
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {}
+      "uniqueConstraints": {},
+      "checkConstraints": {}
     }
   },
   "enums": {},
   "_meta": {
-    "schemas": {},
     "tables": {},
     "columns": {}
-  }
+  },
+  "id": "f25898be-cda8-414d-b701-d7a05f4f6d79",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "views": {}
 }

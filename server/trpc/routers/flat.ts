@@ -11,6 +11,7 @@ import {
   or,
   asc,
   desc,
+  isNotNull,
 } from "drizzle-orm";
 import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
@@ -28,7 +29,7 @@ export const countsAsNewFilter = sql<
 >`strftime('%s', 'now') - firstSeen < ${countsAsNewTime}`.as("isNew");
 
 const queryOptions = {
-  where: isNull(flat.deleted),
+  where: and(isNull(flat.deleted), isNotNull(flat.addressId)),
   with: { address: true, flatToTag: true },
   columns: {
     id: true,

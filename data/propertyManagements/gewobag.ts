@@ -1,109 +1,306 @@
-import type { Browser } from "puppeteer-core";
-import ky from "ky";
-import { parse } from "node-html-parser";
-import type { PropertyManagement, Flat } from "../propertyManagementList";
-import { flatSchema } from "../propertyManagementList";
-import { getAddress } from "../address";
-import { hashString } from "~/server/util";
-import { getApartmentTagsLocally } from "../tags";
-import { getApartmentTagsViaAI } from "~/server/aiTagRetriever";
-import { env } from "~/env";
-import { parseGermanNumberString, cleanAddress } from "../shared/utils";
+import { HTMLElement, parse } from "node-html-parser";
+import { getApartmentTags } from "../tags";
+import { flatSchema, type PropertyManagement, type Flat } from "../schemas";
+import { fetchHtml } from "~/lib/http";
+import { parseNumberString } from "~/lib/parser";
 
-export const gewobag: PropertyManagement = {
+export const gewobag = {
   slug: "gewobag",
   name: "Gewobag",
   website: "https://www.gewobag.de/",
-  getFlats: async () => {
-    const url =
-      "https://www.gewobag.de/fuer-mieter-und-mietinteressenten/mietangebote/?bezirke_all=1&objekttyp%5B%5D=wohnung&gesamtmiete_von=&gesamtmiete_bis=&gesamtflaeche_von=&gesamtflaeche_bis=&zimmer_von=&zimmer_bis=&sort-by=recent";
+  extractUrls,
+  extractDataFromHtml,
+} as const satisfies PropertyManagement;
 
-    try {
-      const response = await ky.get(url);
-      const html = await response.text();
-      const root = parse(html);
+async function extractUrls() {
+  const html = await fetchHtml(
+    "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/?objekttyp%5B%5D=wohnung&gesamtmiete_von=&gesamtmiete_bis=&gesamtflaeche_von=&gesamtflaeche_bis=&zimmer_von=&zimmer_bis=&sort-by=",
+  );
+  const root = parse(html);
+  const items = root.querySelectorAll(".angebot-big-box");
 
-      const listings = root.querySelectorAll("article.angebot-big-layout");
+  return items
+    .map((item) => {
+      const href = item
+        .querySelector(".angebot-footer a")
+        ?.getAttribute("href");
 
-      const flats = await Promise.all(
-        listings.map(async (listing) => {
-          try {
-            // Extract title and URL
-            const titleEl = listing.querySelector(".angebot-title");
-            const title = titleEl?.text?.trim() || "";
+      if (!href) {
+        return null;
+      }
 
-            const linkEl = listing.querySelector(".read-more-link");
-            const url = linkEl?.getAttribute("href") || "";
+      return href;
+    })
+    .filter(Boolean);
+}
 
-            // Extract address
-            const addressEl = listing.querySelector("address");
-            const address = cleanAddress(addressEl?.text) || "";
+function extractDataFromHtml(html: string, href: string) {
+  const id = href.split("/").slice(-2)[0]!;
+  const root = parse(html);
 
-            // Extract data from tables
-            const areaCell = listing.querySelector(".angebot-area td");
-            const areaText = areaCell?.text?.trim() || "";
-            // Format: "1 Zimmer | 47,99 m²"
-            const areaParts = areaText.split("|");
+  const title = root.querySelector("h1")?.textContent.trim();
 
-            const rooms = parseGermanNumberString(areaParts[0]);
-            const area = parseGermanNumberString(areaParts[1]);
+  // Extract pricing information
+  const pricingData = extractPricingData(root);
 
-            const costCell = listing.querySelector(".angebot-kosten td");
-            const costText = costCell?.text?.trim() || "";
-            // Format: "ab 841,75€"
-            const warmRent = parseGermanNumberString(costText);
+  // Extract general flat data
+  const generalData = extractGeneralData(root);
 
-            // Image
-            const imageEl =
-              listing.querySelector("img[alt='Hausansicht']") ||
-              listing.querySelector("img");
-            const imageUrl =
-              imageEl?.getAttribute("src") ||
-              imageEl?.getAttribute("data-src") ||
-              null;
+  // Extract features/amenities
+  const features = extractFeatures(root);
 
-            if (!title || !url || !address) {
-              return false;
-            }
+  // Extract descriptions
+  const descriptions = extractDescriptions(root);
 
-            const id = await hashString(url);
-            const cleanedAddress = await getAddress(id, address);
+  const floorPlan = extractFloorPlan(root);
 
-            if (!cleanedAddress) {
-              return false;
-            }
+  // Extract images
+  const images = extractImages(root);
 
-            const tags = env.OPENAI_API_KEY
-              ? await getApartmentTagsViaAI(id, title)
-              : getApartmentTagsLocally(title);
+  if (!title) {
+    throw new Error(`Title not found for flat ${href}`);
+  }
 
-            const flat = {
-              id,
-              title,
-              coldRentPrice: null, // Cold rent not available on overview
-              warmRentPrice: warmRent,
-              roomCount: rooms,
-              usableArea: area,
-              address: cleanedAddress,
-              floor: null,
-              tags,
-              imageUrl,
-              url,
-            } satisfies Flat;
+  // Build the final scraped flat object
+  const scrapedFlat: Flat = {
+    id,
+    title,
+    coldRentPrice: pricingData.coldRent,
+    warmRentPrice: pricingData.warmRent,
+    url: href,
+    addressText: generalData.address ?? "",
 
-            const result = flatSchema.safeParse(flat);
-            return result.success ? result.data : false;
-          } catch (error) {
-            console.error("Error parsing Gewobag listing:", error);
-            return false;
+    // Optional fields
+    usableArea: generalData.area ?? 0,
+    roomCount: generalData.rooms ?? 0,
+    floor: generalData.floor,
+
+    tags: getApartmentTags(title),
+    imageUrl: images[0] ?? undefined,
+  };
+
+  return flatSchema.parse(scrapedFlat);
+}
+
+/**
+ * Extract pricing data from tables
+ */
+function extractPricingData(root: HTMLElement) {
+  const pricingData: {
+    coldRent?: number;
+    warmRent?: number;
+    additionalCosts?: number;
+    heatingCosts?: number;
+    deposit?: number;
+  } = {};
+
+  // Find the pricing table
+  const pricingTable = root.querySelector("table");
+  if (pricingTable) {
+    const rows = pricingTable.querySelectorAll("tr");
+
+    rows.forEach((row) => {
+      const cells = row.querySelectorAll("td,th");
+
+      if (cells.length === 2) {
+        const key = cells[0]!.textContent.trim().toLowerCase();
+        const value = cells[1]!.textContent.trim();
+
+        if (key.includes("grundmiete")) {
+          pricingData.coldRent = parseNumberString(value);
+        } else if (key.includes("gesamtmiete")) {
+          pricingData.warmRent = parseNumberString(value);
+        } else if (key.includes("betriebskosten kalt")) {
+          pricingData.additionalCosts = parseNumberString(value);
+        } else if (key.includes("betriebskosten warm")) {
+          pricingData.heatingCosts = parseNumberString(value);
+        } else if (key.includes("kaution")) {
+          pricingData.deposit = parseNumberString(value);
+        }
+      }
+    });
+  }
+
+  return pricingData;
+}
+
+/**
+ * Extract general flat data from tables
+ */
+function extractGeneralData(root: HTMLElement) {
+  const generalData: {
+    address?: string;
+    neighborhood?: string;
+    rooms?: number;
+    area?: number;
+    floor?: number;
+    buildingYear?: number;
+    availableFrom?: string;
+  } = {};
+
+  // Find all tables and extract general data
+  const tables = root.querySelectorAll("table");
+
+  tables.forEach((table) => {
+    const rows = table.querySelectorAll("tr");
+
+    rows.forEach((row) => {
+      const cells = row.querySelectorAll("td,th");
+      if (cells.length === 2) {
+        const key = cells[0]!.textContent.trim().toLowerCase();
+        const value = cells[1]!.textContent.trim();
+
+        if (key.includes("anschrift")) {
+          generalData.address = value;
+        } else if (key.includes("bezirk") || key.includes("ortsteil")) {
+          generalData.neighborhood = value;
+        } else if (key.includes("anzahl zimmer")) {
+          generalData.rooms = parseFloat(value);
+        } else if (key.includes("fläche")) {
+          const areaMatch = /([\d,]+)/.exec(value);
+          if (areaMatch) {
+            generalData.area = parseNumberString(areaMatch[1]!);
           }
-        }),
-      );
+        } else if (key.includes("etage")) {
+          const floorNum = parseInt(value);
+          if (!isNaN(floorNum)) {
+            generalData.floor = floorNum;
+          }
+        } else if (key.includes("baujahr")) {
+          const year = parseInt(value);
+          if (!isNaN(year)) {
+            generalData.buildingYear = year;
+          }
+        } else if (key.includes("frei ab")) {
+          generalData.availableFrom = value;
+        }
+      }
+    });
+  });
 
-      return flats.filter((flat): flat is Flat => flat !== false);
-    } catch (error) {
-      console.error("Error scraping Gewobag:", error);
-      return [];
+  return generalData;
+}
+
+/**
+ * Extract features and amenities
+ */
+function extractFeatures(root: HTMLElement) {
+  const features: {
+    hasBalcony?: boolean;
+    hasElevator?: boolean;
+    hasBathtub?: boolean;
+    hasShower?: boolean;
+    hasKitchen?: boolean;
+    isBarrierFree?: boolean;
+    heatingType?: string;
+  } = {};
+
+  // Look for the features table (usually labeled "Merkmale")
+  const tables = root.querySelectorAll("table");
+  let featuresText = "";
+
+  // Strategy 1: Look for table with "Merkmale" or "besondere Eigenschaften"
+  for (const table of tables) {
+    const text = table.textContent;
+    if (text.includes("Merkmale") || text.includes("besondere Eigenschaften")) {
+      featuresText = text.toLowerCase();
+      break;
     }
-  },
-};
+  }
+
+  // Strategy 2: Fallback to the third table if we found nothing and it exists
+  if (!featuresText && tables.length >= 3) {
+    featuresText = tables[2]!.textContent.toLowerCase();
+  }
+
+  // Strategy 3: Check the section under "Merkmale" header
+  if (!featuresText) {
+    const merkmaleHeader = root
+      .querySelectorAll("h2, h3")
+      .find((h) => h.textContent.includes("Merkmale"));
+    if (merkmaleHeader) {
+      featuresText =
+        merkmaleHeader.nextElementSibling?.textContent.toLowerCase() || "";
+    }
+  }
+
+  if (!featuresText) return features;
+
+  features.hasBalcony =
+    featuresText.includes("balkon") ||
+    featuresText.includes("terrasse") ||
+    featuresText.includes("loggia");
+  features.hasElevator =
+    featuresText.includes("aufzug") || featuresText.includes("fahrstuhl");
+  features.hasBathtub = featuresText.includes("badewanne");
+  features.hasShower = featuresText.includes("dusche");
+  features.hasKitchen =
+    featuresText.includes("küche") || featuresText.includes("einbauküche");
+  features.isBarrierFree =
+    featuresText.includes("barrierefrei") ||
+    featuresText.includes("rollstuhl") ||
+    featuresText.includes("barrierearm");
+
+  if (
+    featuresText.includes("fernheizung") ||
+    featuresText.includes("zentralheizung") ||
+    featuresText.includes("fernwärme")
+  ) {
+    features.heatingType = "Fernheizung/Zentralheizung";
+  }
+
+  return features;
+}
+
+/**
+ * Extract description texts
+ */
+function extractDescriptions(root: HTMLElement) {
+  const descriptions: {
+    description?: string;
+    locationDescription?: string;
+  } = {};
+
+  const h3s = root.querySelectorAll("h3");
+
+  // Find description sections
+  const objectDescSection = h3s.find((h) =>
+    h.textContent.includes("Objektbeschreibung"),
+  );
+  if (objectDescSection) {
+    const nextP = objectDescSection.nextElementSibling;
+    if (nextP && nextP.tagName === "P") {
+      descriptions.description = nextP.textContent.trim();
+    }
+  }
+
+  const locationSection = h3s.find((h) => h.textContent.includes("Lage"));
+  if (locationSection) {
+    const nextP = locationSection.nextElementSibling;
+    if (nextP && nextP.tagName === "P") {
+      descriptions.locationDescription = nextP.textContent.trim();
+    }
+  }
+
+  return descriptions;
+}
+
+function extractFloorPlan(root: HTMLElement) {
+  const floorPlan = root.querySelector(".media-plan img");
+  return floorPlan?.getAttribute("src");
+}
+
+/**
+ * Extract image URLs
+ */
+function extractImages(root: HTMLElement) {
+  // Find images in the gallery
+  return root
+    .querySelectorAll(".angebot-slider img")
+    .map((img) => img.getAttribute("src"))
+    .filter(Boolean)
+    .map((src) =>
+      src.startsWith("http") ? src : `https://www.gewobag.de${src}`,
+    )
+    .slice(0, 5);
+}

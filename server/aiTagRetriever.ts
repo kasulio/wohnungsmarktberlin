@@ -38,7 +38,7 @@ let openai: OpenAI | undefined;
 if (openaiApiKey) {
   openai = new OpenAI({ apiKey: openaiApiKey });
 } else {
-  console.error("OpenAI API key is not provided in the env file.");
+  console.warn("OpenAI API key is not provided in the env file.");
 }
 
 export const getApartmentTagsViaAI = async (

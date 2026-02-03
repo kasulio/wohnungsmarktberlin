@@ -402,9 +402,9 @@ export const zipCodeToDistrict = Object.entries(berlinDistricts).reduce(
 );
 
 // this is necessary for the type to be inferred correctly
-const [firstKey, ...restOfKeys] = typedObjectKeys(berlinDistricts);
+const districts = typedObjectKeys(berlinDistricts);
 
-export const districtIdSchema = z.enum([firstKey, ...restOfKeys]);
+export const districtIdSchema = z.enum(districts);
 export const districtSchema = z.object({
   title: z.string(),
   zipCodes: z.array(z.string()),

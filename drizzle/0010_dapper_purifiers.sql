@@ -1,0 +1,1 @@
+ALTER TABLE `flat` ADD `addressImprovement` text DEFAULT 'pending';
