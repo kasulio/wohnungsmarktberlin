@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y curl
 COPY package.json ./
 COPY bun.lock ./
 
-RUN bun install --frozen-lockfile
+RUN bun install
 
 COPY . .
 RUN bun run build
