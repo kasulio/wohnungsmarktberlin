@@ -10,7 +10,7 @@ import { isFulfilled, isRejected } from "~/utils/typeHelper";
 import { tags } from "~/data/tags";
 import { fetchHtml } from "~/lib/http";
 import { processWithQueue } from "~/lib/utils";
-import { Flat, PropertyManagement } from "~/data/schemas";
+import type { Flat, PropertyManagement } from "~/data/schemas";
 const insertFlatSchema = createInsertSchema(flat);
 
 export const propertyManagementRouter = router({

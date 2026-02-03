@@ -7,24 +7,10 @@ export const deploymentUrl = env.DEPLOYMENT_URL;
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2026-02-03",
-  typescript: { typeCheck: true },
   app: {
     head: {
       charset: "utf-8",
       viewport: "width=device-width, initial-scale=1",
-      script: [
-        {
-          defer: true,
-          "data-domain": new URL(deploymentUrl).hostname,
-          src: "https://plausible.lukasfrey.com/js/script.js",
-        },
-        {
-          async: true,
-          defer: true,
-          "data-domain": "wohnungsmarktberlin.de",
-          src: "https://speedin.site/static/js/collect.js",
-        },
-      ],
       meta: [
         {
           name: "robots",
@@ -39,7 +25,6 @@ export default defineNuxtConfig({
   },
   devtools: {
     enabled: true,
-
     timeline: { enabled: true },
   },
   vue: {
@@ -47,12 +32,14 @@ export default defineNuxtConfig({
   },
   nitro: {
     esbuild: { options: { target: "esnext" } },
-    experimental: {
-      tasks: true,
-    },
+    experimental: { tasks: true },
     scheduledTasks: {
-      "* * * * *": ["address-improvement", "clean-caches"],
-      "*/3 * * * *": ["update-flats"],
+      "* * * * *": [
+        "address-improvement",
+        "clean-caches",
+        "extract-flats",
+        "update-flats",
+      ],
     },
     preset: "bun",
   },

@@ -47,6 +47,13 @@ export const flat = sqliteTable("flat", {
   url: text("url").notNull(),
 });
 
+export const flatUrlJob = sqliteTable("flatUrlJob", {
+  url: text("url").notNull(),
+  propertyManagementId: text("propertyManagementId").notNull(),
+  status: text("status").notNull().default("pending"),
+  createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
+});
+
 export const flatRelations = relations(flat, ({ one, many }) => ({
   address: one(address, { fields: [flat.addressId], references: [address.id] }),
   propertyManagement: one(propertyManagement, {

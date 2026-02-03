@@ -1,4 +1,8 @@
 import { cleanUpCaches } from "../image-cache";
+import { createCaller } from "../trpc/routers";
+import { updateMapPreview } from "../updateMapPreview";
+
+let previousMapPreviewHash: string | null = null;
 
 export default defineTask({
   meta: {
@@ -6,7 +10,23 @@ export default defineTask({
     description: "Clean the caches",
   },
   run: async () => {
+    const caller = createCaller({
+      user: "admin",
+    });
+
     cleanUpCaches();
+
+    const mapPreviewHash = await caller.flat.getMapPreviewHash();
+
+    if (
+      mapPreviewHash !== previousMapPreviewHash &&
+      process.env.NODE_ENV !== "development"
+    ) {
+      console.log(`[task:clean-caches] regenerating map preview`);
+      previousMapPreviewHash = mapPreviewHash;
+      await updateMapPreview(mapPreviewHash);
+    }
+
     return { result: true };
   },
 });

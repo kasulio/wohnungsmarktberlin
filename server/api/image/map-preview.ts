@@ -10,7 +10,7 @@ import {
 try {
   await fs.access(mapPreviewImagePath, constants.F_OK);
 } catch (error) {
-  updateMapPreview();
+  updateMapPreview("");
 }
 export const mapPreviewCache = simpleImageCache("map-preview", () =>
   fs.readFile(mapPreviewImagePath),

@@ -9,6 +9,10 @@
     "generate": "bun --bun nuxt generate",
     "preview": "bun --bun nuxt preview",
     "start": "bun --bun nuxt start",
+    "db:generate": "bun --bun drizzle-kit generate",
+    "db:push": "bun --bun drizzle-kit push",
+    "db:studio": "bun --bun drizzle-kit studio",
+    "typecheck": "bun --bun tsc --noEmit",
     "postinstall": "bun --bun nuxt prepare"
   },
   "devDependencies": {

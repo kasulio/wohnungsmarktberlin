@@ -1,26 +1,27 @@
-import ky from "ky";
 import { z } from "zod";
-import { fetchHtml, fetchJson } from "./http";
+import { fetchJson } from "./http";
+import { hashString } from "~/server/util";
+import { db } from "~/db/db";
+import { eq } from "drizzle-orm";
+import { address as addressTable } from "~/db/schema";
+import { createInsertSchema } from "drizzle-zod";
+const insertAddressSchema = createInsertSchema(addressTable);
 
-const extendedAddressInformationSchema = z.object({
-  coordinates: z.object({
-    lat: z.number(),
-    lng: z.number(),
-  }),
-  address: z.object({
-    street: z.string(),
-    housenumber: z.string(),
-    postcode: z.string(),
-    city: z.string(),
-    district: z.string(),
-    osmId: z.number(),
-  }),
-});
-
-export async function getAddressInformation(
-  address: string
-): Promise<z.infer<typeof extendedAddressInformationSchema> | undefined> {
+export async function getAddressFromPhoton(
+  address: string,
+): Promise<z.infer<typeof insertAddressSchema> | undefined> {
   try {
+    const addressId = hashString(address);
+
+    const existingAddress = await db
+      .select()
+      .from(addressTable)
+      .where(eq(addressTable.id, addressId))
+      .limit(1);
+    if (existingAddress.length > 0) {
+      return existingAddress[0];
+    }
+
     const results = await fetchJson(`https://photon.komoot.io/api`, {
       searchParams: {
         q: address,
@@ -30,25 +31,17 @@ export async function getAddressInformation(
       },
     });
 
-    // @ts-ignore
-    const feature = results?.features?.[0];
+    const feature = results.features[0];
     if (!feature) return undefined;
-    console.log({
-      coordinates: {
-        lat: feature.geometry.coordinates[1],
-        lng: feature.geometry.coordinates[0],
-      },
-      address: feature.properties,
-    });
-    const parsed = extendedAddressInformationSchema.safeParse({
-      coordinates: {
-        lat: feature.geometry.coordinates[1],
-        lng: feature.geometry.coordinates[0],
-      },
-      address: {
-        ...feature.properties,
-        osmId: feature.properties?.osm_id,
-      },
+
+    const parsed = insertAddressSchema.safeParse({
+      id: addressId,
+      street: feature.properties.street,
+      city: feature.properties.city,
+      streetNumber: feature.properties.housenumber,
+      postalCode: feature.properties.postcode,
+      longitude: feature.geometry.coordinates[0],
+      latitude: feature.geometry.coordinates[1],
     });
 
     if (!parsed.success) {

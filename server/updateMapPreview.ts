@@ -14,10 +14,7 @@ export const mapPreviewImagePath = path.join(
 
 export async function updateMapPreview(previewHash: string) {
   const url = new URL("https://maps.googleapis.com/maps/api/staticmap");
-  url.searchParams.set(
-    "center",
-    berlinCoordinates.lat + "," + berlinCoordinates.lng,
-  );
+  url.searchParams.set("center", "52.520008,13.404954");
   url.searchParams.set("zoom", "11");
   url.searchParams.set("size", "640x640");
   url.searchParams.set("scale", "2");

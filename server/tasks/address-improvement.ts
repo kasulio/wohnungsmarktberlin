@@ -1,7 +1,7 @@
 import { db } from "~/db/db";
-import { and, eq, isNull, isNotNull, sql } from "drizzle-orm";
+import { and, count, eq, isNull, isNotNull, sql } from "drizzle-orm";
 import { flat as flatTable, address as addressTable } from "~/db/schema";
-import { getAddressInformation } from "~/lib/photon";
+import { getAddressFromPhoton } from "~/lib/photon";
 
 export default defineTask({
   meta: {
@@ -9,59 +9,77 @@ export default defineTask({
     description: "Improve the addresses of the flats",
   },
   run: async () => {
-    return { result: await updateAdresses() };
-  },
-});
+    const result = {
+      success: true,
+      stats: {
+        addressesImproved: 0,
+        addressesFailed: 0,
+        addressesPending: 0,
+      },
+    };
 
-export async function updateAdresses() {
-  const flats = await db.query.flat.findMany({
-    where: and(
-      isNull(flatTable.addressId),
-      isNotNull(flatTable.addressText),
-      eq(flatTable.addressImprovement, "pending"),
-    ),
-    limit: 10,
-    orderBy: [sql`random()`],
-  });
+    const flats = await db.query.flat.findMany({
+      where: and(
+        isNull(flatTable.addressId),
+        isNotNull(flatTable.addressText),
+        eq(flatTable.addressImprovement, "pending"),
+      ),
+      limit: 10,
+      orderBy: [sql`random()`],
+    });
 
-  if (flats.length === 0) return;
+    if (flats.length === 0) return { result };
 
-  console.log(`[task] ${flats.length} addresses to improve`);
-  for (const flat of flats) {
-    const addressInformation = await getAddressInformation(flat.addressText);
-    if (addressInformation) {
-      const id = addressInformation.address.osmId.toString();
-      await db
-        .insert(addressTable)
-        .values({
-          id: id,
-          street: addressInformation.address.street,
-          city: addressInformation.address.city,
-          streetNumber: addressInformation.address.housenumber,
-          postalCode: addressInformation.address.postcode,
-          longitude: addressInformation.coordinates.lng,
-          latitude: addressInformation.coordinates.lat,
-        })
-        .onConflictDoNothing()
-        .returning();
+    for (const flat of flats) {
+      try {
+        const address = await getAddressFromPhoton(flat.addressText);
+        if (address) {
+          console.log(
+            `[task:address-improvement] ${flat.addressText} -> ${address.street} ${address.streetNumber} ${address.postalCode} ${address.city}`,
+          );
+          await db.transaction(async (tx) => {
+            await tx.insert(addressTable).values(address).onConflictDoNothing();
+            await tx
+              .update(flatTable)
+              .set({ addressId: address.id, addressImprovement: "success" })
+              .where(eq(flatTable.id, flat.id));
+          });
+          result.stats.addressesImproved++;
+        } else {
+          console.error(
+            `[task:address-improvement] No address found for ${flat.addressText}`,
+          );
 
-      await db
-        .update(flatTable)
-        .set({ addressId: id, addressImprovement: "success" })
-        .where(eq(flatTable.id, flat.id));
-    } else {
-      console.error(`[task] No address found for ${flat.addressText}`);
+          await db
+            .update(flatTable)
+            .set({ addressImprovement: "failed" })
+            .where(eq(flatTable.id, flat.id));
+          result.stats.addressesFailed++;
+        }
+      } catch (e) {
+        console.error(e);
+        result.stats.addressesFailed++;
+      }
 
-      await db
-        .update(flatTable)
-        .set({ addressImprovement: "failed" })
-        .where(eq(flatTable.id, flat.id));
+      await Bun.sleep(2000 + Math.random() * 5000);
     }
 
-    await Bun.sleep(2000 + Math.random() * 5000);
-  }
-}
+    result.stats.addressesPending = await db
+      .select({ count: count() })
+      .from(flatTable)
+      .where(
+        and(
+          isNull(flatTable.addressId),
+          isNotNull(flatTable.addressText),
+          eq(flatTable.addressImprovement, "pending"),
+        ),
+      )
+      .execute()
+      .then((res) => res[0]?.count ?? 0);
 
-if (import.meta.main) {
-  await updateAdresses();
-}
+    console.log(
+      `[task:address-improvement] improved ${result.stats.addressesImproved} addresses, failed ${result.stats.addressesFailed} addresses, pending ${result.stats.addressesPending} addresses`,
+    );
+    return { result };
+  },
+});

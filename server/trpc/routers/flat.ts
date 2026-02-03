@@ -169,14 +169,15 @@ export const flatRouter = router({
           .where(and(...filters))
       ).length;
 
-      const totalElementsCount = (
-        await db
-          .select({
-            count: count(),
-          })
-          .from(flat)
-          .where(isNull(flat.deleted))
-      )[0].count;
+      const totalElementsCount =
+        (
+          await db
+            .select({
+              count: count(),
+            })
+            .from(flat)
+            .where(and(isNull(flat.deleted), isNotNull(flat.addressId)))
+        )[0]?.count ?? 0;
 
       const orderByInput = [];
       const orderFunc = input.order?.[0] === "asc" ? asc : desc;
@@ -243,7 +244,7 @@ export const flatRouter = router({
 
           // add current tag
           if (dataPoint.flatToTag?.tagId) {
-            acc[dataPoint.flat.id].tags.push(dataPoint.flatToTag.tagId);
+            acc[dataPoint.flat.id]!.tags.push(dataPoint.flatToTag.tagId);
           }
 
           return acc;

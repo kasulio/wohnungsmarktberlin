@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import type { Browser } from "puppeteer-core";
 import { insertAddressSchema } from "./address";
 import { tagsSchema } from "./tags";
 
