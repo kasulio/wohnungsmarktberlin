@@ -1,22 +1,17 @@
-# Building the app #
-FROM oven/bun:alpine AS builder
-
-WORKDIR /app
+# use the official Bun image
+# see all versions at https://hub.docker.com/r/oven/bun/tags
+FROM oven/bun:slim
+WORKDIR /usr/src/app
+ENV NODE_ENV=production
+RUN apt-get update && apt-get install -y curl
 
 COPY package.json ./
 COPY bun.lock ./
 
-RUN bun install
+RUN bun install --frozen-lockfile
 
 COPY . .
 RUN bun run build
 
-# Running the app #
-FROM oven/bun:alpine
-WORKDIR /app
 
-COPY --from=builder /app/.output ./
-
-EXPOSE 3000
-
-ENTRYPOINT [ "bun", "./server/index.mjs" ]
+ENTRYPOINT [ "bun", "run", ".output/server/index.mjs" ]

@@ -34,10 +34,10 @@
     "eslint-plugin-vue": "^10.1.0",
     "nuxt": "^4.3.0",
     "prettier": "^3.5.3",
-    "prettier-plugin-tailwindcss": "^0.6.11",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "tsx": "^4.19.4",
     "typescript": "^5.9.3",
-    "vue": "^3.5.14",
+    "vue": "^3.5.27",
     "vue-router": "^4.5.1"
   },
   "dependencies": {
@@ -52,15 +52,15 @@
     "@trpc/server": "^10.45.0",
     "baseline-browser-mapping": "^2.9.19",
     "caniuse-lite": "^1.0.30001767",
-    "drizzle-orm": "^0.44.1",
-    "drizzle-zod": "^0.5.1",
+    "drizzle-orm": "^0.45.1",
+    "drizzle-zod": "^0.8.3",
     "ky": "^1.14.3",
     "lottie-web": "^5.13.0",
     "node-html-parser": "^7.0.2",
     "openai": "^4.25.0",
     "puppeteer-core": "^24.9.0",
     "trpc-nuxt": "^0.10.17",
-    "vue3-google-map": "^0.22.0",
+    "vue3-google-map": "^0.27.0",
     "zod": "^4.3.6"
   }
 }
