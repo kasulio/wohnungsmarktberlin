@@ -11,6 +11,8 @@ import {
 } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
 
+let lastIndex = 0;
+
 export default defineTask({
   meta: {
     name: "update-flats",
@@ -44,8 +46,8 @@ export default defineTask({
 
     // Select property management using round-robin based on current minute
     const currentMinute = new Date().getMinutes();
-    // const index = currentMinute % 10;
-    const index = 1;
+    const index = lastIndex++ % Object.values(propertyManagements).length;
+    // const index = 1;
     const propertyManagement = Object.values(propertyManagements)[index];
 
     // No property management selected for this minute index, skip

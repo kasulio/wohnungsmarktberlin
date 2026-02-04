@@ -1,4 +1,3 @@
-import ky from "ky";
 import { z } from "zod";
 import { fetchJson } from "~/lib/http";
 
