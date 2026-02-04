@@ -8,10 +8,10 @@ RUN apt-get update && apt-get install -y curl build-essential
 COPY package.json ./
 COPY bun.lock ./
 
-RUN bun install --cpu=x64 --os=linux
+RUN bun install
+
 
 COPY . .
 RUN bun run build
-
 
 ENTRYPOINT [ "bun", "run", ".output/server/index.mjs" ]

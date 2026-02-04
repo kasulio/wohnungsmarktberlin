@@ -20,11 +20,15 @@ export default defineEventHandler(async (e) => {
     .then((flat) => flat?.image);
 
   if (!image) {
-    return null;
+    throw createError({
+      statusCode: 404,
+      statusMessage: "Image not found",
+    });
   }
 
   setResponseHeaders(e, {
     "Cache-Control": "public, max-age=31536000, immutable",
+    "Content-Type": "image/jpeg",
   });
 
   return image;
