@@ -25,7 +25,10 @@ export const flatSchema = z.object({
   url: z.string(),
 });
 
+export const scrapedFlatSchema = flatSchema.omit({ id: true });
+
 export type Flat = z.infer<typeof flatSchema>;
+export type ScrapedFlat = z.infer<typeof scrapedFlatSchema>;
 
 const propertyManagementSchema = z.object({
   slug: z.string(),
@@ -35,5 +38,5 @@ const propertyManagementSchema = z.object({
 
 export type PropertyManagement = z.infer<typeof propertyManagementSchema> & {
   extractUrls: () => Promise<string[]>;
-  extractDataFromHtml: (html: string, href: string) => Flat;
+  extractDataFromHtml: (html: string, href: string) => ScrapedFlat;
 };

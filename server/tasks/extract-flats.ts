@@ -7,6 +7,7 @@ import {
 } from "~/server/db/schema";
 import { propertyManagements } from "~/data/propertyManagements";
 import { fetchHtml } from "~/lib/http";
+import { scrapedFlatSchema } from "~/data/schemas";
 
 export default defineTask({
   meta: {
@@ -38,10 +39,13 @@ export default defineTask({
 
       const html = await fetchHtml(flatUrlJob.url);
       try {
-        const flat = propertyManagement.extractDataFromHtml(
+        const scrapedFlat = propertyManagement.extractDataFromHtml(
           html,
           flatUrlJob.url,
         );
+
+        const flat = scrapedFlatSchema.parse(scrapedFlat);
+
         const image = flat.imageUrl ? await getImage(flat.imageUrl) : null;
 
         console.log(`[task:extract-flats] extracted flat ${flat.url}`);
@@ -53,7 +57,6 @@ export default defineTask({
               coldRentPrice: flat.coldRentPrice,
               floor: flat.floor,
               propertyManagementId: flatUrlJob.propertyManagementId,
-              id: flat.id,
               roomCount: flat.roomCount,
               title: flat.title,
               usableArea: flat.usableArea,

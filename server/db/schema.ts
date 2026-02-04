@@ -29,7 +29,9 @@ export const tagRelations = relations(tag, ({ many }) => ({
 }));
 
 export const flat = sqliteTable("flat", {
-  id: text("id").primaryKey(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => Bun.randomUUIDv7()),
   title: text("title").notNull(),
   coldRentPrice: integer("coldRentPrice"),
   warmRentPrice: integer("warmRentPrice"),

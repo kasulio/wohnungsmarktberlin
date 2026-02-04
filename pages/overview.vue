@@ -171,7 +171,7 @@ const sortOrders = computed(() => {
             :tags="flat.tags"
             :favorite="false"
             :usable-area="flat.usableArea"
-            :image-src="getFlatImageUrl(flat)"
+            :image-src="flat.hasImage ? getFlatImageUrl(flat) : null"
             :url="flat.url"
             :first-seen="new Date(flat.firstSeen)"
           />
@@ -195,7 +195,7 @@ const sortOrders = computed(() => {
             :tags="flat.tags"
             :favorite="false"
             :usable-area="flat.usableArea"
-            :image-src="getFlatImageUrl(flat)"
+            :image-src="flat.hasImage ? getFlatImageUrl(flat) : null"
             :url="flat.url"
             :first-seen="new Date(flat.firstSeen)"
           />
