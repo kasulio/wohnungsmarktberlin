@@ -1,4 +1,3 @@
-import { cleanUpCaches } from "../image-cache";
 import { createCaller } from "../trpc/routers";
 import { updateMapPreview } from "../updateMapPreview";
 
@@ -13,8 +12,6 @@ export default defineTask({
     const caller = createCaller({
       user: "admin",
     });
-
-    cleanUpCaches();
 
     const mapPreviewHash = await caller.flat.getMapPreviewHash();
 

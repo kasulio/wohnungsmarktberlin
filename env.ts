@@ -22,6 +22,9 @@ export const env = createEnv({
       .min(1)
       .optional()
       .prefault("http://localhost:3000"),
+    IMGPROXY_ENDPOINT: z.url(),
+    IMGPROXY_KEY: z.string().min(1),
+    IMGPROXY_SALT: z.string().min(1),
   },
   client: {
     NUXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().min(1),

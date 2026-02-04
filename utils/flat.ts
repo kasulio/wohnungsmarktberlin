@@ -1,7 +1,7 @@
 export function getFlatImageUrl(flat: { id: string; hasImage: boolean }) {
-  const origin = useRequestURL().origin;
+  const config = useRuntimeConfig();
 
   return flat.hasImage
-    ? `${origin}/api/image/${flat.id}`
-    : `${origin}/apartment_example_image.png`;
+    ? `${config.public.deploymentUrl}/api/image/${flat.id}`
+    : `${config.public.deploymentUrl}/apartment_example_image.png`;
 }

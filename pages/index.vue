@@ -8,7 +8,7 @@ const [propertyManagementsWithFlats, mapPreviewHash] = await Promise.all([
 ]);
 
 const flats = propertyManagementsWithFlats;
-const origin = useRequestURL().origin;
+const config = useRuntimeConfig();
 </script>
 
 <template>
@@ -45,7 +45,7 @@ const origin = useRequestURL().origin;
         :warm-rent-price="flat.warmRentPrice"
         :tags="flat.tags"
         :usable-area="flat.usableArea"
-        :image-src="flat.hasImage ? `/api/image/${flat.id}` : null"
+        :image-src="getFlatImageUrl(flat)"
         :url="flat.url"
         :first-seen="new Date(flat.firstSeen)"
       />
@@ -69,11 +69,10 @@ const origin = useRequestURL().origin;
       class="map_preview relative mt-8 aspect-square overflow-hidden rounded-3xl border border-black md:mt-0"
       title="Zur Karte"
     >
-      <CustomImageLoader
-        :src="`${origin}/api/image/map-preview`"
+      <NuxtImg
+        :src="`${config.public.deploymentUrl}/api/image/map-preview?v=${mapPreviewHash}`"
         alt="Vorschau der Karte"
         class="h-full w-full object-cover"
-        :v="mapPreviewHash"
         :width="512"
         :height="512"
         format="avif,webp"

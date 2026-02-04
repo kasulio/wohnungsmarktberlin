@@ -1,9 +1,9 @@
 import { count, eq } from "drizzle-orm";
+import { generateImageUrl } from "@imgproxy/imgproxy-node";
 import { db } from "~/db/db";
 import { flat as flatTable, flatUrlJob as flatUrlJobTable } from "~/db/schema";
 import { propertyManagements } from "~/data/propertyManagements";
 import { fetchHtml } from "~/lib/http";
-import sharp from "sharp";
 
 export default defineTask({
   meta: {
@@ -104,12 +104,25 @@ function getPropertyManagement(propertyManagementId: string) {
   return propertyManagement;
 }
 
-async function getImage(imageUrl: string) {
+async function getImage(remoteImageUrl: string) {
+  const imageUrl = generateImageUrl({
+    endpoint: process.env.IMGPROXY_ENDPOINT!,
+    url: remoteImageUrl,
+    options: {
+      resize: {
+        width: 200,
+        height: 200,
+        resizing_type: "fit",
+      },
+    },
+    key: process.env.IMGPROXY_KEY!,
+    salt: process.env.IMGPROXY_SALT!,
+  });
+
   try {
-    const imageBuffer = await fetch(imageUrl).then((res) => res.arrayBuffer());
-    return await sharp(imageBuffer)
-      .resize(200, 200, { fit: "cover" })
-      .toBuffer();
+    return await fetch(imageUrl)
+      .then((res) => res.arrayBuffer())
+      .then((buffer) => Buffer.from(buffer));
   } catch (e) {
     console.error(e);
     return null;

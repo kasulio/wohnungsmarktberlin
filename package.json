@@ -46,6 +46,7 @@
     "@auth/core": "^0.17.0",
     "@googlemaps/google-maps-services-js": "^3.3.42",
     "@hebilicious/authjs-nuxt": "^0.3.5",
+    "@imgproxy/imgproxy-node": "^1.1.0",
     "@lordicon/element": "^1.11.0",
     "@nuxt/image": "^2.0.0-alpha.1",
     "@t3-oss/env-nuxt": "^0.13.4",

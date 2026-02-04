@@ -48,7 +48,7 @@ export const flat = sqliteTable("flat", {
 });
 
 export const flatUrlJob = sqliteTable("flatUrlJob", {
-  url: text("url").notNull(),
+  url: text("url").notNull().primaryKey(),
   propertyManagementId: text("propertyManagementId").notNull(),
   status: text("status").notNull().default("pending"),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),

@@ -1,7 +1,6 @@
+import { eq } from "drizzle-orm";
 import { db } from "~/db/db";
-import { simpleImageCache } from "~/server/image-cache";
-
-const imagesCache = new Map<string, ReturnType<typeof simpleImageCache>>();
+import { flat } from "~/db/schema";
 
 export default defineEventHandler(async (e) => {
   const flatId = getRouterParam(e, "flatId");
@@ -10,41 +9,23 @@ export default defineEventHandler(async (e) => {
     return null;
   }
 
-  // check if imagesCache has the flatId
-  if (!imagesCache.has(flatId)) {
-    imagesCache.set(
-      flatId,
-      simpleImageCache(
-        `flat-${flatId}`,
-        () => {
-          return db.query.flat
-            .findFirst({
-              where: (f, { eq }) => eq(f.id, flatId),
-              columns: { image: true },
-            })
-            .then((res) => res!.image!);
-        },
-        2,
-      ),
-    );
+  // get the image from the database
+  const image = await db.query.flat
+    .findFirst({
+      where: eq(flat.id, flatId),
+      columns: {
+        image: true,
+      },
+    })
+    .then((flat) => flat?.image);
 
-    // make sure imageCache does not get too big
-    if (imagesCache.size > 100) {
-      imagesCache.delete(imagesCache.keys().next().value);
-    }
+  if (!image) {
+    return null;
   }
 
-  const cache = imagesCache.get(flatId)!;
-  const query = getQuery(e);
-  const { format, content } = await cache({
-    w: 64,
-    h: 64,
-    ...query,
-  });
   setResponseHeaders(e, {
     "Cache-Control": "public, max-age=31536000, immutable",
-    "Content-Type": `image/${format}`,
   });
 
-  return content;
+  return image;
 });

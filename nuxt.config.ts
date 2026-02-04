@@ -30,6 +30,10 @@ export default defineNuxtConfig({
   vue: {
     compilerOptions: { isCustomElement: (tag) => ["lord-icon"].includes(tag) },
   },
+  image: {
+    domains: [deploymentUrl!, "localhost:3000"],
+    densities: [1, 2],
+  },
   nitro: {
     esbuild: { options: { target: "esnext" } },
     experimental: { tasks: true },

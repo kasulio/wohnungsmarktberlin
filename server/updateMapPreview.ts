@@ -1,10 +1,8 @@
 import path from "path";
 import { and, isNotNull, isNull } from "drizzle-orm";
-import { mapPreviewCache } from "./api/image/map-preview";
 import { db } from "~/db/db";
 import { flat } from "~/db/schema";
 import { env } from "~/env";
-import { berlinCoordinates } from "~/data/coordinates";
 
 export const mapPreviewImagePath = path.join(
   process.cwd(),
@@ -43,9 +41,6 @@ export async function updateMapPreview(previewHash: string) {
   const image = Buffer.from(buffer);
 
   await Bun.file(mapPreviewImagePath).write(image);
-
-  mapPreviewCache({ v: previewHash, w: 512, h: 512 });
-  mapPreviewCache({ v: previewHash, w: 1024, h: 1024 });
 
   return true;
 }
