@@ -1,15 +1,13 @@
+import type { PropertyManagement } from "../schemas";
 import {
-  scrapedFlatSchema,
-  type PropertyManagement,
-  type ScrapedFlat,
-} from "../schemas";
-import { deuwo } from "./deuwo";
-import { extractDeuvonoUrls } from "./shared/deuvono";
+  extractDeuvonoUrls,
+  extractDeuvonoDataFromHtml,
+} from "./shared/deuvono";
 
 export const vonovia = {
   slug: "vonovia",
   name: "Vonovia",
   website: "https://www.vonovia.de",
   extractUrls: () => extractDeuvonoUrls("vonovia"),
-  extractDataFromHtml: deuwo.extractDataFromHtml,
+  extractDataFromHtml: extractDeuvonoDataFromHtml,
 } as const satisfies PropertyManagement;
