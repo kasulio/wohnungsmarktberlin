@@ -110,6 +110,28 @@ function extractDataFromHtml(html: string, href: string) {
   const floorInfo = getTableValue("Etage / Anzahl Etagen").split("/");
   const floor = floorInfo[0] ? parseInt(floorInfo[0].trim()) : undefined;
 
+  // Extract image URL from img srcset attribute (select largest image)
+  const imgElement = root.querySelector("figure.gallery__main-image img");
+  let imageUrl: string | undefined;
+  if (imgElement) {
+    const srcset = imgElement.getAttribute("srcset");
+    if (srcset) {
+      // Parse srcset to get the largest image
+      const srcsetParts = srcset.split(",").map((s) => s.trim());
+      const images = srcsetParts
+        .map((part) => {
+          const [url, width] = part.split(" ");
+          return { url: url?.trim(), width: parseInt(width || "0") || 0 };
+        })
+        .filter((img) => img.url); // Filter out undefined urls
+      // Sort by width descending and take the largest
+      images.sort((a, b) => b.width - a.width);
+      if (images.length > 0 && images[0]?.url) {
+        imageUrl = `${BASE_URL}${images[0].url}`;
+      }
+    }
+  }
+
   return {
     title,
     coldRentPrice: coldRent,
@@ -120,6 +142,6 @@ function extractDataFromHtml(html: string, href: string) {
     roomCount: rooms ?? 0,
     floor,
     tags: getApartmentTags(title),
-    imageUrl: undefined,
+    imageUrl,
   } satisfies ScrapedFlat;
 }
