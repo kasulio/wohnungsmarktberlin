@@ -19,7 +19,7 @@ logs
 .fleet
 .idea
 docker-compose.yml
-db/sqlite.db
+server/db/sqlite.db
 
 # Local env files
 .env

@@ -3,8 +3,8 @@ import { eq } from "drizzle-orm";
 import { tags, tagsSchema } from "~/data/tags";
 import { env } from "~/env";
 import { type Tags } from "~/data/tags"; // Import the 'Tags' type from the appropriate module
-import { db } from "~/db/db";
-import { flat, flatToTag, tag } from "~/db/schema";
+import { db } from "~/server/db/client";
+import { flat, flatToTag, tag } from "~/server/db/schema";
 
 /**
  * TODO

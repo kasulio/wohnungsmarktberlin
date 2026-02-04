@@ -1,7 +1,7 @@
 import path from "path";
 import { and, isNotNull, isNull } from "drizzle-orm";
-import { db } from "~/db/db";
-import { flat } from "~/db/schema";
+import { db } from "~/server/db/client";
+import { flat } from "~/server/db/schema";
 import { env } from "~/env";
 
 export const mapPreviewImagePath = path.join(

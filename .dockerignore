@@ -4,4 +4,4 @@
 .vscode
 node_modules
 Dockerfile
-db/sqlite.db
+server/db/sqlite.db

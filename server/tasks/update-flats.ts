@@ -1,5 +1,5 @@
-import { db } from "~/db/db";
-import { flat, flatUrlJob } from "~/db/schema";
+import { db } from "~/server/db/client";
+import { flat, flatUrlJob } from "~/server/db/schema";
 import {
   and,
   eq,

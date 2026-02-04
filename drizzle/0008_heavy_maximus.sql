@@ -1,1 +1,0 @@
-ALTER TABLE `flat` ADD `addressText` text DEFAULT '' NOT NULL;

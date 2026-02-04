@@ -1,103 +1,12 @@
 {
-  "version": "5",
+  "version": "7",
   "dialect": "sqlite",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1698956345394,
-      "tag": "0000_faulty_joystick",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1699381440754,
-      "tag": "0001_sparkling_stryfe",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1701687422563,
-      "tag": "0002_icy_dragon_lord",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1704646608045,
-      "tag": "0003_flowery_smiling_tiger",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1704722140310,
-      "tag": "0004_bouncy_stick",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1704726179848,
-      "tag": "0005_damp_nebula",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1704730019771,
-      "tag": "0006_thick_tiger_shark",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "5",
-      "when": 1704730134429,
-      "tag": "0007_secret_goblin_queen",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
       "version": "6",
-      "when": 1770048289822,
-      "tag": "0008_heavy_maximus",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1770048311221,
-      "tag": "0009_moaning_siren",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "6",
-      "when": 1770049596456,
-      "tag": "0010_dapper_purifiers",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "6",
-      "when": 1770113647967,
-      "tag": "0011_short_ken_ellis",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "6",
-      "when": 1770113678388,
-      "tag": "0012_smart_mister_fear",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "6",
-      "when": 1770214132889,
-      "tag": "0013_cheerful_payback",
+      "when": 1770229612480,
+      "tag": "0000_youthful_wildside",
       "breakpoints": true
     }
   ]

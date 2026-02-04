@@ -1,6 +1,6 @@
-import { db } from "~/db/db";
+import { db } from "~/server/db/client";
 import { and, count, eq, isNull, isNotNull, sql } from "drizzle-orm";
-import { flat as flatTable, address as addressTable } from "~/db/schema";
+import { flat as flatTable, address as addressTable } from "~/server/db/schema";
 import { getAddressFromPhoton } from "~/lib/photon";
 
 export default defineTask({

@@ -15,8 +15,8 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
-import { db } from "~/db/db";
-import { address, flat, flatToTag } from "~/db/schema";
+import { db } from "~/server/db/client";
+import { address, flat, flatToTag } from "~/server/db/schema";
 import { omit } from "~/utils/typeHelper";
 import { berlinDistricts, districtIdSchema } from "~/data/districts";
 import { type Tags, tagsSchema } from "~/data/tags";

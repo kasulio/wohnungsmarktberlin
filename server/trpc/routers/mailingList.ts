@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import { publicProcedure, router } from "../trpc";
-import { db } from "~/db/db";
+import { db } from "~/server/db/client";
 import { mailingListSignUpSchema } from "~/data/schemas";
 import { getMailList } from "~/data/mailingList";
 

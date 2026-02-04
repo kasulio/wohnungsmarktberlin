@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
-import { db } from "~/db/db";
-import { flat } from "~/db/schema";
+import { db } from "~/server/db/client";
+import { flat } from "~/server/db/schema";
 
 export default defineEventHandler(async (e) => {
   const flatId = getRouterParam(e, "flatId");

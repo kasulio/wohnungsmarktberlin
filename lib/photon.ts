@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { fetchJson } from "./http";
 import { hashString } from "~/server/util";
-import { db } from "~/db/db";
+import { db } from "~/server/db/client";
 import { eq } from "drizzle-orm";
-import { address as addressTable } from "~/db/schema";
+import { address as addressTable } from "~/server/db/schema";
 import { createInsertSchema } from "drizzle-zod";
 const insertAddressSchema = createInsertSchema(addressTable);
 

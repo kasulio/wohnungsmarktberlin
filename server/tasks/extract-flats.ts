@@ -1,7 +1,10 @@
 import { count, eq } from "drizzle-orm";
 import sharp from "sharp";
-import { db } from "~/db/db";
-import { flat as flatTable, flatUrlJob as flatUrlJobTable } from "~/db/schema";
+import { db } from "~/server/db/client";
+import {
+  flat as flatTable,
+  flatUrlJob as flatUrlJobTable,
+} from "~/server/db/schema";
 import { propertyManagements } from "~/data/propertyManagements";
 import { fetchHtml } from "~/lib/http";
 
