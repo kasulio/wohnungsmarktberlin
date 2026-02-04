@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { type Tags } from "@/data/tags";
-import { getFlatImageUrl } from "~/utils/flat";
 import { formatArea, formatPrice } from "~/utils/util";
 
 const props = withDefaults(
@@ -26,10 +25,6 @@ const props = withDefaults(
     as: "card",
   },
 );
-const img = getFlatImageUrl({
-  id: props.id,
-  hasImage: Boolean(props.imageSrc),
-});
 
 const shownPrice = computed(() => props.warmRentPrice ?? props.coldRentPrice);
 </script>
@@ -45,13 +40,9 @@ const shownPrice = computed(() => props.warmRentPrice ?? props.coldRentPrice);
           :to="url"
           target="_blank"
         >
-          <NuxtImg
-            :src="img"
+          <FlatImage
+            :flat="{ id, imageSrc }"
             :alt="`Vorschaubild ${title}`"
-            class="h-16 w-16 rounded-lg"
-            width="64"
-            height="64"
-            format="avif,webp"
           />
         </NuxtLink>
       </div>
@@ -135,13 +126,9 @@ const shownPrice = computed(() => props.warmRentPrice ?? props.coldRentPrice);
         target="_blank"
         class="shrink-0"
       >
-        <CustomImageLoader
-          :src="img"
+        <FlatImage
+          :flat="{ id, imageSrc }"
           :alt="`Vorschaubild ${title}`"
-          class="h-16 w-16 rounded-lg"
-          :width="64"
-          :height="64"
-          format="avif,webp"
         />
       </NuxtLink>
       <div class="flex flex-col justify-between">

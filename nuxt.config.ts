@@ -7,6 +7,14 @@ export const deploymentUrl = env.DEPLOYMENT_URL;
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2026-02-03",
+  routeRules: {
+    "/_ipx/**": {
+      isr: 60 * 60 * 24 * 7, // 7 days
+      headers: {
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    },
+  },
   app: {
     head: {
       charset: "utf-8",

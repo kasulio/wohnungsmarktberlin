@@ -4,7 +4,7 @@ import {
 } from "~/server/updateMapPreview";
 
 if (!(await Bun.file(mapPreviewImagePath).exists())) {
-  await updateMapPreview("");
+  await updateMapPreview();
 }
 
 export default defineEventHandler(async (e) => {

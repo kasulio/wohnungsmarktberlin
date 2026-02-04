@@ -10,7 +10,8 @@ export const mapPreviewImagePath = path.join(
   "map-preview.png",
 );
 
-export async function updateMapPreview(previewHash: string) {
+export async function updateMapPreview() {
+  console.log("[updateMapPreview] updating map preview");
   const url = new URL("https://maps.googleapis.com/maps/api/staticmap");
   url.searchParams.set("center", "52.520008,13.404954");
   url.searchParams.set("zoom", "11");

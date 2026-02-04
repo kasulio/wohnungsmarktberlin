@@ -1,6 +1,5 @@
 <script lang="ts" setup>
 import { type Tags } from "@/data/tags";
-import { getFlatImageUrl } from "~/utils/flat";
 import { formatPrice } from "~/utils/util";
 
 const props = defineProps<{
@@ -19,11 +18,6 @@ const props = defineProps<{
   url: string;
   firstSeen: Date;
 }>();
-
-const img = getFlatImageUrl({
-  id: props.id,
-  hasImage: Boolean(props.imageSrc),
-});
 </script>
 
 <template>
@@ -33,13 +27,9 @@ const img = getFlatImageUrl({
         :to="url"
         target="_blank"
       >
-        <NuxtImg
-          :src="img"
+        <FlatImage
+          :flat="{ id, imageSrc }"
           :alt="`Vorschaubild ${title}`"
-          class="h-16 w-16 rounded-lg"
-          :width="64"
-          height="64"
-          format="avif,webp"
         />
       </NuxtLink>
     </div>

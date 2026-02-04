@@ -15,13 +15,16 @@ export default defineTask({
 
     const mapPreviewHash = await caller.flat.getMapPreviewHash();
 
+    if (previousMapPreviewHash === null) {
+      previousMapPreviewHash = mapPreviewHash;
+    }
+
     if (
       mapPreviewHash !== previousMapPreviewHash &&
       process.env.NODE_ENV !== "development"
     ) {
       console.log(`[task:clean-caches] regenerating map preview`);
-      previousMapPreviewHash = mapPreviewHash;
-      await updateMapPreview(mapPreviewHash);
+      await updateMapPreview();
     }
 
     return { result: true };

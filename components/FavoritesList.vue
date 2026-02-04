@@ -48,13 +48,10 @@ watch(modalOpen, (newValue) => {
           title="Zur Wohnung"
           class="flex items-center gap-2"
         >
-          <NuxtImg
-            :src="getFlatImageUrl(favorite)"
+          <FlatImage
+            :flat="favorite"
             :alt="`Vorschaubild ${favorite.title}`"
             class="h-12 w-12 rounded-md xs:h-16 xs:w-16"
-            width="64"
-            height="64"
-            format="avif,webp"
           />
           <div class="flex grow flex-col">
             <div class="flex items-center gap-2">
