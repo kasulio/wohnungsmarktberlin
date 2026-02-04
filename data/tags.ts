@@ -17,9 +17,9 @@ export const tags = {
 };
 
 // this is necessary for the type to be inferred correctly
-const [firstKey, ...restOfKeys] = typedObjectKeys(tags);
+const keys = typedObjectKeys(tags);
 
-export const tagsSchema = z.array(z.enum([firstKey, ...restOfKeys]));
+export const tagsSchema = z.array(z.enum(keys));
 export type Tags = z.infer<typeof tagsSchema>;
 
 export const titleToTagsMap = {
@@ -36,7 +36,7 @@ export const titleToTagsMap = {
 } as const;
 
 export const tagKeys = typedObjectKeys(tags);
-export const getApartmentTagsLocally = (
+export const getApartmentTags = (
   title: string,
   customTagsMap?: Record<string, Tags>,
 ): Tags => {

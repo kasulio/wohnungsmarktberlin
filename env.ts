@@ -12,10 +12,7 @@ if (process.env.ENV_FILE_PATH) {
 export const env = createEnv({
   server: {
     GOOGLE_MAPS_API_KEY: z.string().min(1),
-    BROWSERLESS_URL: z.string().min(1).optional(),
-    BROWSERLESS_TOKEN: z.string().min(1).optional(),
-    LOCAL_SQLITE_PATH: z.string().min(1).optional(),
-    CRON_TOKEN: z.string().min(1).optional(),
+    LOCAL_SQLITE_PATH: z.string().min(1),
     OPENAI_API_KEY: z.string().min(1).optional(),
     AUTH_USER: z.string().min(1).optional().default("admin"),
     AUTH_PASSWORD: z.string().min(1).optional().default("admin"),
@@ -24,7 +21,7 @@ export const env = createEnv({
       .string()
       .min(1)
       .optional()
-      .default("http://localhost:3000"),
+      .prefault("http://localhost:3000"),
   },
   client: {
     NUXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().min(1),

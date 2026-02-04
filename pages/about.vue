@@ -64,14 +64,16 @@ const { activeFlatCount, allFlatsCount } = stats || initialStats;
       <div class="flex-1 rounded-md border border-dashed border-black p-4">
         <h3 class="pb-2 text-m font-semibold">Wohnungen</h3>
         <table class="w-full">
-          <tr>
-            <td class="text-nowrap">Aktive Wohnungen:</td>
-            <td>{{ activeFlatCount }}</td>
-          </tr>
-          <tr>
-            <td class="text-nowrap">Gesamt seit Januar '24:</td>
-            <td>{{ allFlatsCount }}</td>
-          </tr>
+          <tbody>
+            <tr>
+              <td class="text-nowrap">Aktive Wohnungen:</td>
+              <td>{{ activeFlatCount }}</td>
+            </tr>
+            <tr>
+              <td class="text-nowrap">Gesamt seit Januar '24:</td>
+              <td>{{ allFlatsCount }}</td>
+            </tr>
+          </tbody>
         </table>
       </div>
 

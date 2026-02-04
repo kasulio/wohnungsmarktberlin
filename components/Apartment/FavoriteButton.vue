@@ -43,6 +43,7 @@ onMounted(async () => {
       >
         <lord-icon
           ref="icon"
+          icon="heart"
           src="/icons/heart.json"
           state="morph-heart"
           class="current-color -m-1 md:hover:animate-zoombounce"
@@ -53,8 +54,9 @@ onMounted(async () => {
     <template #fallback>
       <span class="current-color -m-1 flex">
         <lord-icon
-          src="/icons/heart.json"
+          icon="heart"
           state="morph-heart"
+          src="/icons/heart.json"
           style="width: 28px; height: 28px"
         />
       </span>

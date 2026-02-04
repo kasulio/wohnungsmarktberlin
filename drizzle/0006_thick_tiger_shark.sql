@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX `flatToTag_flatId_tagId_unique` ON `flatToTag` (`flatId`,`tagId`);

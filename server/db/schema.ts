@@ -37,12 +37,21 @@ export const flat = sqliteTable("flat", {
   usableArea: real("usableArea"),
   floor: integer("floor"),
   image: blob("image", { mode: "buffer" }),
-  addressId: text("addressId").notNull(),
+  addressId: text("addressId"),
+  addressText: text("addressText").notNull().default(""),
+  addressImprovement: text("addressImprovement").default("pending"),
   propertyManagementId: text("propertyManagementId"),
   firstSeen: integer("firstSeen", { mode: "timestamp" }).notNull(),
   lastSeen: integer("lastSeen", { mode: "timestamp" }).notNull(),
   deleted: integer("deleted", { mode: "timestamp" }),
   url: text("url").notNull(),
+});
+
+export const flatUrlJob = sqliteTable("flatUrlJob", {
+  url: text("url").notNull().primaryKey(),
+  propertyManagementId: text("propertyManagementId").notNull(),
+  status: text("status").notNull().default("pending"),
+  createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
 });
 
 export const flatRelations = relations(flat, ({ one, many }) => ({

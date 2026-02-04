@@ -2,7 +2,6 @@
 import { GoogleMap, Marker, InfoWindow, Polygon } from "vue3-google-map";
 import resolveConfig from "tailwindcss/resolveConfig";
 import tailwindConfig from "~/tailwind.config";
-import { getFlatImageUrl } from "~/utils/flat";
 import { berlinCoordinates, ringbahnCoordinates } from "~/data/coordinates";
 
 const { $client } = useNuxtApp();
@@ -86,12 +85,13 @@ const infoWindowsOpen = ref<Record<string, boolean>>({});
           >
             <InfoWindow :model-value="infoWindowsOpen[flat.id]">
               <div class="flex w-40 flex-col gap-4 p-2">
-                <LazyNuxtImg
+                <FlatImage
                   v-if="infoWindowsOpen[flat.id]"
-                  :src="getFlatImageUrl(flat)"
+                  :flat="flat"
                   :alt="flat.title"
                   class="aspect-square h-32 w-32 rounded-md"
-                  format="avif,webp"
+                  :width="128"
+                  :height="128"
                 />
                 <div class="break-words font-bold">
                   {{ flat.title }}

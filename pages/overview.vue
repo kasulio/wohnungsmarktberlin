@@ -138,6 +138,7 @@ const sortOrders = computed(() => {
               >
                 {{ header.title }}
                 <lord-icon
+                  icon="arrow"
                   src="/icons/arrow.json"
                   state="hover-ternd-flat-3"
                   class="-mr-[20px] -rotate-90 transition-all duration-500"
@@ -170,7 +171,7 @@ const sortOrders = computed(() => {
             :tags="flat.tags"
             :favorite="false"
             :usable-area="flat.usableArea"
-            :image-src="flat.hasImage ? `/api/image/${flat.id}` : null"
+            :image-src="getFlatImageUrl(flat)"
             :url="flat.url"
             :first-seen="new Date(flat.firstSeen)"
           />
@@ -194,7 +195,7 @@ const sortOrders = computed(() => {
             :tags="flat.tags"
             :favorite="false"
             :usable-area="flat.usableArea"
-            :image-src="flat.hasImage ? `/api/image/${flat.id}` : null"
+            :image-src="getFlatImageUrl(flat)"
             :url="flat.url"
             :first-seen="new Date(flat.firstSeen)"
           />
@@ -204,8 +205,8 @@ const sortOrders = computed(() => {
         <Pagination
           :total-elements-count="flats?.totalElementsCount ?? 0"
           :filtered-elements-count="flats?.filteredElementsCount ?? 0"
-          :current-page="urlState.page ? urlState.page[0] : 1"
-          :page-size="urlState.pageSize ? urlState.pageSize[0] : 25"
+          :current-page="urlState.page ? urlState.page[0]! : 1"
+          :page-size="urlState.pageSize ? urlState.pageSize[0]! : 25"
         />
       </div>
     </div>

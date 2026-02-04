@@ -11,11 +11,12 @@ import {
   or,
   asc,
   desc,
+  isNotNull,
 } from "drizzle-orm";
 import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
-import { db } from "~/db/db";
-import { address, flat, flatToTag } from "~/db/schema";
+import { db } from "~/server/db/client";
+import { address, flat, flatToTag } from "~/server/db/schema";
 import { omit } from "~/utils/typeHelper";
 import { berlinDistricts, districtIdSchema } from "~/data/districts";
 import { type Tags, tagsSchema } from "~/data/tags";
@@ -28,7 +29,7 @@ export const countsAsNewFilter = sql<
 >`strftime('%s', 'now') - firstSeen < ${countsAsNewTime}`.as("isNew");
 
 const queryOptions = {
-  where: isNull(flat.deleted),
+  where: and(isNull(flat.deleted), isNotNull(flat.addressId)),
   with: { address: true, flatToTag: true },
   columns: {
     id: true,
@@ -55,7 +56,7 @@ export const flatRouter = router({
   getFeatured: publicProcedure
     .input(
       z.object({
-        limit: z.number().optional().default(8),
+        limit: z.number().optional().prefault(8),
       }),
     )
     .query(async ({ input }) => {
@@ -168,14 +169,15 @@ export const flatRouter = router({
           .where(and(...filters))
       ).length;
 
-      const totalElementsCount = (
-        await db
-          .select({
-            count: count(),
-          })
-          .from(flat)
-          .where(isNull(flat.deleted))
-      )[0].count;
+      const totalElementsCount =
+        (
+          await db
+            .select({
+              count: count(),
+            })
+            .from(flat)
+            .where(and(isNull(flat.deleted), isNotNull(flat.addressId)))
+        )[0]?.count ?? 0;
 
       const orderByInput = [];
       const orderFunc = input.order?.[0] === "asc" ? asc : desc;
@@ -242,7 +244,7 @@ export const flatRouter = router({
 
           // add current tag
           if (dataPoint.flatToTag?.tagId) {
-            acc[dataPoint.flat.id].tags.push(dataPoint.flatToTag.tagId);
+            acc[dataPoint.flat.id]!.tags.push(dataPoint.flatToTag.tagId);
           }
 
           return acc;

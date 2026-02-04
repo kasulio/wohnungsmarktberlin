@@ -4,10 +4,8 @@ import { env } from "./env";
 export default {
   schema: "./db/schema.ts",
   out: "./drizzle",
-  driver: "libsql",
+  dialect: "sqlite",
   dbCredentials: {
-    url: env.LOCAL_SQLITE_PATH
-      ? `file://${env.LOCAL_SQLITE_PATH}`
-      : "file:db/sqlite.db",
+    url: env.LOCAL_SQLITE_PATH!,
   },
 } satisfies Config;

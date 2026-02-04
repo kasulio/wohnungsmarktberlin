@@ -1,15 +1,17 @@
-FROM node:20-alpine
+# use the official Bun image
+# see all versions at https://hub.docker.com/r/oven/bun/tags
+FROM oven/bun:slim
+WORKDIR /usr/src/app
+ENV NODE_ENV=production
+RUN apt-get update && apt-get install -y curl build-essential
 
-WORKDIR /app
+COPY package.json ./
+COPY bun.lock ./
 
-COPY package*.json ./
+RUN bun install
 
-RUN npm ci
 
 COPY . .
+RUN bun run build
 
-EXPOSE 3000
-
-RUN npm run build
-
-CMD [ "node", ".output/server/index.mjs" ]‚
+ENTRYPOINT [ "bun", "run", ".output/server/index.mjs" ]

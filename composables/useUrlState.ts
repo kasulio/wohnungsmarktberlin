@@ -102,7 +102,7 @@ export const flatFilterUrlSchema = z
       .optional()
       .nullable(),
   })
-  .merge(paginationSchema);
+  .extend(paginationSchema.shape);
 
 export const useFlatFilterUrlState = () => {
   const url = useUrlState(flatFilterUrlSchema);

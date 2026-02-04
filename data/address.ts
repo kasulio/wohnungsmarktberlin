@@ -2,8 +2,8 @@ import { Client } from "@googlemaps/google-maps-services-js";
 import { eq } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import type { z } from "zod";
-import { db } from "~/db/db";
-import { address, flat } from "~/db/schema";
+import { db } from "~/server/db/client";
+import { address, flat } from "~/server/db/schema";
 import { env } from "~/env";
 import { hashString } from "~/server/util";
 

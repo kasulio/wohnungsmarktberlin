@@ -23,10 +23,10 @@ const consent = useConsent();
     <p>
       Unsere Webseite wird auf Servern von
       <StyledNuxtLink
-        to="https://docs.hetzner.com/de/general/general-terms-and-conditions/data-privacy-faq/"
+        to="https://www.netcup.com/de/kontakt/datenschutzerklaerung"
         target="_blank"
       >
-        Hetzner Cloud
+        Netcup
       </StyledNuxtLink>
       gehostet, die sich innerhalb der Europäischen Union befinden. Zudem nutzen
       wir
