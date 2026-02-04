@@ -1,5 +1,5 @@
 import { count, eq } from "drizzle-orm";
-import { generateImageUrl } from "@imgproxy/imgproxy-node";
+import sharp from "sharp";
 import { db } from "~/db/db";
 import { flat as flatTable, flatUrlJob as flatUrlJobTable } from "~/db/schema";
 import { propertyManagements } from "~/data/propertyManagements";
@@ -105,24 +105,21 @@ function getPropertyManagement(propertyManagementId: string) {
 }
 
 async function getImage(remoteImageUrl: string) {
-  const imageUrl = generateImageUrl({
-    endpoint: process.env.IMGPROXY_ENDPOINT!,
-    url: remoteImageUrl,
-    options: {
-      resize: {
-        width: 200,
-        height: 200,
-        resizing_type: "fit",
-      },
-    },
-    key: process.env.IMGPROXY_KEY!,
-    salt: process.env.IMGPROXY_SALT!,
-  });
-
   try {
-    return await fetch(imageUrl)
-      .then((res) => res.arrayBuffer())
-      .then((buffer) => Buffer.from(buffer));
+    // Fetch the remote image
+    const response = await fetch(remoteImageUrl);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Process with Sharp
+    const processedBuffer = await sharp(buffer)
+      .resize(200, 200, {
+        fit: "inside",
+        withoutEnlargement: true,
+      })
+      .toBuffer();
+
+    return processedBuffer;
   } catch (e) {
     console.error(e);
     return null;
