@@ -20,6 +20,7 @@ export default defineEventHandler(async (e) => {
     .then((flat) => flat?.image);
 
   if (!image) {
+    console.error(`[api:image] image not found for flat ${flatId}`);
     throw createError({
       statusCode: 404,
       statusMessage: "Image not found",

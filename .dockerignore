@@ -1,6 +1,7 @@
 .build
 .nuxt
-# .output
+.output
 .vscode
 node_modules
 Dockerfile
+db/sqlite.db

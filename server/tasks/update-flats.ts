@@ -43,8 +43,7 @@ export default defineTask({
 
     // Select property management using round-robin based on current minute
     const currentMinute = new Date().getMinutes();
-    // const index = currentMinute % 10;
-    const index = 0;
+    const index = currentMinute % 10;
     const propertyManagement = Object.values(propertyManagements)[index];
 
     // No property management selected for this minute index, skip
