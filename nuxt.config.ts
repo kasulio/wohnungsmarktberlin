@@ -67,7 +67,13 @@ export default defineNuxtConfig({
     "@nuxt/image",
     "@hebilicious/authjs-nuxt",
     "@nuxtjs/sitemap",
+    "nuxt-ipx-cache",
   ],
+  ipxCache: {
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    cacheDir: ".cache/ipx",
+    ipxPrefix: "/_ipx",
+  },
   site: { url: deploymentUrl },
   sitemap: { exclude: ["/admin/**"] },
   authJs: {
