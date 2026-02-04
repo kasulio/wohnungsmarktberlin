@@ -1,4 +1,5 @@
 export function getFlatImageUrl(flat: { id: string; hasImage: boolean }) {
+  if (!flat.hasImage) return null;
   const config = useRuntimeConfig();
 
   return flat.hasImage

@@ -46,12 +46,8 @@ export default defineNuxtConfig({
     esbuild: { options: { target: "esnext" } },
     experimental: { tasks: true },
     scheduledTasks: {
-      "* * * * *": [
-        "address-improvement",
-        "clean-caches",
-        "extract-flats",
-        "update-flats",
-      ],
+      "* * * * *": ["address-improvement", "extract-flats", "update-flats"],
+      "*/15 * * * *": ["update-map-preview"],
     },
     preset: "bun",
   },

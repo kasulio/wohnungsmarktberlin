@@ -41,7 +41,7 @@ const shownPrice = computed(() => props.warmRentPrice ?? props.coldRentPrice);
           target="_blank"
         >
           <FlatImage
-            :flat="{ id, imageSrc }"
+            :image-src="imageSrc"
             :alt="`Vorschaubild ${title}`"
           />
         </NuxtLink>
@@ -127,7 +127,7 @@ const shownPrice = computed(() => props.warmRentPrice ?? props.coldRentPrice);
         class="shrink-0"
       >
         <FlatImage
-          :flat="{ id, imageSrc }"
+          :image-src="imageSrc"
           :alt="`Vorschaubild ${title}`"
         />
       </NuxtLink>

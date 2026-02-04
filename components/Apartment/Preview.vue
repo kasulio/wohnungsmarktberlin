@@ -28,7 +28,7 @@ const props = defineProps<{
         target="_blank"
       >
         <FlatImage
-          :flat="{ id, imageSrc }"
+          :image-src="imageSrc"
           :alt="`Vorschaubild ${title}`"
         />
       </NuxtLink>
