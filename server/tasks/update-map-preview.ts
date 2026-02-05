@@ -5,8 +5,8 @@ let previousMapPreviewHash: string | null = null;
 
 export default defineTask({
   meta: {
-    name: "clean-caches",
-    description: "Clean the caches",
+    name: "update-map-preview",
+    description: "Update the map preview",
   },
   run: async () => {
     const caller = createCaller({
@@ -23,7 +23,7 @@ export default defineTask({
       mapPreviewHash !== previousMapPreviewHash &&
       process.env.NODE_ENV !== "development"
     ) {
-      console.log(`[task:clean-caches] regenerating map preview`);
+      console.log(`[task:update-map-preview] regenerating map preview`);
       await updateMapPreview();
     }
 

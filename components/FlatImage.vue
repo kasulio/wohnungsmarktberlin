@@ -1,12 +1,8 @@
 <script setup lang="ts">
-import { getFlatImageUrl } from "~/utils/flat";
-
 const props = withDefaults(
   defineProps<{
-    flat:
-      | { id: string; hasImage: boolean }
-      | { id: string; imageSrc: string | null };
     alt: string;
+    imageSrc: string | null;
     width?: number;
     height?: number;
     sizes?: string;
@@ -19,21 +15,15 @@ const props = withDefaults(
     loading: "lazy",
   },
 );
-
-const imgUrl = computed(() => {
-  const hasImage =
-    "hasImage" in props.flat
-      ? props.flat.hasImage
-      : Boolean(props.flat.imageSrc);
-  return getFlatImageUrl({ id: props.flat.id, hasImage });
-});
-
+const config = useRuntimeConfig();
 const imgClass = computed(() => props.class || "h-16 w-16 rounded-lg");
 </script>
 
 <template>
   <NuxtImg
-    :src="imgUrl"
+    :src="
+      imageSrc ?? `${config.public.deploymentUrl}/apartment_example_image.png`
+    "
     :alt="alt"
     :width="width"
     :height="height"

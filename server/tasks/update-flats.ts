@@ -11,6 +11,8 @@ import {
 } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
 
+let lastIndex = 0;
+
 export default defineTask({
   meta: {
     name: "update-flats",
@@ -27,6 +29,7 @@ export default defineTask({
         newJobsCreated: 0,
         flatsUpdated: 0,
         duplicateJobsFiltered: 0,
+        jobsReset: 0,
       },
     };
 
@@ -43,7 +46,8 @@ export default defineTask({
 
     // Select property management using round-robin based on current minute
     const currentMinute = new Date().getMinutes();
-    const index = currentMinute % 10;
+    const index = lastIndex++ % Object.values(propertyManagements).length;
+    // const index = 1;
     const propertyManagement = Object.values(propertyManagements)[index];
 
     // No property management selected for this minute index, skip
@@ -71,6 +75,49 @@ export default defineTask({
       // Extract URLs from property management website
       const extractedUrls = await propertyManagement.extractUrls();
       result.stats.extractedUrls = extractedUrls.length;
+
+      // Check existing jobs for extracted URLs and reset to pending if no matching flat exists
+      if (extractedUrls.length > 0) {
+        const existingJobsForExtractedUrls = await db
+          .select({
+            url: flatUrlJob.url,
+            status: flatUrlJob.status,
+          })
+          .from(flatUrlJob)
+          .where(
+            and(
+              eq(flatUrlJob.propertyManagementId, propertyManagement.slug),
+              inArray(flatUrlJob.url, extractedUrls),
+            ),
+          );
+
+        // Find jobs that don't have a corresponding active flat
+        const jobsToReset = existingJobsForExtractedUrls.filter(
+          (job) =>
+            !existingActiveFlats.some((f) => f.url === job.url) &&
+            job.status !== "pending",
+        );
+
+        if (jobsToReset.length > 0) {
+          await db
+            .update(flatUrlJob)
+            .set({ status: "pending" })
+            .where(
+              and(
+                eq(flatUrlJob.propertyManagementId, propertyManagement.slug),
+                inArray(
+                  flatUrlJob.url,
+                  jobsToReset.map((job) => job.url),
+                ),
+              ),
+            );
+
+          result.stats.jobsReset = jobsToReset.length;
+          console.log(
+            `[task:update-flats] Reset ${jobsToReset.length} jobs to pending`,
+          );
+        }
+      }
 
       // Mark flats as deleted if they no longer appear in extracted URLs
       const flatIdsToDelete = existingActiveFlats
@@ -156,7 +203,7 @@ export default defineTask({
     }
 
     console.log(
-      `[task:update-flats] ${result.stats.flatsDeleted} deleted, ${result.stats.newJobsCreated} new jobs, ${result.stats.duplicateJobsFiltered} duplicates filtered, ${result.stats.flatsUpdated} updated`,
+      `[task:update-flats] ${result.stats.flatsDeleted} deleted, ${result.stats.newJobsCreated} new jobs, ${result.stats.duplicateJobsFiltered} duplicates filtered, ${result.stats.flatsUpdated} updated, ${result.stats.jobsReset} jobs reset to pending`,
     );
 
     return { result };

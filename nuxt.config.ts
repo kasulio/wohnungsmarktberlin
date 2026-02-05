@@ -46,12 +46,8 @@ export default defineNuxtConfig({
     esbuild: { options: { target: "esnext" } },
     experimental: { tasks: true },
     scheduledTasks: {
-      "* * * * *": [
-        "address-improvement",
-        "clean-caches",
-        "extract-flats",
-        "update-flats",
-      ],
+      "* * * * *": ["address-improvement", "extract-flats", "update-flats"],
+      "*/15 * * * *": ["update-map-preview"],
     },
     preset: "bun",
   },
@@ -71,7 +67,13 @@ export default defineNuxtConfig({
     "@nuxt/image",
     "@hebilicious/authjs-nuxt",
     "@nuxtjs/sitemap",
+    "nuxt-ipx-cache",
   ],
+  ipxCache: {
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    cacheDir: ".cache/ipx",
+    ipxPrefix: "/_ipx",
+  },
   site: { url: deploymentUrl },
   sitemap: { exclude: ["/admin/**"] },
   authJs: {
