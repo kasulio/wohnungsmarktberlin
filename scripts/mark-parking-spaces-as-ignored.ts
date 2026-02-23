@@ -1,52 +1,7 @@
 import { db } from "../server/db/client";
 import { flat as flatTable } from "../server/db/schema";
-import { eq, isNull } from "drizzle-orm";
-
-function isParkingSpace(title: string): boolean {
-  const parkingKeywords = [
-    "parkplatz",
-    "stellplatz",
-    "garage",
-    "tiefgarage",
-    "außenstellplatz",
-    "duplex-parker",
-    "duplexparker",
-    "pkw-stellplatz",
-    "pkw stellplatz",
-    "kfz-stellplatz",
-    "kfz stellplatz",
-  ];
-
-  const lowerTitle = title.toLowerCase();
-
-  // If parking is mentioned as an included feature (not the main listing), it's not a parking space
-  const includePatterns = [
-    "inklusive",
-    "inkl.",
-    "inkl ",
-    "mit ",
-    "incl.",
-    "incl ",
-    "+ ",
-  ];
-
-  // Check if any parking keyword appears in context of being included
-  const hasIncludedParking = includePatterns.some((pattern) => {
-    return parkingKeywords.some((keyword) => {
-      const regex = new RegExp(
-        `${pattern}.*${keyword}|${keyword}.*${pattern}`,
-        "i",
-      );
-      return regex.test(lowerTitle);
-    });
-  });
-
-  if (hasIncludedParking) {
-    return false;
-  }
-
-  return parkingKeywords.some((keyword) => lowerTitle.includes(keyword));
-}
+import { eq } from "drizzle-orm";
+import { isParkingSpace } from "../lib/flat-utils";
 
 async function markParkingSpacesAsIgnored() {
   console.log("Fetching all flats...");

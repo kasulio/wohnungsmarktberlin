@@ -1,13 +1,16 @@
 import { count, eq } from "drizzle-orm";
-import sharp from "sharp";
 import { db } from "~/server/db/client";
 import {
   flat as flatTable,
   flatUrlJob as flatUrlJobTable,
 } from "~/server/db/schema";
-import { propertyManagements } from "~/data/propertyManagements";
 import { fetchHtml } from "~/lib/http";
 import { scrapedFlatSchema } from "~/data/schemas";
+import {
+  isParkingSpace,
+  getPropertyManagement,
+  getImage,
+} from "~/lib/flat-utils";
 
 export default defineTask({
   meta: {
@@ -102,87 +105,3 @@ export default defineTask({
     return { result };
   },
 });
-
-function isParkingSpace(title: string): boolean {
-  const parkingKeywords = [
-    "parkplatz",
-    "stellplatz",
-    "garage",
-    "tiefgarage",
-    "außenstellplatz",
-    "duplex-parker",
-    "duplexparker",
-    "pkw-stellplatz",
-    "pkw stellplatz",
-    "kfz-stellplatz",
-    "kfz stellplatz",
-  ];
-
-  const lowerTitle = title.toLowerCase();
-  
-  // If parking is mentioned as an included feature (not the main listing), it's not a parking space
-  // These patterns indicate the parking is an amenity, not the main item
-  const includePatterns = [
-    "inklusive",
-    "inkl.",
-    "inkl ",
-    "incl.",
-    "incl ",
-    "wohnung mit",
-    "zimmer mit",
-    "& ",
-  ];
-  
-  // Check if any include pattern appears BEFORE a parking keyword
-  const hasIncludedParking = includePatterns.some(pattern => {
-    return parkingKeywords.some(keyword => {
-      // Escape special regex characters
-      const escapedPattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      // Look for pattern followed by parking keyword (with any characters in between)
-      const regex = new RegExp(`${escapedPattern}.*${keyword}`, "i");
-      return regex.test(lowerTitle);
-    });
-  });
-  
-  if (hasIncludedParking) {
-    return false;
-  }
-  
-  return parkingKeywords.some(keyword => lowerTitle.includes(keyword));
-}
-
-  return parkingKeywords.some((keyword) => lowerTitle.includes(keyword));
-}
-
-function getPropertyManagement(propertyManagementId: string) {
-  const propertyManagement =
-    propertyManagements[
-      propertyManagementId as keyof typeof propertyManagements
-    ];
-  if (!propertyManagement) {
-    throw new Error(`Property management not found: ${propertyManagementId}`);
-  }
-  return propertyManagement;
-}
-
-async function getImage(remoteImageUrl: string) {
-  try {
-    // Fetch the remote image
-    const response = await fetch(remoteImageUrl);
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // Process with Sharp
-    const processedBuffer = await sharp(buffer)
-      .resize(200, 200, {
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .toBuffer();
-
-    return processedBuffer;
-  } catch (e) {
-    console.error(e);
-    return null;
-  }
-}
