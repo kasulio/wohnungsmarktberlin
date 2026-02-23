@@ -19,8 +19,10 @@ export function isParkingSpace(title: string): boolean {
     "kfz-stellplatz",
     "kfz stellplatz",
     "stressfrei parken",
+    "parken",
     "parkplatzsuche",
     "auto stehen",
+    "ihr auto",
   ];
 
   const lowerTitle = title.toLowerCase();
@@ -39,15 +41,12 @@ export function isParkingSpace(title: string): boolean {
     "& ",
   ];
 
-  // Check if any parking keyword appears in context of being included
+  // Check if any parking keyword appears after an include pattern (e.g. "inkl. Parkplatz")
   const hasIncludedParking = includePatterns.some((pattern) => {
     return parkingKeywords.some((keyword) => {
       const escapedPattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const regex = new RegExp(
-        `${escapedPattern}.*${escapedKeyword}|${escapedKeyword}.*${escapedPattern}`,
-        "i",
-      );
+      const regex = new RegExp(`${escapedPattern}.*${escapedKeyword}`, "i");
       return regex.test(lowerTitle);
     });
   });
