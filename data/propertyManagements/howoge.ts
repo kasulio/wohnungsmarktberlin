@@ -9,13 +9,12 @@ import {
 } from "../schemas";
 import { fetchJson } from "~/lib/http";
 import { parseNumberString, parseNumberStringToInt } from "~/lib/parser";
+import { propertyManagementConfigs } from "./configs";
 
 const howogeUrl = "https://www.howoge.de";
 
 export const howoge = {
-  slug: "howoge",
-  name: "Howoge",
-  website: "https://www.howoge.de",
+  ...propertyManagementConfigs.howoge,
   extractUrls,
   extractDataFromHtml,
 } as const satisfies PropertyManagement;

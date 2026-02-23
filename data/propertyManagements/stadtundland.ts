@@ -8,11 +8,10 @@ import {
   type PropertyManagement,
   type ScrapedFlat,
 } from "../schemas";
+import { propertyManagementConfigs } from "./configs";
 
 export const stadtundland = {
-  slug: "stadtundland",
-  name: "Stadt und Land",
-  website: "https://www.stadtundland.de",
+  ...propertyManagementConfigs.stadtundland,
   extractUrls,
   extractDataFromHtml,
 } as const satisfies PropertyManagement;

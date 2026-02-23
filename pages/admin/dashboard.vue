@@ -23,8 +23,11 @@ const updatePropertyManagements = async (slugs?: string[]) => {
   scrapingStatus.value = { isActive: false };
 };
 
-const allFlats = computed(() =>
-  propertyManagements.data.value?.map((p) => p.flats).flat(),
+const totalFlatCount = computed(() =>
+  propertyManagements.data.value?.reduce((sum, p) => sum + p.flatCount, 0) ?? 0,
+);
+const totalActiveFlatCount = computed(() =>
+  propertyManagements.data.value?.reduce((sum, p) => sum + p.activeFlatCount, 0) ?? 0,
 );
 </script>
 <template>
@@ -36,15 +39,11 @@ const allFlats = computed(() =>
           <tbody>
             <tr>
               <td>Wohnungen (aktiv):</td>
-              <td>
-                {{ allFlats?.filter((flat) => flat.isActive).length ?? 0 }}
-              </td>
+              <td>{{ totalActiveFlatCount }}</td>
             </tr>
             <tr>
               <td>Wohnungen (gesamt):</td>
-              <td>
-                {{ allFlats?.length ?? 0 }}
-              </td>
+              <td>{{ totalFlatCount }}</td>
             </tr>
           </tbody>
         </table>
@@ -78,15 +77,12 @@ const allFlats = computed(() =>
               <tr>
                 <td>Wohnungen (aktiv):</td>
                 <td>
-                  {{
-                    propertyManagement.flats.filter((flat) => flat.isActive)
-                      .length
-                  }}
+                  {{ propertyManagement.activeFlatCount }}
                 </td>
               </tr>
               <tr>
                 <td>Wohnungen (gesamt):</td>
-                <td>{{ propertyManagement.flats.length }}</td>
+                <td>{{ propertyManagement.flatCount }}</td>
               </tr>
             </tbody>
           </table>

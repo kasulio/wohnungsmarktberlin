@@ -1,17 +1,12 @@
 import { HTMLElement, parse } from "node-html-parser";
 import { getApartmentTags } from "../tags";
-import {
-  scrapedFlatSchema,
-  type PropertyManagement,
-  type ScrapedFlat,
-} from "../schemas";
+import { type PropertyManagement, type ScrapedFlat } from "../schemas";
 import { fetchHtml } from "~/lib/http";
 import { parseNumberString } from "~/lib/parser";
+import { propertyManagementConfigs } from "./configs";
 
 export const gewobag = {
-  slug: "gewobag",
-  name: "Gewobag",
-  website: "https://www.gewobag.de/",
+  ...propertyManagementConfigs.gewobag,
   extractUrls,
   extractDataFromHtml,
 } as const satisfies PropertyManagement;

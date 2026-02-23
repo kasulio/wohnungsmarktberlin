@@ -1,19 +1,14 @@
 import { parse, type HTMLElement } from "node-html-parser";
 import { getApartmentTags } from "../tags";
-import {
-  scrapedFlatSchema,
-  type PropertyManagement,
-  type ScrapedFlat,
-} from "../schemas";
+import { type PropertyManagement, type ScrapedFlat } from "../schemas";
 import { fetchHtml } from "~/lib/http";
 import { parseNumberString } from "~/lib/parser";
+import { propertyManagementConfigs } from "./configs";
 
 const BASE_URL = "https://www.berlinovo.de";
 
 export const berlinovo = {
-  slug: "berlinovo",
-  name: "Berlinovo",
-  website: "https://www.berlinovo.de",
+  ...propertyManagementConfigs.berlinovo,
   extractUrls,
   extractDataFromHtml,
 } as const satisfies PropertyManagement;

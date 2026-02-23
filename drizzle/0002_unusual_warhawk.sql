@@ -1,0 +1,1 @@
+ALTER TABLE `propertyManagement` ADD `active` integer DEFAULT true NOT NULL;

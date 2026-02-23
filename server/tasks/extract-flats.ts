@@ -1,4 +1,4 @@
-import { count, eq } from "drizzle-orm";
+import { count, eq, lt } from "drizzle-orm";
 import { db } from "~/server/db/client";
 import {
   flat as flatTable,
@@ -27,6 +27,17 @@ export default defineTask({
         flatsPending: 0,
       },
     };
+
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+    const deleted = await db
+      .delete(flatUrlJobTable)
+      .where(lt(flatUrlJobTable.createdAt, threeDaysAgo))
+      .returning({ url: flatUrlJobTable.url });
+    if (deleted.length > 0) {
+      console.log(
+        `[task:extract-flats] removed ${deleted.length} jobs older than 3 days`,
+      );
+    }
 
     const flatUrlJobs = await db
       .select()

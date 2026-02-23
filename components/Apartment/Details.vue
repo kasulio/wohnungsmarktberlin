@@ -19,14 +19,19 @@ const props = withDefaults(
     url: string;
     firstSeen: Date;
     roomCount: number | null;
+    propertyManagementId?: string | null;
     as?: "row" | "card";
   }>(),
   {
     as: "card",
+    propertyManagementId: null,
   },
 );
 
 const shownPrice = computed(() => props.warmRentPrice ?? props.coldRentPrice);
+const providerName = computed(() =>
+  getProviderName(props.propertyManagementId),
+);
 </script>
 
 <template>
@@ -61,7 +66,14 @@ const shownPrice = computed(() => props.warmRentPrice ?? props.coldRentPrice);
           <h4 class="overflow-hidden text-ellipsis text-s font-light">
             {{ address.street }} {{ address.streetNumber }}
           </h4>
-          <div class="flex flex-row items-center gap-x-1">
+          <div
+            class="mt-1 flex flex-row flex-wrap items-center gap-x-1 gap-y-1"
+          >
+            <ApartmentProvider
+              v-if="providerName"
+              :property-management-id="propertyManagementId!"
+              :provider-name="providerName"
+            />
             <ApartmentTag
               v-for="tag in tags"
               :key="tag"
@@ -165,7 +177,12 @@ const shownPrice = computed(() => props.warmRentPrice ?? props.coldRentPrice);
       <ApartmentFavoriteButton :id="id" />
     </div>
     <div class="flex justify-between overflow-hidden">
-      <div class="tags-container flex flex-row gap-x-1">
+      <div class="tags-container flex flex-row flex-wrap gap-1">
+        <ApartmentProvider
+          v-if="providerName"
+          :property-management-id="propertyManagementId!"
+          :provider-name="providerName"
+        />
         <ApartmentTag
           v-for="tag in tags"
           :key="tag"

@@ -3,11 +3,10 @@ import {
   extractDeuvonoUrls,
   extractDeuvonoDataFromHtml,
 } from "./shared/deuvono";
+import { propertyManagementConfigs } from "./configs";
 
 export const deuwo = {
-  slug: "deuwo",
-  name: "Deutsche Wohnen",
-  website: "https://www.deutsche-wohnen.com",
+  ...propertyManagementConfigs.deuwo,
   extractUrls: () => extractDeuvonoUrls("deuwo"),
   extractDataFromHtml: extractDeuvonoDataFromHtml,
 } as const satisfies PropertyManagement;

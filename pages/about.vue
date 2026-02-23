@@ -8,12 +8,9 @@ const initialStats = {
 };
 
 const stats = propertyManagements.data.value?.reduce(
-  (acc, propertyManagement) => {
-    acc.allFlatsCount += propertyManagement.flats.length;
-    acc.activeFlatCount += propertyManagement.flats.filter(
-      (flat) => flat.isActive,
-    ).length;
-
+  (acc, pm) => {
+    acc.allFlatsCount += pm.flatCount;
+    acc.activeFlatCount += pm.activeFlatCount;
     return acc;
   },
   initialStats,
@@ -64,14 +61,27 @@ const { activeFlatCount, allFlatsCount } = stats || initialStats;
       <div class="flex-1 rounded-md border border-dashed border-black p-4">
         <h3 class="pb-2 text-m font-semibold">Wohnungen</h3>
         <table class="w-full">
-          <tbody>
-            <tr>
-              <td class="text-nowrap">Aktive Wohnungen:</td>
-              <td>{{ activeFlatCount }}</td>
+          <thead>
+            <tr class="text-left text-sm text-gray-500">
+              <th class="pb-1 font-normal"></th>
+              <th class="pb-1 font-normal text-right">Aktiv</th>
+              <th class="pb-1 pl-4 font-normal text-right">Gesamt</th>
             </tr>
-            <tr>
-              <td class="text-nowrap">Gesamt seit Januar '24:</td>
-              <td>{{ allFlatsCount }}</td>
+          </thead>
+          <tbody>
+            <tr
+              v-for="pm in propertyManagements.data.value"
+              :key="pm.slug"
+              class="text-sm"
+            >
+              <td class="text-nowrap pr-4">{{ pm.name }}</td>
+              <td class="text-right">{{ pm.activeFlatCount }}</td>
+              <td class="pl-4 text-right">{{ pm.flatCount }}</td>
+            </tr>
+            <tr class="border-t border-black font-semibold">
+              <td class="text-nowrap pt-1">Gesamt</td>
+              <td class="pt-1 text-right">{{ activeFlatCount }}</td>
+              <td class="pl-4 pt-1 text-right">{{ allFlatsCount }}</td>
             </tr>
           </tbody>
         </table>

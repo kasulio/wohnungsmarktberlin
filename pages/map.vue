@@ -196,6 +196,21 @@ function dismissCard() {
             <p class="line-clamp-2 text-s font-semibold leading-snug text-main">
               {{ selectedFlat.title }}
             </p>
+            <div class="flex flex-wrap gap-1">
+              <ApartmentProvider
+                v-if="getProviderName(selectedFlat.propertyManagementId)"
+                :property-management-id="selectedFlat.propertyManagementId!"
+                :provider-name="
+                  getProviderName(selectedFlat.propertyManagementId)!
+                "
+              />
+              <ApartmentTag
+                v-for="tag in selectedFlat.tags"
+                :key="tag"
+                :tag="tag"
+                class="rounded-full bg-secondary px-2.5 py-0.25 text-xs text-accent"
+              />
+            </div>
             <ul class="space-y-0.5 text-xs text-main/70">
               <li>
                 {{ selectedFlat.address.street }}
@@ -274,6 +289,21 @@ function dismissCard() {
               >
                 {{ selectedFlat.title }}
               </p>
+              <div class="flex flex-wrap gap-1">
+                <ApartmentProvider
+                  v-if="getProviderName(selectedFlat.propertyManagementId)"
+                  :property-management-id="selectedFlat.propertyManagementId!"
+                  :provider-name="
+                    getProviderName(selectedFlat.propertyManagementId)!
+                  "
+                />
+                <ApartmentTag
+                  v-for="tag in selectedFlat.tags"
+                  :key="tag"
+                  :tag="tag"
+                  class="rounded-full bg-secondary px-2.5 py-0.25 text-xs text-accent"
+                />
+              </div>
               <ul class="space-y-0.5 text-xs text-main/70">
                 <li>
                   {{ selectedFlat.address.street }}
