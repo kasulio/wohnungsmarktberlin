@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { typedObjectKeys } from "@/utils/typeHelper";
+import { typedObjectKeys } from "~/utils/typeHelper";
 
 export const tags = {
   new: "Neueintrag",
