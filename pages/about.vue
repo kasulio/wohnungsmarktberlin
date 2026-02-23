@@ -1,20 +1,18 @@
 <script setup lang="ts">
 const { $client } = useNuxtApp();
 const propertyManagements = await $client.propertyManagement.getAll.useQuery();
+const activityStats = await $client.stats.getActivityStats.useQuery();
 
 const initialStats = {
   activeFlatCount: 0,
   allFlatsCount: 0,
 };
 
-const stats = propertyManagements.data.value?.reduce(
-  (acc, pm) => {
-    acc.allFlatsCount += pm.flatCount;
-    acc.activeFlatCount += pm.activeFlatCount;
-    return acc;
-  },
-  initialStats,
-);
+const stats = propertyManagements.data.value?.reduce((acc, pm) => {
+  acc.allFlatsCount += pm.flatCount;
+  acc.activeFlatCount += pm.activeFlatCount;
+  return acc;
+}, initialStats);
 const { activeFlatCount, allFlatsCount } = stats || initialStats;
 </script>
 
@@ -62,10 +60,10 @@ const { activeFlatCount, allFlatsCount } = stats || initialStats;
         <h3 class="pb-2 text-m font-semibold">Wohnungen</h3>
         <table class="w-full">
           <thead>
-            <tr class="text-left text-sm text-gray-500">
+            <tr class="text-sm text-left text-gray-500">
               <th class="pb-1 font-normal"></th>
-              <th class="pb-1 font-normal text-right">Aktiv</th>
-              <th class="pb-1 pl-4 font-normal text-right">Gesamt</th>
+              <th class="pb-1 text-right font-normal">Aktiv</th>
+              <th class="pb-1 pl-4 text-right font-normal">Gesamt</th>
             </tr>
           </thead>
           <tbody>
@@ -92,6 +90,15 @@ const { activeFlatCount, allFlatsCount } = stats || initialStats;
         <p>105 Besuche seit Livegang</p>
       </div> -->
     </div>
+
+    <h2 class="pb-2 pt-6 text-l font-semibold">Aktivität</h2>
+    <p class="max-w-2xl">
+      Hier siehst du wann neue Wohnungen online gestellt werden:
+    </p>
+    <FlatActivityChart
+      v-if="activityStats.data.value"
+      :stats="activityStats.data.value"
+    />
 
     <p></p>
     <h2 class="pb-2 pt-6 text-l font-semibold">Ich will auch</h2>
