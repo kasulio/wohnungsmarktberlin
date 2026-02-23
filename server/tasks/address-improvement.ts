@@ -23,6 +23,7 @@ export default defineTask({
         isNull(flatTable.addressId),
         isNotNull(flatTable.addressText),
         eq(flatTable.addressImprovement, "pending"),
+        eq(flatTable.ignored, false),
       ),
       limit: 10,
       orderBy: [sql`random()`],
@@ -72,6 +73,7 @@ export default defineTask({
           isNull(flatTable.addressId),
           isNotNull(flatTable.addressText),
           eq(flatTable.addressImprovement, "pending"),
+          eq(flatTable.ignored, false),
         ),
       )
       .execute()

@@ -1,0 +1,1 @@
+ALTER TABLE `flat` ADD `ignored` integer DEFAULT false NOT NULL;
