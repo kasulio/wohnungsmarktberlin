@@ -29,7 +29,11 @@ export const countsAsNewFilter = sql<
 >`strftime('%s', 'now') - firstSeen < ${countsAsNewTime}`.as("isNew");
 
 const queryOptions = {
-  where: and(isNull(flat.deleted), isNotNull(flat.addressId)),
+  where: and(
+    isNull(flat.deleted),
+    isNotNull(flat.addressId),
+    eq(flat.ignored, false),
+  ),
   with: { address: true, flatToTag: true },
   columns: {
     id: true,
@@ -105,6 +109,9 @@ export const flatRouter = router({
         // not deleted
         isNull(flat.deleted),
 
+        // not ignored
+        eq(flat.ignored, false),
+
         // id filter
         input.ids &&
           (input.ids.length ? inArray(flat.id, input.ids) : sql`FALSE`),
@@ -176,7 +183,13 @@ export const flatRouter = router({
               count: count(),
             })
             .from(flat)
-            .where(and(isNull(flat.deleted), isNotNull(flat.addressId)))
+            .where(
+              and(
+                isNull(flat.deleted),
+                isNotNull(flat.addressId),
+                eq(flat.ignored, false),
+              ),
+            )
         )[0]?.count ?? 0;
 
       const orderByInput = [];
@@ -272,7 +285,7 @@ export const flatRouter = router({
           id: flat.id,
         })
         .from(flat)
-        .where(isNull(flat.deleted))
+        .where(and(isNull(flat.deleted), eq(flat.ignored, false)))
     ).map((x) => x.id);
 
     return await hashString(flatIds.join(""));

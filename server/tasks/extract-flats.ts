@@ -47,8 +47,11 @@ export default defineTask({
         const flat = scrapedFlatSchema.parse(scrapedFlat);
 
         const image = flat.imageUrl ? await getImage(flat.imageUrl) : null;
+        const ignored = isParkingSpace(flat.title);
 
-        console.log(`[task:extract-flats] extracted flat ${flat.url}`);
+        console.log(
+          `[task:extract-flats] extracted flat ${flat.url}${ignored ? " (parking space - ignored)" : ""}`,
+        );
         await db.transaction(async (tx) => {
           await tx
             .insert(flatTable)
@@ -66,6 +69,7 @@ export default defineTask({
               url: flat.url,
               image: image,
               deleted: null,
+              ignored,
             })
             .onConflictDoNothing()
             .execute();
@@ -98,6 +102,57 @@ export default defineTask({
     return { result };
   },
 });
+
+function isParkingSpace(title: string): boolean {
+  const parkingKeywords = [
+    "parkplatz",
+    "stellplatz",
+    "garage",
+    "tiefgarage",
+    "außenstellplatz",
+    "duplex-parker",
+    "duplexparker",
+    "pkw-stellplatz",
+    "pkw stellplatz",
+    "kfz-stellplatz",
+    "kfz stellplatz",
+  ];
+
+  const lowerTitle = title.toLowerCase();
+  
+  // If parking is mentioned as an included feature (not the main listing), it's not a parking space
+  // These patterns indicate the parking is an amenity, not the main item
+  const includePatterns = [
+    "inklusive",
+    "inkl.",
+    "inkl ",
+    "incl.",
+    "incl ",
+    "wohnung mit",
+    "zimmer mit",
+    "& ",
+  ];
+  
+  // Check if any include pattern appears BEFORE a parking keyword
+  const hasIncludedParking = includePatterns.some(pattern => {
+    return parkingKeywords.some(keyword => {
+      // Escape special regex characters
+      const escapedPattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      // Look for pattern followed by parking keyword (with any characters in between)
+      const regex = new RegExp(`${escapedPattern}.*${keyword}`, "i");
+      return regex.test(lowerTitle);
+    });
+  });
+  
+  if (hasIncludedParking) {
+    return false;
+  }
+  
+  return parkingKeywords.some(keyword => lowerTitle.includes(keyword));
+}
+
+  return parkingKeywords.some((keyword) => lowerTitle.includes(keyword));
+}
 
 function getPropertyManagement(propertyManagementId: string) {
   const propertyManagement =
