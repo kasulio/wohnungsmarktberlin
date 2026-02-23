@@ -174,6 +174,7 @@ const sortOrders = computed(() => {
             :image-src="getFlatImageUrl(flat)"
             :url="flat.url"
             :first-seen="new Date(flat.firstSeen)"
+            :property-management-id="flat.propertyManagementId"
           />
         </tbody>
       </table>
@@ -198,6 +199,7 @@ const sortOrders = computed(() => {
             :image-src="getFlatImageUrl(flat)"
             :url="flat.url"
             :first-seen="new Date(flat.firstSeen)"
+            :property-management-id="flat.propertyManagementId"
           />
         </div>
       </div>

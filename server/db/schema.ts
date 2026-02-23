@@ -101,6 +101,7 @@ export const propertyManagement = sqliteTable("propertyManagement", {
   slug: text("slug").primaryKey(),
   name: text("name").notNull(),
   website: text("website"),
+  active: integer("active", { mode: "boolean" }).notNull().default(true),
 });
 
 export const propertyManagementRelations = relations(

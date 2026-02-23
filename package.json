@@ -10,6 +10,7 @@
     "preview": "bun --bun nuxt preview",
     "start": "bun --bun nuxt start",
     "db:generate": "bun --bun drizzle-kit generate",
+    "db:migrate": "bun --bun server/db/migrate.ts",
     "db:push": "bun --bun drizzle-kit push",
     "db:studio": "bun --bun drizzle-kit studio",
     "typecheck": "bun --bun tsc --noEmit",
@@ -67,6 +68,7 @@
     "@trpc/server": "^10.45.0",
     "baseline-browser-mapping": "^2.9.19",
     "caniuse-lite": "^1.0.30001767",
+    "chart.js": "^4.5.1",
     "drizzle-orm": "^0.45.1",
     "drizzle-zod": "^0.8.3",
     "ky": "^1.14.3",
@@ -76,6 +78,7 @@
     "puppeteer-core": "^24.9.0",
     "sharp": "^0.34.5",
     "trpc-nuxt": "^0.10.17",
+    "vue-chartjs": "^5.3.3",
     "vue3-google-map": "^0.27.0",
     "zod": "^4.3.6"
   }

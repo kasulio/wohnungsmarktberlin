@@ -7,13 +7,12 @@ import {
   type ScrapedFlat,
 } from "../schemas";
 import { parseNumberString } from "~/lib/parser";
+import { propertyManagementConfigs } from "./configs";
 
 const BASE_URL = "https://www.degewo.de";
 
 export const degewo = {
-  slug: "degewo",
-  name: "Degewo",
-  website: "https://www.degewo.de",
+  ...propertyManagementConfigs.degewo,
   extractUrls,
   extractDataFromHtml,
 } as const satisfies PropertyManagement;

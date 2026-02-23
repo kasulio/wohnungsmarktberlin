@@ -48,6 +48,7 @@ const config = useRuntimeConfig();
         :image-src="getFlatImageUrl(flat)"
         :url="flat.url"
         :first-seen="new Date(flat.firstSeen)"
+        :property-management-id="flat.propertyManagementId"
       />
 
       <FatButton

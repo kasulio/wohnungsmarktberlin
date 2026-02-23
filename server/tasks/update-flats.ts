@@ -101,7 +101,7 @@ export default defineTask({
         if (jobsToReset.length > 0) {
           await db
             .update(flatUrlJob)
-            .set({ status: "pending" })
+            .set({ status: "pending", createdAt: new Date() })
             .where(
               and(
                 eq(flatUrlJob.propertyManagementId, propertyManagement.slug),

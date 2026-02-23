@@ -17,7 +17,12 @@ const props = defineProps<{
   usableArea: number | null;
   url: string;
   firstSeen: Date;
+  propertyManagementId?: string | null;
 }>();
+
+const providerName = computed(() =>
+  getProviderName(props.propertyManagementId),
+);
 </script>
 
 <template>
@@ -51,7 +56,12 @@ const props = defineProps<{
           :zip-code="address.postalCode"
         />
       </h4>
-      <div class="tags-container flex flex-row gap-x-1">
+      <div class="flex flex-row flex-wrap items-center gap-1">
+        <ApartmentProvider
+          v-if="providerName"
+          :property-management-id="propertyManagementId!"
+          :provider-name="providerName"
+        />
         <ApartmentTag
           v-for="tag in tags"
           :key="tag"
