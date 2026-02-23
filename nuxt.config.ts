@@ -75,7 +75,16 @@ export default defineNuxtConfig({
     ipxPrefix: "/_ipx",
   },
   site: { url: deploymentUrl },
-  sitemap: { exclude: ["/admin/**"] },
+  sitemap: {
+    exclude: ["/admin/**"],
+    urls: [
+      { loc: "/", changefreq: "hourly", priority: 1.0 },
+      { loc: "/overview", changefreq: "hourly", priority: 0.9 },
+      { loc: "/map", changefreq: "hourly", priority: 0.8 },
+      { loc: "/about", changefreq: "monthly", priority: 0.5 },
+      { loc: "/privacy", changefreq: "yearly", priority: 0.2 },
+    ],
+  },
   authJs: {
     guestRedirectTo: "/api/auth/signin",
     authenticatedRedirectTo: "/admin/dashboard",

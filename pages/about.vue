@@ -1,4 +1,17 @@
 <script setup lang="ts">
+const config = useRuntimeConfig();
+const pageDescription =
+  "Erfahre mehr über WohnungsMarktBerlin – wie wir Berliner Mietwohnungen automatisch aggregieren und welche Hausverwaltungen wir einbinden.";
+useSeoMeta({
+  title: "Über das Projekt",
+  description: pageDescription,
+  ogTitle: "Über WohnungsMarktBerlin",
+  ogDescription: pageDescription,
+  ogUrl: `${config.public.deploymentUrl}/about`,
+  twitterTitle: "Über WohnungsMarktBerlin",
+  twitterDescription: pageDescription,
+});
+
 const { $client } = useNuxtApp();
 const propertyManagements = await $client.propertyManagement.getAll.useQuery();
 const activityStats = await $client.stats.getActivityStats.useQuery();
