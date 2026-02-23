@@ -51,8 +51,8 @@ export default defineTask({
         flatUrlJob.propertyManagementId,
       );
 
-      const html = await fetchHtml(flatUrlJob.url);
       try {
+        const html = await fetchHtml(flatUrlJob.url);
         const scrapedFlat = propertyManagement.extractDataFromHtml(
           html,
           flatUrlJob.url,
@@ -96,7 +96,15 @@ export default defineTask({
         });
         result.stats.flatsExtracted++;
       } catch (e) {
-        console.error(e);
+        console.error(
+          `[task:extract-flats] failed to extract flat ${flatUrlJob.url}:`,
+          e,
+        );
+        await db
+          .update(flatUrlJobTable)
+          .set({ status: "failed" })
+          .where(eq(flatUrlJobTable.url, flatUrlJob.url))
+          .execute();
         result.stats.flatsFailed++;
       }
 
