@@ -9,6 +9,55 @@ const [propertyManagementsWithFlats, mapPreviewHash] = await Promise.all([
 
 const flats = propertyManagementsWithFlats;
 const config = useRuntimeConfig();
+
+const pageDescription =
+  "Finde aktuelle Mietwohnungen in Berlin – von Berlinovo, Degewo, Deutsche Wohnen, Gewobag, HOWOGE, Stadt und Land und Vonovia. Täglich aktualisiert, kostenlos, ohne Anmeldung.";
+const pageTitle = "Berlins Wohnungsmarkt auf einen Blick";
+
+useSeoMeta({
+  title: pageTitle,
+  description: pageDescription,
+  ogTitle: `WohnungsMarktBerlin – ${pageTitle}`,
+  ogDescription: pageDescription,
+  ogUrl: config.public.deploymentUrl,
+  twitterTitle: `WohnungsMarktBerlin – ${pageTitle}`,
+  twitterDescription: pageDescription,
+});
+
+useHead({
+  script: [
+    {
+      type: "application/ld+json",
+      innerHTML: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        name: "WohnungsMarktBerlin",
+        url: config.public.deploymentUrl,
+        description: pageDescription,
+        potentialAction: {
+          "@type": "SearchAction",
+          target: {
+            "@type": "EntryPoint",
+            urlTemplate: `${config.public.deploymentUrl}/overview`,
+          },
+          "query-input": "required name=search_term_string",
+        },
+      }),
+    },
+    {
+      type: "application/ld+json",
+      innerHTML: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        name: "WohnungsMarktBerlin",
+        url: config.public.deploymentUrl,
+        email: "wohnungsmarkt@lukasfrey.com",
+        description:
+          "Aggregator für Berliner Mietwohnungen öffentlicher Hausverwaltungen.",
+      }),
+    },
+  ],
+});
 </script>
 
 <template>

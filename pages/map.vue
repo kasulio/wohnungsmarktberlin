@@ -6,8 +6,17 @@ import { berlinCoordinates, ringbahnCoordinates } from "~/data/coordinates";
 
 const { $client } = useNuxtApp();
 
-useHead({
+const config = useRuntimeConfig();
+const pageDescription =
+  "Berliner Mietwohnungen auf der Karte – sieh auf einen Blick, wo günstige Wohnungen in deinem Wunschbezirk verfügbar sind.";
+useSeoMeta({
   title: "Karte",
+  description: pageDescription,
+  ogTitle: "Wohnungskarte Berlin | WohnungsMarktBerlin",
+  ogDescription: pageDescription,
+  ogUrl: `${config.public.deploymentUrl}/map`,
+  twitterTitle: "Wohnungskarte Berlin | WohnungsMarktBerlin",
+  twitterDescription: pageDescription,
 });
 definePageMeta({
   pageTransition: {
@@ -104,6 +113,7 @@ function dismissCard() {
 
 <template>
   <div class="flex h-full w-full flex-col">
+    <h1 class="sr-only">Berliner Mietwohnungen auf der Karte</h1>
     <Filters />
     <div
       ref="mapContainer"
@@ -208,7 +218,7 @@ function dismissCard() {
                 v-for="tag in selectedFlat.tags"
                 :key="tag"
                 :tag="tag"
-                class="rounded-full bg-secondary px-2.5 py-0.25 text-xs text-accent"
+                class="py-0.25 rounded-full bg-secondary px-2.5 text-xs text-accent"
               />
             </div>
             <ul class="space-y-0.5 text-xs text-main/70">
@@ -301,7 +311,7 @@ function dismissCard() {
                   v-for="tag in selectedFlat.tags"
                   :key="tag"
                   :tag="tag"
-                  class="rounded-full bg-secondary px-2.5 py-0.25 text-xs text-accent"
+                  class="py-0.25 rounded-full bg-secondary px-2.5 text-xs text-accent"
                 />
               </div>
               <ul class="space-y-0.5 text-xs text-main/70">

@@ -1,6 +1,15 @@
 <script setup lang="ts">
-useHead({
+const config = useRuntimeConfig();
+const pageDescription =
+  "Alle aktuellen Mietwohnungen in Berlin auf einen Blick – filter nach Preis, Zimmeranzahl, Fläche und Bezirk. Angebote von öffentlichen Berliner Hausverwaltungen.";
+useSeoMeta({
   title: "Alle Wohnungen",
+  description: pageDescription,
+  ogTitle: "Alle Mietwohnungen in Berlin | WohnungsMarktBerlin",
+  ogDescription: pageDescription,
+  ogUrl: `${config.public.deploymentUrl}/overview`,
+  twitterTitle: "Alle Mietwohnungen in Berlin | WohnungsMarktBerlin",
+  twitterDescription: pageDescription,
 });
 const { $client } = useNuxtApp();
 const { urlState, updateQueryState } = useFlatFilterUrlState();
@@ -9,6 +18,32 @@ const { registerLoadingRef, unregisterLoadingRef } =
 
 const flatsQuery = await $client.flat.getAll.useQuery(urlState);
 const flats = flatsQuery.data ?? [];
+
+// JSON-LD ItemList for top apartments (SSR, no filters applied)
+useHead({
+  script: [
+    {
+      type: "application/ld+json",
+      innerHTML: computed(() => {
+        const items = flatsQuery.data?.value?.data ?? [];
+        return JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          name: "Mietwohnungen in Berlin",
+          description: pageDescription,
+          url: `${config.public.deploymentUrl}/overview`,
+          numberOfItems: items.length,
+          itemListElement: items.slice(0, 20).map((flat, index) => ({
+            "@type": "ListItem",
+            position: index + 1,
+            url: flat.url,
+            name: flat.title,
+          })),
+        });
+      }),
+    },
+  ],
+});
 onMounted(() => {
   registerLoadingRef(flatsQuery.status, (status) => status.value === "pending");
 });
@@ -92,6 +127,7 @@ const sortOrders = computed(() => {
 </script>
 <template>
   <div>
+    <h1 class="sr-only">Alle Mietwohnungen in Berlin</h1>
     <Filters />
     <div v-if="!flats?.data?.length">
       <h2 class="mt-4 text-xl">

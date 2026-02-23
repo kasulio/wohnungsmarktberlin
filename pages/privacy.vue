@@ -1,4 +1,16 @@
 <script setup lang="ts">
+const config = useRuntimeConfig();
+const pageDescription =
+  "Datenschutzerklärung von WohnungsMarktBerlin – Informationen zur Datenverarbeitung, IP-Adressen, Cookies und Google Maps.";
+useSeoMeta({
+  title: "Datenschutzerklärung",
+  description: pageDescription,
+  ogTitle: "Datenschutzerklärung | WohnungsMarktBerlin",
+  ogDescription: pageDescription,
+  ogUrl: `${config.public.deploymentUrl}/privacy`,
+  twitterTitle: "Datenschutzerklärung | WohnungsMarktBerlin",
+  twitterDescription: pageDescription,
+});
 const consent = useConsent();
 </script>
 

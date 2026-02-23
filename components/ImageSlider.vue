@@ -35,7 +35,8 @@ onUnmounted(() => {
     <NuxtImg
       :key="currentImageIndex"
       :src="`/decoration/${images[currentImageIndex]}`"
-      alt="Bild zur Dekoration"
+      alt=""
+      role="presentation"
       class="absolute h-full w-full object-cover"
       sizes="100vw sm:50vw md:400px"
       format="avif,webp"

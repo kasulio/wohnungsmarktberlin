@@ -1,21 +1,34 @@
 <script setup lang="ts">
-const currentUrl = useRequestURL().origin;
+const requestUrl = useRequestURL();
+const currentUrl = requestUrl.origin;
+const canonicalUrl = computed(() => requestUrl.origin + requestUrl.pathname);
+
+const siteTitle = "WohnungsMarktBerlin";
+const defaultTitle = "Berlins Wohnungsmarkt auf einen Blick";
+const defaultDescription =
+  "Alle Berliner Mietwohnungen öffentlicher Hausverwaltungen auf einen Blick – aktuell, kostenlos und täglich aktualisiert.";
+
 useHead({
-  title: "Berlins Wohnungsmarkt auf einen Blick",
+  titleTemplate: (title) =>
+    title && title !== defaultTitle
+      ? `${title} | ${siteTitle}`
+      : `${siteTitle} – ${defaultTitle}`,
+  title: defaultTitle,
+  link: [{ rel: "canonical", href: canonicalUrl }],
   meta: [
     {
       name: "description",
-      content:
-        "WohnungsMarktBerlin - Berlins Wohnungsmarkt auf einen Blick. Finde die passende Hausverwaltung für deine Wohnung.",
+      content: defaultDescription,
     },
+    { property: "og:site_name", content: siteTitle },
+    { property: "og:type", content: "website" },
     {
       property: "og:title",
-      content: "WohnungsMarktBerlin - Berlins Wohnungsmarkt auf einen Blick",
+      content: `${siteTitle} – ${defaultTitle}`,
     },
     {
       property: "og:description",
-      content:
-        "WohnungsMarktBerlin - Berlins Wohnungsmarkt auf einen Blick. Finde die passende Hausverwaltung für deine Wohnung.",
+      content: defaultDescription,
     },
     {
       property: "og:image",
@@ -23,16 +36,15 @@ useHead({
     },
     {
       property: "og:url",
-      content: currentUrl,
+      content: canonicalUrl,
     },
     {
       property: "twitter:title",
-      content: "WohnungsMarktBerlin - Berlins Wohnungsmarkt auf einen Blick",
+      content: `${siteTitle} – ${defaultTitle}`,
     },
     {
       property: "twitter:description",
-      content:
-        "WohnungsMarktBerlin - Berlins Wohnungsmarkt auf einen Blick. Finde die passende Hausverwaltung für deine Wohnung.",
+      content: defaultDescription,
     },
     {
       property: "twitter:image",
