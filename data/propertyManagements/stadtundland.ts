@@ -112,6 +112,23 @@ function extractDataFromHtml(html: string, href: string) {
   const warmRentText = getTableValue("Gesamtmiete")?.replace("€", "").trim();
   const warmRent = parseNumberString(warmRentText);
 
+  // Extract image from Next.js img with the featured (large) size
+  // src is like: /_next/image?url=https%3A%2F%2Fd2396ha8oiavw0.cloudfront.net%2F...&w=1920&q=75
+  const featuredImg = root.querySelector('img[data-nimg="1"][width="675"]');
+  let imageUrl: string | undefined;
+  if (featuredImg) {
+    const src = featuredImg.getAttribute("src");
+    if (src) {
+      try {
+        imageUrl =
+          new URL(src, "https://stadtundland.de").searchParams.get("url") ??
+          undefined;
+      } catch {
+        // ignore invalid URLs
+      }
+    }
+  }
+
   return {
     title,
     coldRentPrice: coldRent,
@@ -122,6 +139,6 @@ function extractDataFromHtml(html: string, href: string) {
     roomCount: rooms ?? 0,
     floor,
     tags: getApartmentTags(title),
-    imageUrl: undefined,
+    imageUrl,
   } satisfies ScrapedFlat;
 }

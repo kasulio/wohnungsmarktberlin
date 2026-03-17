@@ -114,6 +114,13 @@ function extractDataFromHtml(html: string, href: string) {
   const floorText = getTrValueByLabel("Etage:");
   const floor = parseNumberStringToInt(floorText);
 
+  // Main featured image is inside <a class="image--large ...">
+  const mainImg = root.querySelector("a.image--large img[data-number=\"1\"]");
+  const imageSrc = mainImg?.getAttribute("src");
+  const imageUrl = imageSrc
+    ? `${howogeUrl}${imageSrc}`
+    : undefined;
+
   return {
     title,
     coldRentPrice: coldRent,
@@ -124,6 +131,6 @@ function extractDataFromHtml(html: string, href: string) {
     roomCount: rooms ?? 0,
     floor,
     tags: getApartmentTags(title),
-    imageUrl: undefined,
+    imageUrl,
   } satisfies ScrapedFlat;
 }

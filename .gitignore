@@ -28,3 +28,5 @@ server/db/sqlite.db
 
 # Generated Map Preview
 public/map-preview.png
+
+data/html
