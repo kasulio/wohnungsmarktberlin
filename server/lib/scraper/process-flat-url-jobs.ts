@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray, lt } from "drizzle-orm";
+import { and, asc, count, eq, inArray, lt, sql } from "drizzle-orm";
 import { fetchHtml } from "~/lib/http";
 import { scrapedFlatSchema } from "~/data/schemas";
 import {
@@ -118,19 +118,28 @@ export async function processFlatUrlJobs(
 
         await tx
           .update(flatUrlJobTable)
-          .set({ status: "completed" })
+          .set({ status: "completed", lastError: null })
           .where(eq(flatUrlJobTable.url, flatUrlJob.url))
           .execute();
       });
       stats.flatsExtracted++;
     } catch (e) {
+      // No max-attempts cap: job stays `failed` until operator retries or row pruned.
       console.error(
         `[process-flat-url-jobs] failed to extract flat ${flatUrlJob.url}:`,
         e,
       );
+      const lastError = (e instanceof Error ? e.message : String(e)).slice(
+        0,
+        500,
+      );
       await db
         .update(flatUrlJobTable)
-        .set({ status: "failed" })
+        .set({
+          status: "failed",
+          lastError,
+          attempts: sql`(coalesce(${flatUrlJobTable.attempts}, 0) + 1)`,
+        })
         .where(eq(flatUrlJobTable.url, flatUrlJob.url))
         .execute();
       stats.flatsFailed++;

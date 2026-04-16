@@ -56,6 +56,9 @@ export const flatUrlJob = sqliteTable("flatUrlJob", {
   propertyManagementId: text("propertyManagementId").notNull(),
   status: text("status").notNull().default("pending"),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
+  /** Capped error string from last failed extract attempt (see process-flat-url-jobs). */
+  lastError: text("lastError"),
+  attempts: integer("attempts").notNull().default(0),
 });
 
 export const scraperRun = sqliteTable(

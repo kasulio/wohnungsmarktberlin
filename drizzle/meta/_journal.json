@@ -43,6 +43,13 @@
       "when": 1776342375586,
       "tag": "0005_regular_otto_octavius",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1776345054363,
+      "tag": "0006_past_kronos",
+      "breakpoints": true
     }
   ]
 }

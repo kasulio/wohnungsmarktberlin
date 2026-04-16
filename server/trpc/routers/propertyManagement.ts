@@ -1,6 +1,8 @@
 import { z } from "zod";
-import { asc, count, desc, eq, sql } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { and, asc, count, desc, eq, inArray, min, sql } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
+import { env } from "~/env";
 import { db } from "~/server/db/client";
 import {
   flat,
@@ -9,22 +11,55 @@ import {
   scraperRun,
 } from "~/server/db/schema";
 import { logScraperRun } from "~/server/lib/scraper/log-scraper-run";
-import { processFlatUrlJobs } from "~/server/lib/scraper/process-flat-url-jobs";
+import {
+  type ProcessFlatUrlJobsStats,
+  processFlatUrlJobs,
+} from "~/server/lib/scraper/process-flat-url-jobs";
 import { pruneFlatsNotSeenForDays } from "~/server/lib/scraper/prune-stale-flats";
 import {
   type SyncListingsStats,
   syncListingsForPropertyManagement,
 } from "~/server/lib/scraper/sync-listings";
-import {
-  publicProcedure,
-  protectedProcedure,
-  router,
-} from "../trpc";
+import { publicProcedure, protectedProcedure, router } from "../trpc";
 
-const ADMIN_EXTRACT_JOB_LIMIT = 40;
+/** In-memory only; multi-instance deploy needs shared lock (see follow-up plan). */
+const ADMIN_SCRAPE_COOLDOWN_MS = 30_000;
+const adminScrapeCooldownGlobal = "__admin_scrape_all__";
+const adminScrapeLastAt = new Map<string, number>();
 
-const isConfiguredPm = (slug: string): slug is keyof typeof propertyManagements =>
+const isConfiguredPm = (
+  slug: string,
+): slug is keyof typeof propertyManagements =>
   Object.hasOwn(propertyManagements, slug);
+
+async function countPendingJobs(
+  propertyManagementIds?: string[],
+): Promise<number> {
+  const where =
+    propertyManagementIds && propertyManagementIds.length > 0
+      ? and(
+          eq(flatUrlJob.status, "pending"),
+          inArray(flatUrlJob.propertyManagementId, propertyManagementIds),
+        )
+      : eq(flatUrlJob.status, "pending");
+  const row = await db
+    .select({ c: count() })
+    .from(flatUrlJob)
+    .where(where)
+    .then((r) => r[0]);
+  return row?.c ?? 0;
+}
+
+async function lastSuccessfulRunCreatedAt(kind: string): Promise<Date | null> {
+  const row = await db
+    .select({ createdAt: scraperRun.createdAt })
+    .from(scraperRun)
+    .where(and(eq(scraperRun.kind, kind), eq(scraperRun.success, true)))
+    .orderBy(desc(scraperRun.createdAt))
+    .limit(1)
+    .then((r) => r[0]);
+  return row?.createdAt ?? null;
+}
 
 export const propertyManagementRouter = router({
   getAll: publicProcedure.query(async () => {
@@ -109,20 +144,47 @@ export const propertyManagementRouter = router({
       .select({
         url: flatUrlJob.url,
         propertyManagementId: flatUrlJob.propertyManagementId,
+        lastError: flatUrlJob.lastError,
       })
       .from(flatUrlJob)
       .where(eq(flatUrlJob.status, "failed"))
       .orderBy(desc(flatUrlJob.createdAt))
       .limit(60);
 
-    const failedSamplesByPm = new Map<string, { url: string }[]>();
+    const failedSamplesByPm = new Map<
+      string,
+      { url: string; lastError: string | null }[]
+    >();
     for (const job of failedJobs) {
       const list = failedSamplesByPm.get(job.propertyManagementId) ?? [];
       if (list.length < 3) {
-        list.push({ url: job.url });
+        list.push({ url: job.url, lastError: job.lastError ?? null });
         failedSamplesByPm.set(job.propertyManagementId, list);
       }
     }
+
+    const oldestPendingRows = await db
+      .select({
+        propertyManagementId: flatUrlJob.propertyManagementId,
+        oldestPendingAt: min(flatUrlJob.createdAt),
+      })
+      .from(flatUrlJob)
+      .where(eq(flatUrlJob.status, "pending"))
+      .groupBy(flatUrlJob.propertyManagementId);
+
+    const oldestPendingByPm = new Map(
+      oldestPendingRows.map((r) => [
+        r.propertyManagementId,
+        r.oldestPendingAt ?? null,
+      ]),
+    );
+
+    const [lastSuccessAdmin, lastSuccessSync, lastSuccessExtract] =
+      await Promise.all([
+        lastSuccessfulRunCreatedAt("admin-scrape"),
+        lastSuccessfulRunCreatedAt("update-flats"),
+        lastSuccessfulRunCreatedAt("extract-flats"),
+      ]);
 
     const perPropertyManagement = activeSlugs.map((slug) => {
       const counts = pmMap.get(slug) ?? {
@@ -133,6 +195,7 @@ export const propertyManagementRouter = router({
       return {
         slug,
         ...counts,
+        oldestPendingAt: oldestPendingByPm.get(slug) ?? null,
         failedSamples: failedSamplesByPm.get(slug) ?? [],
       };
     });
@@ -163,6 +226,11 @@ export const propertyManagementRouter = router({
             }
           : null,
       },
+      activity: {
+        lastSuccessAdmin,
+        lastSuccessSync,
+        lastSuccessExtract,
+      },
       perPropertyManagement,
       recentRuns: recentRuns.map((r) => ({
         id: r.id,
@@ -181,10 +249,12 @@ export const propertyManagementRouter = router({
     .input(
       z.object({
         slugs: z.array(z.string()).optional(),
+        mode: z.enum(["full", "sync_only", "extract_only"]).default("full"),
       }),
     )
     .mutation(async ({ input }) => {
       const started = Date.now();
+      const mode = input.mode;
       const activeRows = await db
         .select({ slug: propertyManagement.slug })
         .from(propertyManagement)
@@ -196,16 +266,51 @@ export const propertyManagementRouter = router({
       let targetSlugs: string[];
       if (scoped) {
         targetSlugs =
-          input.slugs?.filter(
-            (s) => activeSet.has(s) && isConfiguredPm(s),
-          ) ?? [];
+          input.slugs?.filter((s) => activeSet.has(s) && isConfiguredPm(s)) ??
+          [];
       } else {
         targetSlugs = activeRows
           .map((r) => r.slug)
           .filter((s) => isConfiguredPm(s));
       }
 
-      await pruneFlatsNotSeenForDays(7);
+      if (targetSlugs.length === 0) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: scoped
+            ? "Keine passende Verwaltung für diese Aktion (inaktiv oder nicht konfiguriert)."
+            : "Keine konfigurierte aktive Verwaltung.",
+        });
+      }
+
+      const now = Date.now();
+      if (scoped) {
+        for (const slug of targetSlugs) {
+          const last = adminScrapeLastAt.get(slug);
+          if (last !== undefined && now - last < ADMIN_SCRAPE_COOLDOWN_MS) {
+            throw new TRPCError({
+              code: "TOO_MANY_REQUESTS",
+              message:
+                "Zu schnell hintereinander — bitte ~30 Sekunden warten (Cooldown pro Verwaltung).",
+            });
+          }
+        }
+        for (const slug of targetSlugs) adminScrapeLastAt.set(slug, now);
+      } else {
+        const last = adminScrapeLastAt.get(adminScrapeCooldownGlobal);
+        if (last !== undefined && now - last < ADMIN_SCRAPE_COOLDOWN_MS) {
+          throw new TRPCError({
+            code: "TOO_MANY_REQUESTS",
+            message:
+              "Zu schnell hintereinander — bitte ~30 Sekunden warten (Cooldown für Alle-Verwaltungen-Lauf).",
+          });
+        }
+        adminScrapeLastAt.set(adminScrapeCooldownGlobal, now);
+      }
+
+      if (mode === "full") {
+        await pruneFlatsNotSeenForDays(7);
+      }
 
       const syncResults: Array<{
         slug: string;
@@ -214,32 +319,49 @@ export const propertyManagementRouter = router({
         error?: string;
       }> = [];
 
-      for (const slug of targetSlugs) {
-        const r = await syncListingsForPropertyManagement(slug);
-        syncResults.push({
-          slug,
-          success: r.success,
-          stats: r.stats,
-          error: r.error,
-        });
+      if (mode === "full" || mode === "sync_only") {
+        for (const slug of targetSlugs) {
+          const r = await syncListingsForPropertyManagement(slug);
+          syncResults.push({
+            slug,
+            success: r.success,
+            stats: r.stats,
+            error: r.error,
+          });
+        }
       }
 
-      const { stats: extractionStats } = await processFlatUrlJobs({
-        limit: ADMIN_EXTRACT_JOB_LIMIT,
-        propertyManagementIds: scoped ? targetSlugs : undefined,
-        sleepBetweenJobs: false,
-      });
+      let extractionStats: ProcessFlatUrlJobsStats;
+      if (mode === "full" || mode === "extract_only") {
+        const { stats } = await processFlatUrlJobs({
+          limit: env.ADMIN_SCRAPER_EXTRACT_BATCH,
+          propertyManagementIds: scoped ? targetSlugs : undefined,
+          sleepBetweenJobs: false,
+        });
+        extractionStats = stats;
+      } else {
+        extractionStats = {
+          flatsExtracted: 0,
+          flatsFailed: 0,
+          flatsPending: await countPendingJobs(
+            scoped ? targetSlugs : undefined,
+          ),
+        };
+      }
 
       const pendingRemaining = extractionStats.flatsPending;
 
       const payload = {
+        mode,
         syncResults,
         extractionStats,
         pendingRemaining,
       };
 
-      const syncOk = syncResults.every((s) => s.success);
-      const extractOk = extractionStats.flatsFailed === 0;
+      const syncOk =
+        mode === "extract_only" || syncResults.every((s) => s.success);
+      const extractOk =
+        mode === "sync_only" || extractionStats.flatsFailed === 0;
       const runOk = syncOk && extractOk;
 
       await logScraperRun({
@@ -250,18 +372,44 @@ export const propertyManagementRouter = router({
         errorMessage: runOk
           ? null
           : [
-              ...syncResults
-                .filter((s) => !s.success)
-                .map((s) => `${s.slug}: ${s.error ?? "unknown"}`),
-              ...(extractOk
-                ? []
-                : [`extract: ${extractionStats.flatsFailed} fehlgeschlagen`]),
-            ].join("; "),
+              ...(mode !== "extract_only"
+                ? syncResults
+                    .filter((s) => !s.success)
+                    .map((s) => `${s.slug}: ${s.error ?? "unknown"}`)
+                : []),
+              ...(mode !== "sync_only" && !extractOk
+                ? [`extract: ${extractionStats.flatsFailed} fehlgeschlagen`]
+                : []),
+            ].join("; ") || null,
         durationMs: Date.now() - started,
         trigger: "admin",
       });
 
       return payload;
+    }),
+
+  /**
+   * Re-queue a failed flatUrlJob: pending + clear lastError. attempts unchanged (audit).
+   */
+  retryFlatUrlJob: protectedProcedure
+    .input(z.object({ url: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const updated = await db
+        .update(flatUrlJob)
+        .set({ status: "pending", lastError: null })
+        .where(
+          and(eq(flatUrlJob.url, input.url), eq(flatUrlJob.status, "failed")),
+        )
+        .returning({ url: flatUrlJob.url });
+
+      if (updated.length === 0) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message:
+            "Kein fehlgeschlagener Job mit dieser URL — evtl. bereits verarbeitet.",
+        });
+      }
+      return { url: updated[0]!.url };
     }),
 });
 

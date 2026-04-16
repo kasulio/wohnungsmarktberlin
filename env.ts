@@ -20,6 +20,16 @@ export const env = createEnv({
       .min(1)
       .optional()
       .prefault("http://localhost:3000"),
+    /** Max flatUrl jobs processed per admin full / extract_only run (tasks unchanged). */
+    ADMIN_SCRAPER_EXTRACT_BATCH: z
+      .string()
+      .optional()
+      .transform((s) => {
+        if (s === undefined || s === "") return 40;
+        const n = Number.parseInt(s, 10);
+        if (!Number.isFinite(n) || n < 1) return 40;
+        return Math.min(500, n);
+      }),
   },
   client: {
     NUXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().min(1),
