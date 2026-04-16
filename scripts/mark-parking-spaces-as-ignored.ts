@@ -15,7 +15,7 @@ async function markParkingSpacesAsIgnored() {
   let updatedCount = 0;
 
   for (const flat of allFlats) {
-    if (isParkingSpace(flat.title)) {
+    if (isParkingSpace(flat)) {
       await db
         .update(flatTable)
         .set({ ignored: true })

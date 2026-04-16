@@ -61,10 +61,13 @@ export default defineTask({
         const flat = scrapedFlatSchema.parse(scrapedFlat);
 
         const image = flat.imageUrl ? await getImage(flat.imageUrl) : null;
-        const ignored = isParkingSpace(flat.title);
+        const ignored = isParkingSpace({
+          ...flat,
+          propertyManagementId: flatUrlJob.propertyManagementId,
+        });
 
         console.log(
-          `[task:extract-flats] extracted flat ${flat.url}${ignored ? " (parking space - ignored)" : ""}`,
+          `[task:extract-flats] extracted flat ${flat.url}${ignored ? " (ignored)" : ""}`,
         );
         await db.transaction(async (tx) => {
           await tx

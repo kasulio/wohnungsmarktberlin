@@ -1,11 +1,32 @@
 import sharp from "sharp";
 import { propertyManagements } from "~/data/propertyManagements";
+import { deuwo } from "~/data/propertyManagements/deuwo";
+
+/** Minimal fields for ignore rules (scraped flat + `propertyManagementId`, or DB row). */
+export type FlatForIgnoreCheck = {
+  title: string;
+  propertyManagementId?: string | null;
+  coldRentPrice?: number | null;
+  warmRentPrice?: number | null;
+};
+
+function isDeutscheWohnenCheapListing(flat: FlatForIgnoreCheck): boolean {
+  if (flat.propertyManagementId !== deuwo.slug) return false;
+  const rent = flat.coldRentPrice ?? flat.warmRentPrice ?? null;
+  return rent !== null && rent <= 100;
+}
 
 /**
- * Checks if a title represents a parking space listing.
- * Returns false if parking is mentioned as an included amenity rather than the main listing.
+ * Returns true if the listing should be ignored (not shown): parking-only-style titles,
+ * or Deutsche Wohnen listings at ≤100€ (cold rent, else warm).
+ * Parking in the title as an included amenity does not count.
  */
-export function isParkingSpace(title: string): boolean {
+export function isParkingSpace(flat: FlatForIgnoreCheck): boolean {
+  if (isDeutscheWohnenCheapListing(flat)) return true;
+  return isIgnoredByTitle(flat.title);
+}
+
+function isIgnoredByTitle(title: string): boolean {
   const parkingKeywords = [
     "parkplatz",
     "stellplatz",
@@ -27,7 +48,6 @@ export function isParkingSpace(title: string): boolean {
 
   const lowerTitle = title.toLowerCase();
 
-  // If parking is mentioned as an included feature (not the main listing), it's not a parking space
   const includePatterns = [
     "inklusive",
     "inkl.",
@@ -41,11 +61,9 @@ export function isParkingSpace(title: string): boolean {
     "& ",
   ];
 
-  // Check if any parking keyword appears after an include pattern (e.g. "inkl. Parkplatz")
   const hasIncludedParking = includePatterns.some((pattern) => {
     return parkingKeywords.some((keyword) => {
       const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      // "mit " alone matches "Mit uns hat … Parkplatzsuche" (marketing); exclude mit + pronoun.
       const regex =
         pattern === "mit "
           ? new RegExp(
