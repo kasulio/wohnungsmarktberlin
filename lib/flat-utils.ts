@@ -44,9 +44,18 @@ export function isParkingSpace(title: string): boolean {
   // Check if any parking keyword appears after an include pattern (e.g. "inkl. Parkplatz")
   const hasIncludedParking = includePatterns.some((pattern) => {
     return parkingKeywords.some((keyword) => {
-      const escapedPattern = pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const regex = new RegExp(`${escapedPattern}.*${escapedKeyword}`, "i");
+      // "mit " alone matches "Mit uns hat … Parkplatzsuche" (marketing); exclude mit + pronoun.
+      const regex =
+        pattern === "mit "
+          ? new RegExp(
+              `\\bmit\\s+(?!uns\\b|ihnen\\b|dir\\b|euch\\b|ihm\\b|ihr\\b).*${escapedKeyword}`,
+              "i",
+            )
+          : new RegExp(
+              `${pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}.*${escapedKeyword}`,
+              "i",
+            );
       return regex.test(lowerTitle);
     });
   });
