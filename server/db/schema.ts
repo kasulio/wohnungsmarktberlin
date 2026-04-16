@@ -7,6 +7,7 @@ import {
   blob,
   unique,
   primaryKey,
+  index,
 } from "drizzle-orm/sqlite-core";
 import type { Tags } from "~/data/tags";
 
@@ -56,6 +57,26 @@ export const flatUrlJob = sqliteTable("flatUrlJob", {
   status: text("status").notNull().default("pending"),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
 });
+
+export const scraperRun = sqliteTable(
+  "scraperRun",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => Bun.randomUUIDv7()),
+    kind: text("kind").notNull(),
+    propertyManagementId: text("propertyManagementId"),
+    success: integer("success", { mode: "boolean" }).notNull(),
+    statsJson: text("statsJson").notNull(),
+    errorMessage: text("errorMessage"),
+    durationMs: integer("durationMs"),
+    trigger: text("trigger").notNull(),
+    createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
+  },
+  (t) => ({
+    createdAtIdx: index("scraperRun_createdAt_idx").on(t.createdAt),
+  }),
+);
 
 export const flatRelations = relations(flat, ({ one, many }) => ({
   address: one(address, { fields: [flat.addressId], references: [address.id] }),
