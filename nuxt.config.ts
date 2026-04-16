@@ -75,7 +75,7 @@ export default defineNuxtConfig({
   },
   site: { url: deploymentUrl },
   sitemap: {
-    exclude: ["/admin/**"],
+    exclude: ["/admin/**", "/login"],
     urls: [
       { loc: "/", changefreq: "hourly", priority: 1.0 },
       { loc: "/overview", changefreq: "hourly", priority: 0.9 },

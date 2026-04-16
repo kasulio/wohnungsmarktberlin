@@ -4,13 +4,12 @@ import { db } from "../server/db/client";
 import { account, user } from "../server/db/schema";
 
 const email = process.env.SEED_ADMIN_EMAIL ?? "admin@example.com";
-const username = process.env.SEED_ADMIN_USERNAME ?? "admin";
 const displayName = process.env.SEED_ADMIN_NAME ?? "Admin";
 const password = process.env.SEED_ADMIN_PASSWORD;
 
 if (!password) {
   console.error(
-    "Set SEED_ADMIN_PASSWORD in the environment (and optionally SEED_ADMIN_EMAIL, SEED_ADMIN_USERNAME, SEED_ADMIN_NAME).",
+    "Set SEED_ADMIN_PASSWORD in the environment (and optionally SEED_ADMIN_EMAIL, SEED_ADMIN_NAME).",
   );
   process.exit(1);
 }
@@ -24,24 +23,28 @@ if (existing) {
   process.exit(0);
 }
 
-const userId = Bun.randomUUIDv7();
 const passwordHash = await hashPassword(password);
 
-await db.insert(user).values({
-  id: userId,
-  name: displayName,
-  email,
-  emailVerified: true,
-  username,
-  displayUsername: username,
-});
+const inserted = await db
+  .insert(user)
+  .values({
+    name: displayName,
+    email,
+    emailVerified: true,
+  })
+  .returning();
+
+const newUser = inserted[0];
+if (!newUser) {
+  console.error("Failed to insert admin user (no row returned).");
+  process.exit(1);
+}
 
 await db.insert(account).values({
-  id: Bun.randomUUIDv7(),
-  accountId: userId,
+  accountId: newUser.id,
   providerId: "credential",
-  userId,
+  userId: newUser.id,
   password: passwordHash,
 });
 
-console.info(`Seeded admin user: ${username} (${email}).`);
+console.info(`Seeded admin user: ${email}.`);
