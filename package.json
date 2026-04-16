@@ -13,7 +13,7 @@
     "db:migrate": "bun --bun server/db/migrate.ts",
     "db:push": "bun --bun drizzle-kit push",
     "db:studio": "bun --bun drizzle-kit studio",
-    "typecheck": "bun --bun tsc --noEmit",
+    "typecheck": "bun --bun tsgo --noEmit",
     "postinstall": "bun --bun nuxt prepare"
   },
   "devDependencies": {
@@ -28,6 +28,7 @@
     "@types/bun": "^1.3.8",
     "@typescript-eslint/eslint-plugin": "^8.54.0",
     "@typescript-eslint/parser": "^8.54.0",
+    "@typescript/native-preview": "^7.0.0-dev.20260416.1",
     "@unhead/vue": "^2.1.2",
     "better-sqlite3": "^12.6.2",
     "dotenv": "^16.6.1",
