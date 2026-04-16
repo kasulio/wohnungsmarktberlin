@@ -22,6 +22,13 @@
       "when": 1771859599361,
       "tag": "0002_unusual_warhawk",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1776338787649,
+      "tag": "0003_robust_mystique",
+      "breakpoints": true
     }
   ]
 }

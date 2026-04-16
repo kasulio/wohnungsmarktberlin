@@ -65,7 +65,6 @@ export default defineNuxtConfig({
       },
     ],
     "@nuxt/image",
-    "@hebilicious/authjs-nuxt",
     "@nuxtjs/sitemap",
     "nuxt-ipx-cache",
   ],
@@ -85,16 +84,10 @@ export default defineNuxtConfig({
       { loc: "/privacy", changefreq: "yearly", priority: 0.2 },
     ],
   },
-  authJs: {
-    guestRedirectTo: "/api/auth/signin",
-    authenticatedRedirectTo: "/admin/dashboard",
-  },
   build: { transpile: ["trpc-nuxt", "zod"] },
   experimental: { clientFallback: true },
   runtimeConfig: {
-    authJs: { secret: env.NUXT_NEXTAUTH_SECRET },
     public: {
-      authJs: { baseUrl: deploymentUrl },
       deploymentUrl,
       googleMapsApiKey: env.NUXT_PUBLIC_GOOGLE_MAPS_API_KEY,
       googleMapsId: env.NUXT_PUBLIC_GOOGLE_MAPS_MAP_ID,

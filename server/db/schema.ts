@@ -110,3 +110,5 @@ export const propertyManagementRelations = relations(
     flats: many(flat),
   }),
 );
+
+export * from "./auth-schema";

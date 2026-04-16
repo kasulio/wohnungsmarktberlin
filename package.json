@@ -13,6 +13,7 @@
     "db:migrate": "bun --bun server/db/migrate.ts",
     "db:push": "bun --bun drizzle-kit push",
     "db:studio": "bun --bun drizzle-kit studio",
+    "seed:admin": "bun --bun scripts/seed-admin-auth.ts",
     "typecheck": "bun --bun tsgo --noEmit",
     "postinstall": "bun --bun nuxt prepare"
   },
@@ -57,9 +58,7 @@
     "unrs-resolver"
   ],
   "dependencies": {
-    "@auth/core": "^0.17.0",
     "@googlemaps/google-maps-services-js": "^3.4.2",
-    "@hebilicious/authjs-nuxt": "^0.3.5",
     "@imgproxy/imgproxy-node": "^1.1.0",
     "@lordicon/element": "^1.11.0",
     "@nuxt/image": "^2.0.0-alpha.1",
@@ -68,6 +67,7 @@
     "@trpc/client": "^10.45.0",
     "@trpc/server": "^10.45.0",
     "baseline-browser-mapping": "^2.9.19",
+    "better-auth": "^1.6.5",
     "caniuse-lite": "^1.0.30001767",
     "chart.js": "^4.5.1",
     "drizzle-orm": "^0.45.1",

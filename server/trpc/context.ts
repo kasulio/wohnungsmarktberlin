@@ -1,16 +1,16 @@
 import { type inferAsyncReturnType } from "@trpc/server";
 import { type H3Event } from "h3";
-import { getServerToken } from "#auth";
-import { authOptions } from "~/server/api/auth/[...]";
+
+import { auth } from "~/lib/auth";
 
 /**
  * Creates context for an incoming request
  * @link https://trpc.io/docs/context
  */
-const runtimeConfig = useRuntimeConfig();
 export const createContext = async (e: H3Event) => {
-  const jwt = await getServerToken(e, authOptions, runtimeConfig);
-  if (jwt?.sub) return { user: jwt.sub };
+  const session = await auth.api.getSession({ headers: e.headers });
+  const id = session?.user?.id;
+  if (id) return { user: id };
   return {};
 };
 

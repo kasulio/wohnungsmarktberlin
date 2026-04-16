@@ -14,9 +14,12 @@ export const env = createEnv({
     GOOGLE_MAPS_API_KEY: z.string().min(1),
     LOCAL_SQLITE_PATH: z.string().min(1),
     OPENAI_API_KEY: z.string().min(1).optional(),
-    AUTH_USER: z.string().min(1).optional().default("admin"),
-    AUTH_PASSWORD: z.string().min(1).optional().default("admin"),
-    NUXT_NEXTAUTH_SECRET: z.string().min(1).optional().default("secret"),
+    BETTER_AUTH_SECRET: z.string().min(32),
+    BETTER_AUTH_URL: z
+      .string()
+      .url()
+      .optional()
+      .prefault("http://localhost:3000"),
     DEPLOYMENT_URL: z
       .string()
       .min(1)

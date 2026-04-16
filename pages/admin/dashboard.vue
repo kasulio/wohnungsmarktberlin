@@ -1,6 +1,5 @@
 <script setup lang="ts">
 useHead({ title: "Admin Dashboard" });
-definePageMeta({ middleware: ["auth"] });
 const { $client } = useNuxtApp();
 const NuxtLink = resolveComponent("NuxtLink");
 
