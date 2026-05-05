@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { type Tags } from "@/data/tags";
+import type { Tags } from "@/data/tags";
 import { formatArea, formatPrice } from "~/utils/util";
 
 const props = withDefaults(
@@ -20,11 +20,13 @@ const props = withDefaults(
     firstSeen: Date;
     roomCount: number | null;
     propertyManagementId?: string | null;
+    floor?: number | null;
     as?: "row" | "card";
   }>(),
   {
     as: "card",
     propertyManagementId: null,
+    floor: null,
   },
 );
 
@@ -86,7 +88,7 @@ const providerName = computed(() =>
       </div>
     </td>
     <td class="align-top">
-      <span v-html="formatPrice(shownPrice)"></span>
+      <span>{{ formatPrice(shownPrice) }}</span>
       <span
         v-if="$props.warmRentPrice"
         class="block text-s opacity-80"
@@ -96,17 +98,16 @@ const providerName = computed(() =>
     <td class="align-top">
       {{ roomCount ?? "-" }}
     </td>
-    <td
-      class="align-top"
-      v-html="formatArea(usableArea)"
-    ></td>
+    <td class="align-top">
+      {{ formatArea(usableArea) }}
+    </td>
     <td
       v-if="shownPrice"
       class="align-top"
     >
       {{
         usableArea
-          ? (shownPrice / usableArea).toFixed(2).replace(".", ",") + "&nbsp;€"
+          ? (shownPrice / usableArea).toFixed(2).replace(".", ",") + "\u00A0€"
           : "-"
       }}
     </td>
@@ -128,75 +129,20 @@ const providerName = computed(() =>
   </tr>
 
   <!---------- MOBILE ------------>
-  <div
+  <ApartmentMobileListingCard
     v-else
-    class="items-top flex min-w-80 flex-1 flex-col gap-y-4 rounded-md bg-slate-200 p-3"
-  >
-    <div class="flex gap-x-4">
-      <NuxtLink
-        :to="url"
-        target="_blank"
-        class="shrink-0"
-      >
-        <FlatImage
-          :image-src="imageSrc"
-          :alt="`Vorschaubild ${title}`"
-        />
-      </NuxtLink>
-      <div class="flex flex-col justify-between">
-        <NuxtLink
-          :to="url"
-          target="_blank"
-        >
-          <h3 class="line-clamp-2 text-ellipsis text-m leading-5">
-            {{ title }}
-          </h3>
-        </NuxtLink>
-        <h4 class="line-clamp-1 text-ellipsis text-s font-light">
-          {{ address.street }} {{ address.streetNumber }} -
-          <ApartmentDistrict
-            class="hover:underline"
-            :zip-code="address.postalCode"
-          />
-        </h4>
-      </div>
-    </div>
-    <div
-      class="flex justify-between border-y border-y-black border-opacity-30 py-4 text-m font-light"
-    >
-      <span v-html="formatPrice(shownPrice)"></span>
-      <span class="opacity-40">|</span>
-      <span v-if="roomCount && roomCount > 1">{{ roomCount }} Zimmer</span>
-      <span
-        v-if="roomCount && roomCount > 1"
-        class="opacity-40"
-        >|</span
-      >
-      <span v-html="formatArea(usableArea)"></span>
-      <span class="opacity-40">|</span>
-      <ApartmentFavoriteButton :id="id" />
-    </div>
-    <div class="flex justify-between overflow-hidden">
-      <div class="tags-container flex flex-row flex-wrap gap-1">
-        <ApartmentProvider
-          v-if="providerName"
-          :property-management-id="propertyManagementId!"
-          :provider-name="providerName"
-        />
-        <ApartmentTag
-          v-for="tag in tags"
-          :key="tag"
-          :tag="tag"
-          class="tag py-0.25 rounded-full bg-secondary px-2.5 text-xs text-accent"
-        >
-        </ApartmentTag>
-      </div>
-      <StyledNuxtLink
-        :to="url"
-        class="text-s"
-      >
-        Zur Wohnung
-      </StyledNuxtLink>
-    </div>
-  </div>
+    :id="id"
+    :title="title"
+    :address="address"
+    :cold-rent-price="coldRentPrice"
+    :warm-rent-price="warmRentPrice"
+    :image-src="imageSrc"
+    :tags="tags"
+    :usable-area="usableArea"
+    :url="url"
+    :first-seen="firstSeen"
+    :room-count="roomCount"
+    :property-management-id="propertyManagementId"
+    :floor="floor"
+  />
 </template>

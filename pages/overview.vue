@@ -211,6 +211,7 @@ const sortOrders = computed(() => {
             :url="flat.url"
             :first-seen="new Date(flat.firstSeen)"
             :property-management-id="flat.propertyManagementId"
+            :floor="flat.floor"
           />
         </tbody>
       </table>
@@ -219,7 +220,7 @@ const sortOrders = computed(() => {
         <h2 class="mb-4 text-xl">
           {{ countText }}
         </h2>
-        <div class="flex flex-wrap gap-4">
+        <div class="flex flex-col gap-3">
           <ApartmentDetails
             v-for="flat in flats?.data"
             :id="flat.id"
@@ -236,6 +237,7 @@ const sortOrders = computed(() => {
             :url="flat.url"
             :first-seen="new Date(flat.firstSeen)"
             :property-management-id="flat.propertyManagementId"
+            :floor="flat.floor"
           />
         </div>
       </div>

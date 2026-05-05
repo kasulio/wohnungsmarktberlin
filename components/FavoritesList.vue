@@ -61,19 +61,13 @@ watch(modalOpen, (newValue) => {
                 {{ favorite.title }}</span
               >
               <span class="text-s font-light">
-                <span
-                  class="block"
-                  v-html="
-                    formatPrice(
-                      favorite.warmRentPrice ?? favorite.coldRentPrice,
-                      true,
-                    )
-                  "
-                ></span>
-                <span
-                  class="block"
-                  v-html="formatArea(favorite.usableArea)"
-                ></span>
+                <span class="block">{{
+                  formatPrice(
+                    favorite.warmRentPrice ?? favorite.coldRentPrice,
+                    true,
+                  )
+                }}</span>
+                <span class="block">{{ formatArea(favorite.usableArea) }}</span>
               </span>
             </div>
           </div>
