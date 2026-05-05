@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { tags } from "~/data/tags";
 import { berlinDistricts } from "~/data/districts";
+import { propertyManagementConfigs } from "~/data/propertyManagements/configs";
+import { tags } from "~/data/tags";
+
 const { updateQueryState, urlState } = useFlatFilterUrlState();
 const modalOpen = ref(false);
 
@@ -13,11 +15,12 @@ const modalPreferences = reactive({
   areaMax: null,
   tags: [] as string[],
   districts: [] as string[],
+  propertyManagements: [] as string[],
 } as Record<
   "priceMin" | "priceMax" | "roomsMin" | "roomsMax" | "areaMin" | "areaMax",
   number | null
 > &
-  Record<"tags" | "districts", string[]>);
+  Record<"tags" | "districts" | "propertyManagements", string[]>);
 
 interface Metadata {
   [key: string]: {
@@ -46,7 +49,7 @@ watch(urlState, () => {
 
 const syncStateWithUrl = () => {
   for (const key of typedObjectKeys(modalPreferences)) {
-    if (key === "tags" || key === "districts")
+    if (key === "tags" || key === "districts" || key === "propertyManagements")
       modalPreferences[key] = urlState.value[key] ?? [];
     else modalPreferences[key] = urlState.value[key]?.[0] ?? null;
   }
@@ -106,6 +109,21 @@ const uiFilters = computed(() => {
       continue;
     }
 
+    if (key === "propertyManagements") {
+      for (const slug of value) {
+        const cfg =
+          propertyManagementConfigs[
+            slug as keyof typeof propertyManagementConfigs
+          ];
+        filters.push({
+          filter: slug,
+          id: key,
+          title: cfg?.name ?? slug,
+        });
+      }
+      continue;
+    }
+
     if (value) {
       const filter = createFilter(
         value,
@@ -154,6 +172,12 @@ const districtSuggestions = Object.entries(berlinDistricts).map(
     title: name,
   }),
 );
+const propertyManagementSuggestions = Object.values(
+  propertyManagementConfigs,
+).map(({ slug, name }) => ({
+  id: slug,
+  title: name,
+}));
 </script>
 
 <template>
@@ -232,6 +256,15 @@ const districtSuggestions = Object.entries(berlinDistricts).map(
             :placeholder="'max. ' + filterMetadata.area.max.toLocaleString()"
             :min="filterMetadata.area.min"
             :max="filterMetadata.area.max"
+          />
+        </div>
+      </div>
+      <div>
+        <strong>Hausverwaltung</strong>
+        <div class="flex items-center gap-2">
+          <TextFieldWithAutocomplete
+            v-model="modalPreferences.propertyManagements"
+            :suggestions="propertyManagementSuggestions"
           />
         </div>
       </div>
