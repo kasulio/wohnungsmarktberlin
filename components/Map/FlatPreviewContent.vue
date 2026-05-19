@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { MapFlat } from "~/types/map-flat";
-import { formatArea, formatPrice } from "~/utils/util";
+import { formatArea, formatPrimaryRent, formatRoomCount } from "~/utils/util";
 
 const props = defineProps<{
   flat: Pick<
@@ -16,16 +16,6 @@ const props = defineProps<{
   >;
   districtLink?: boolean;
 }>();
-
-const roomLabel = computed(() => {
-  const n = props.flat.roomCount;
-  if (n == null || n === 0) return "–";
-  return String(n);
-});
-
-const rentLabel = computed(() =>
-  formatPrice(props.flat.warmRentPrice ?? props.flat.coldRentPrice, true),
-);
 </script>
 
 <template>
@@ -58,10 +48,10 @@ const rentLabel = computed(() =>
         />
       </li>
       <li class="flex gap-2">
-        <span>{{ roomLabel }} Zi.</span>
+        <span>{{ formatRoomCount(flat.roomCount) }} Zi.</span>
         <span>{{ formatArea(flat.usableArea) }}</span>
         <span class="font-semibold text-accent">
-          {{ rentLabel }}
+          {{ formatPrimaryRent(flat, true) }}
         </span>
       </li>
     </ul>

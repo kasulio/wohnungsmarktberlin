@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import type { Tags } from "@/data/tags";
 import { zipCodeToDistrict } from "~/data/districts";
-import { formatArea, formatPrice } from "~/utils/util";
+import { formatArea, formatPrice, formatRoomCount } from "~/utils/util";
 
 const props = withDefaults(
   defineProps<{
@@ -55,26 +55,6 @@ const summaryLabel = computed(() => {
   return `${props.address.street} ${props.address.streetNumber}, ${loc}`;
 });
 
-/** Treat 0 as unknown (scrapers / non-residential). */
-const roomLabel = computed(() => {
-  const n = props.roomCount;
-  if (n == null || n === 0) {
-    return "–";
-  }
-  return String(n);
-});
-
-const rentLabel = computed(() => {
-  const c = props.coldRentPrice;
-  const w = props.warmRentPrice;
-  if (!c && !w) return "–";
-  const fmt = (n: number) => n.toFixed(2).replace(".", ",");
-  if (c && w) return `${fmt(c)}/${fmt(w)}\u00A0€`;
-  return formatPrice(c ?? w);
-});
-
-const fmt = (n: number) => n.toFixed(2).replace(".", ",") + "\u00A0€";
-
 const route = useRoute();
 
 const mapTo = computed(() => ({
@@ -92,7 +72,8 @@ const tableRows = computed(() => {
     ? `${postalCode} ${district.value.name}`
     : postalCode;
   rows.push({ label: "Adresse", value: `${street} ${streetNumber}, ${loc}` });
-  if (props.roomCount) rows.push({ label: "Zimmer", value: roomLabel.value });
+  if (props.roomCount)
+    rows.push({ label: "Zimmer", value: formatRoomCount(props.roomCount) });
   if (props.usableArea)
     rows.push({ label: "Fläche", value: formatArea(props.usableArea) });
   if (props.floor != null)
@@ -101,13 +82,13 @@ const tableRows = computed(() => {
       value: props.floor === 0 ? "EG" : String(props.floor),
     });
   if (props.coldRentPrice)
-    rows.push({ label: "Kaltmiete", value: fmt(props.coldRentPrice) });
+    rows.push({ label: "Kaltmiete", value: formatPrice(props.coldRentPrice) });
   if (props.warmRentPrice)
-    rows.push({ label: "Warmmiete", value: fmt(props.warmRentPrice) });
-  if (props.warmRentPrice && props.usableArea)
+    rows.push({ label: "Warmmiete", value: formatPrice(props.warmRentPrice) });
+  if ((props.coldRentPrice || props.warmRentPrice) && props.usableArea)
     rows.push({
       label: "€/m²",
-      value: fmt(props.warmRentPrice / props.usableArea),
+      value: `${props.coldRentPrice ? formatPrice(props.coldRentPrice / props.usableArea) : "-"} / ${props.warmRentPrice ? formatPrice(props.warmRentPrice / props.usableArea) : "-"}`,
     });
   rows.push({ label: "Gesehen am", value: firstSeenLabel.value });
   return rows;
@@ -142,7 +123,9 @@ const tableRows = computed(() => {
               name="lucide-lab:floor-plan"
               class="size-3.5 shrink-0 -scale-x-100 text-main/45"
             />
-            <span class="truncate tabular-nums">{{ roomLabel }} Zimmer</span>
+            <span class="truncate tabular-nums">
+              {{ formatRoomCount(roomCount) }} Zimmer
+            </span>
           </div>
           <div class="flex min-w-0 items-center gap-1.5">
             <Icon

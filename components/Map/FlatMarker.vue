@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { CustomMarker } from "vue3-google-map";
 import type { MapFlatWithCoordinates } from "~/types/map-flat";
-import { formatPrice } from "~/utils/util";
+import { formatPrimaryRent } from "~/utils/util";
 
 const props = defineProps<{
   flat: MapFlatWithCoordinates;
@@ -13,10 +13,6 @@ const emit = defineEmits<{
   mouseenter: [MouseEvent];
   mouseout: [];
 }>();
-
-const rentLabel = computed(() =>
-  formatPrice(props.flat.warmRentPrice ?? props.flat.coldRentPrice, true),
-);
 </script>
 
 <template>
@@ -43,7 +39,7 @@ const rentLabel = computed(() =>
       >
         <IconHome class="h-3 w-3 text-secondary" />
         <span class="text-xs font-semibold text-secondary">
-          {{ rentLabel }}
+          {{ formatPrimaryRent(flat, true) }}
         </span>
       </div>
     </div>

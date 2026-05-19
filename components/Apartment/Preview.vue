@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { Tags } from "@/data/tags";
-import { formatPrice } from "~/utils/util";
+import { formatArea, formatPrimaryRent } from "~/utils/util";
 
 const props = defineProps<{
   id: string;
@@ -73,7 +73,7 @@ const providerName = computed(() =>
     </div>
     <div class="flex shrink-0 flex-grow flex-col items-end gap-1">
       <span class="price block text-l font-light leading-5">{{
-        formatPrice(warmRentPrice ?? coldRentPrice, true)
+        formatPrimaryRent($props, true)
       }}</span>
       <span class="block text-s font-light">{{ formatArea(usableArea) }}</span>
       <ApartmentFavoriteButton :id="id" />

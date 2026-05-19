@@ -1,6 +1,11 @@
 <script lang="ts" setup>
 import type { Tags } from "@/data/tags";
-import { formatArea, formatPrice } from "~/utils/util";
+import {
+  formatArea,
+  formatPrimaryRent,
+  formatRoomCount,
+  primaryRentPrice,
+} from "~/utils/util";
 
 const props = withDefaults(
   defineProps<{
@@ -30,7 +35,12 @@ const props = withDefaults(
   },
 );
 
-const shownPrice = computed(() => props.warmRentPrice ?? props.coldRentPrice);
+const primaryRent = computed(() =>
+  primaryRentPrice({
+    warmRentPrice: props.warmRentPrice,
+    coldRentPrice: props.coldRentPrice,
+  }),
+);
 const providerName = computed(() =>
   getProviderName(props.propertyManagementId),
 );
@@ -88,7 +98,7 @@ const providerName = computed(() =>
       </div>
     </td>
     <td class="align-top">
-      <span>{{ formatPrice(shownPrice) }}</span>
+      <span>{{ formatPrimaryRent($props) }}</span>
       <span
         v-if="$props.warmRentPrice"
         class="block text-s opacity-80"
@@ -96,18 +106,18 @@ const providerName = computed(() =>
       >
     </td>
     <td class="align-top">
-      {{ roomCount ?? "-" }}
+      {{ formatRoomCount(roomCount) }}
     </td>
     <td class="align-top">
       {{ formatArea(usableArea) }}
     </td>
     <td
-      v-if="shownPrice"
+      v-if="primaryRent"
       class="align-top"
     >
       {{
         usableArea
-          ? (shownPrice / usableArea).toFixed(2).replace(".", ",") + "\u00A0€"
+          ? (primaryRent / usableArea).toFixed(2).replace(".", ",") + "\u00A0€"
           : "-"
       }}
     </td>

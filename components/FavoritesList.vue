@@ -62,10 +62,7 @@ watch(modalOpen, (newValue) => {
               >
               <span class="text-s font-light">
                 <span class="block">{{
-                  formatPrice(
-                    favorite.warmRentPrice ?? favorite.coldRentPrice,
-                    true,
-                  )
+                  formatPrimaryRent(favorite, true)
                 }}</span>
                 <span class="block">{{ formatArea(favorite.usableArea) }}</span>
               </span>
