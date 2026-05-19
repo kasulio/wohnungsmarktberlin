@@ -18,16 +18,17 @@ const showIcon = computed(() => !props.hideIcon && isExternal.value);
 <template>
   <NuxtLink
     v-bind="props"
-    :target="isExternal ? '_blank' : undefined"
+    :target="isExternal ? '_blank' : props.target"
     :class="{
       'inline-flex items-center gap-x-1': showIcon,
       'underline hover:no-underline': !props.noUnderline,
     }"
   >
     <slot></slot>
-    <IconExternalLink
+    <Icon
+      name="lucide:external-link"
       v-if="showIcon"
-      class="block h-4 w-4"
+      class="size-4 shrink-0"
       :class="props.iconClass"
     />
   </NuxtLink>

@@ -75,6 +75,16 @@ const rentLabel = computed(() => {
 
 const fmt = (n: number) => n.toFixed(2).replace(".", ",") + "\u00A0€";
 
+const route = useRoute();
+
+const mapTo = computed(() => ({
+  path: "/map",
+  query: {
+    ...route.query,
+    flat: props.id,
+  },
+}));
+
 const tableRows = computed(() => {
   const rows: { label: string; value: string }[] = [];
   const { street, streetNumber, postalCode } = props.address;
@@ -244,13 +254,29 @@ const tableRows = computed(() => {
             </tbody>
           </table>
 
-          <StyledNuxtLink
-            :to="url"
-            no-underline
-            class="text-sm inline-flex min-h-10 w-full items-center justify-center rounded-lg bg-accent px-3 font-medium text-white shadow-sm"
-          >
-            Zur Wohnung
-          </StyledNuxtLink>
+          <div class="grid grid-cols-2 gap-2">
+            <StyledNuxtLink
+              :to="mapTo"
+              target="_blank"
+              no-underline
+              class="text-sm inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-main/20 bg-background px-3 font-medium text-main shadow-sm"
+              @click.stop
+            >
+              Zur Karte
+              <Icon
+                name="lucide:map"
+                class="size-4 shrink-0"
+              />
+            </StyledNuxtLink>
+            <StyledNuxtLink
+              :to="url"
+              no-underline
+              class="text-sm inline-flex min-h-10 items-center justify-center rounded-lg bg-accent px-3 font-medium text-white shadow-sm"
+              @click.stop
+            >
+              Zur Wohnung
+            </StyledNuxtLink>
+          </div>
         </div>
       </div>
     </div>
