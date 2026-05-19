@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `flat_url_unique` ON `flat` (`url`);

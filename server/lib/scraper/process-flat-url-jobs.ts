@@ -4,7 +4,7 @@ import { scrapedFlatSchema } from "~/data/schemas";
 import {
   getPropertyManagement,
   getImage,
-  isParkingSpace,
+  shouldIgnoreListing,
 } from "~/lib/flat-utils";
 import { db } from "~/server/db/client";
 import {
@@ -86,14 +86,15 @@ export async function processFlatUrlJobs(
       const flat = scrapedFlatSchema.parse(scrapedFlat);
 
       const image = flat.imageUrl ? await getImage(flat.imageUrl) : null;
-      const ignored = isParkingSpace({
+      const shouldIgnore = shouldIgnoreListing({
         ...flat,
         propertyManagementId: flatUrlJob.propertyManagementId,
       });
 
       console.log(
-        `[process-flat-url-jobs] extracted flat ${flat.url}${ignored ? " (ignored)" : ""}`,
+        `[process-flat-url-jobs] extracted flat ${flat.url}${shouldIgnore ? " (ignored)" : ""}`,
       );
+      const now = new Date();
       await db.transaction(async (tx) => {
         await tx
           .insert(flatTable)
@@ -106,14 +107,30 @@ export async function processFlatUrlJobs(
             title: flat.title,
             usableArea: flat.usableArea,
             warmRentPrice: flat.warmRentPrice,
-            lastSeen: new Date(),
-            firstSeen: new Date(),
+            lastSeen: now,
+            firstSeen: now,
             url: flat.url,
             image: image,
             deleted: null,
-            ignored,
+            ignored: shouldIgnore,
           })
-          .onConflictDoNothing()
+          .onConflictDoUpdate({
+            target: flatTable.url,
+            set: {
+              addressText: flat.addressText,
+              coldRentPrice: flat.coldRentPrice,
+              floor: flat.floor,
+              propertyManagementId: flatUrlJob.propertyManagementId,
+              roomCount: flat.roomCount,
+              title: flat.title,
+              usableArea: flat.usableArea,
+              warmRentPrice: flat.warmRentPrice,
+              lastSeen: now,
+              image: image,
+              deleted: null,
+              ignored: shouldIgnore,
+            },
+          })
           .execute();
 
         await tx

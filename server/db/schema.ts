@@ -48,7 +48,7 @@ export const flat = sqliteTable("flat", {
   lastSeen: integer("lastSeen", { mode: "timestamp" }).notNull(),
   deleted: integer("deleted", { mode: "timestamp" }),
   ignored: integer("ignored", { mode: "boolean" }).notNull().default(false),
-  url: text("url").notNull(),
+  url: text("url").notNull().unique(),
 });
 
 export const flatUrlJob = sqliteTable("flatUrlJob", {

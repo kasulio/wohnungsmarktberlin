@@ -9,83 +9,139 @@ export type FlatForIgnoreCheck = {
   propertyManagementId?: string | null;
   coldRentPrice?: number | null;
   warmRentPrice?: number | null;
+  roomCount?: number | null;
 };
 
-function isDeutscheWohnenCheapListing(flat: FlatForIgnoreCheck): boolean {
-  const propertyManagements = [deuwo.slug, vonovia.slug];
-  if (!propertyManagements.includes(flat.propertyManagementId ?? ""))
-    return false;
+function isDeuvonoProvider(
+  propertyManagementId: string | null | undefined,
+): boolean {
+  return (
+    propertyManagementId === deuwo.slug || propertyManagementId === vonovia.slug
+  );
+}
+
+function isDeuvonoCheapListing(flat: FlatForIgnoreCheck): boolean {
+  if (!isDeuvonoProvider(flat.propertyManagementId)) return false;
   const rent = flat.coldRentPrice ?? flat.warmRentPrice ?? null;
   return rent !== null && rent <= 100;
 }
 
-/**
- * Returns true if the listing should be ignored (not shown): parking-only-style titles,
- * or Deutsche Wohnen listings at ≤100€ (cold rent, else warm).
- * Parking in the title as an included amenity does not count.
- */
-export function isParkingSpace(flat: FlatForIgnoreCheck): boolean {
-  if (isDeutscheWohnenCheapListing(flat)) return true;
-  return isIgnoredByTitle(flat.title);
+/** deuwo/vonovia listings with no rooms are almost always non-residential. */
+export function isDeuvonoZeroRoom(flat: FlatForIgnoreCheck): boolean {
+  if (!isDeuvonoProvider(flat.propertyManagementId)) return false;
+  return flat.roomCount === 0 || flat.roomCount == null;
 }
 
-function isIgnoredByTitle(title: string): boolean {
-  const parkingKeywords = [
-    "parkplatz",
-    "stellplatz",
-    "garage",
-    "tiefgarage",
-    "außenstellplatz",
-    "duplex-parker",
-    "duplexparker",
-    "pkw-stellplatz",
-    "pkw stellplatz",
-    "kfz-stellplatz",
-    "kfz stellplatz",
-    "stressfrei parken",
-    "parken",
-    "parkplatzsuche",
-    "auto stehen",
-    "ihr auto",
-  ];
+const COMMERCIAL_TITLE_KEYWORDS = [
+  "gewerbe",
+  "gewerbefläche",
+  "gewerbeflaeche",
+  "gewerbemietfläche",
+  "gewerbemietflaeche",
+  "gewerbeeinheit",
+  "büro",
+  "buero",
+  "praxis",
+  "praxisräume",
+  "praxisraeume",
+  "ladengeschäft",
+  "ladengeschaeft",
+  "kiezladen",
+  "einzelhandel",
+  "einzelhandelsfläche",
+  "einzelhandelsflaeche",
+  "geschäft",
+  "geschaeft",
+  "dienstleistung",
+  "yoga-studio",
+  "gesundheitsstandort",
+  "lagerfläche",
+  "lagerflaeche",
+  "werkstatt",
+  "einzelhandels-",
+  "gastronomie",
+  "restaurant",
+  "pizzeria",
+];
 
+export function isCommercialByTitle(title: string): boolean {
+  const lowerTitle = title.toLowerCase();
+  return COMMERCIAL_TITLE_KEYWORDS.some((keyword) =>
+    lowerTitle.includes(keyword),
+  );
+}
+
+const PARKING_TITLE_KEYWORDS = [
+  "parkplatz",
+  "stellplatz",
+  "garage",
+  "tiefgarage",
+  "außenstellplatz",
+  "duplex-parker",
+  "duplexparker",
+  "pkw-stellplatz",
+  "pkw stellplatz",
+  "kfz-stellplatz",
+  "kfz stellplatz",
+  "stressfrei parken",
+  "parken",
+  "parkplatzsuche",
+  "auto stehen",
+  "ihr auto",
+];
+
+const PARKING_INCLUDED_IN_AMENITY_PATTERNS = [
+  "inklusive",
+  "inkl.",
+  "inkl ",
+  "mit ",
+  "incl.",
+  "incl ",
+  "wohnung mit",
+  "zimmer mit",
+  "+ ",
+  "& ",
+];
+
+export function isParkingByTitle(title: string): boolean {
   const lowerTitle = title.toLowerCase();
 
-  const includePatterns = [
-    "inklusive",
-    "inkl.",
-    "inkl ",
-    "mit ",
-    "incl.",
-    "incl ",
-    "wohnung mit",
-    "zimmer mit",
-    "+ ",
-    "& ",
-  ];
-
-  const hasIncludedParking = includePatterns.some((pattern) => {
-    return parkingKeywords.some((keyword) => {
-      const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const regex =
-        pattern === "mit "
-          ? new RegExp(
-              `\\bmit\\s+(?!uns\\b|ihnen\\b|dir\\b|euch\\b|ihm\\b|ihr\\b).*${escapedKeyword}`,
-              "i",
-            )
-          : new RegExp(
-              `${pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}.*${escapedKeyword}`,
-              "i",
-            );
-      return regex.test(lowerTitle);
-    });
-  });
+  const hasIncludedParking = PARKING_INCLUDED_IN_AMENITY_PATTERNS.some(
+    (pattern) => {
+      return PARKING_TITLE_KEYWORDS.some((keyword) => {
+        const escapedKeyword = keyword.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex =
+          pattern === "mit "
+            ? new RegExp(
+                `\\bmit\\s+(?!uns\\b|ihnen\\b|dir\\b|euch\\b|ihm\\b|ihr\\b).*${escapedKeyword}`,
+                "i",
+              )
+            : new RegExp(
+                `${pattern.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}.*${escapedKeyword}`,
+                "i",
+              );
+        return regex.test(lowerTitle);
+      });
+    },
+  );
 
   if (hasIncludedParking) {
     return false;
   }
 
-  return parkingKeywords.some((keyword) => lowerTitle.includes(keyword));
+  return PARKING_TITLE_KEYWORDS.some((keyword) => lowerTitle.includes(keyword));
+}
+
+/**
+ * Returns true if the listing should be ignored (not shown): non-residential
+ * (commercial, parking, deuwo/vonovia zero-room), or deuwo/vonovia ≤100€ rent.
+ */
+export function shouldIgnoreListing(flat: FlatForIgnoreCheck): boolean {
+  if (isDeuvonoZeroRoom(flat)) return true;
+  if (isDeuvonoCheapListing(flat)) return true;
+  if (isParkingByTitle(flat.title)) return true;
+  if (isCommercialByTitle(flat.title)) return true;
+  return false;
 }
 
 /**

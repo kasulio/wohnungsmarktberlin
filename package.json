@@ -15,6 +15,7 @@
     "db:studio": "bun --bun drizzle-kit studio",
     "seed:admin": "bun --bun scripts/seed-admin-auth.ts",
     "typecheck": "bun --bun tsgo --noEmit",
+    "test": "bun test",
     "postinstall": "bun --bun nuxt prepare"
   },
   "devDependencies": {
