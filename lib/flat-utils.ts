@@ -1,6 +1,7 @@
 import sharp from "sharp";
 import { propertyManagements } from "~/data/propertyManagements";
 import { deuwo } from "~/data/propertyManagements/deuwo";
+import { vonovia } from "~/data/propertyManagements/vonovia";
 
 /** Minimal fields for ignore rules (scraped flat + `propertyManagementId`, or DB row). */
 export type FlatForIgnoreCheck = {
@@ -11,7 +12,9 @@ export type FlatForIgnoreCheck = {
 };
 
 function isDeutscheWohnenCheapListing(flat: FlatForIgnoreCheck): boolean {
-  if (flat.propertyManagementId !== deuwo.slug) return false;
+  const propertyManagements = [deuwo.slug, vonovia.slug];
+  if (!propertyManagements.includes(flat.propertyManagementId ?? ""))
+    return false;
   const rent = flat.coldRentPrice ?? flat.warmRentPrice ?? null;
   return rent !== null && rent <= 100;
 }
