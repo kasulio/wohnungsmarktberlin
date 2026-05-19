@@ -49,7 +49,8 @@ watch(modalOpen, (newValue) => {
           class="flex items-center gap-2"
         >
           <FlatImage
-            :image-src="getFlatImageUrl(favorite)"
+            :id="favorite.id"
+            :has-image="favorite.hasImage"
             :alt="`Vorschaubild ${favorite.title}`"
             class="h-12 w-12 rounded-md xs:h-16 xs:w-16"
           />

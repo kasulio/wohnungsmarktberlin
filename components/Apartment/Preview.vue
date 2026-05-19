@@ -1,28 +1,8 @@
 <script lang="ts" setup>
-import type { Tags } from "@/data/tags";
+import type { ListingCardProps } from "~/types/listing-flat";
 import { formatArea, formatPrimaryRent } from "~/utils/util";
 
-const props = defineProps<{
-  id: string;
-  title: string;
-  address: {
-    street: string;
-    postalCode: string;
-    streetNumber: string;
-  };
-  coldRentPrice: number | null;
-  warmRentPrice: number | null;
-  imageSrc: string | null;
-  tags: Tags;
-  usableArea: number | null;
-  url: string;
-  firstSeen: Date;
-  propertyManagementId?: string | null;
-}>();
-
-const providerName = computed(() =>
-  getProviderName(props.propertyManagementId),
-);
+defineProps<ListingCardProps>();
 </script>
 
 <template>
@@ -33,7 +13,8 @@ const providerName = computed(() =>
         target="_blank"
       >
         <FlatImage
-          :image-src="imageSrc"
+          :id="id"
+          :has-image="hasImage"
           :alt="`Vorschaubild ${title}`"
         />
       </NuxtLink>
@@ -57,18 +38,10 @@ const providerName = computed(() =>
         />
       </h4>
       <div class="flex flex-row flex-wrap items-center gap-1">
-        <ApartmentProvider
-          v-if="providerName"
-          :property-management-id="propertyManagementId!"
-          :provider-name="providerName"
+        <ApartmentProviderTags
+          :property-management-id="propertyManagementId"
+          :tags="tags"
         />
-        <ApartmentTag
-          v-for="tag in tags"
-          :key="tag"
-          :tag="tag"
-          class="tag py-0.25 rounded-full bg-white px-2.5 text-xs text-accent"
-        >
-        </ApartmentTag>
       </div>
     </div>
     <div class="flex shrink-0 flex-grow flex-col items-end gap-1">

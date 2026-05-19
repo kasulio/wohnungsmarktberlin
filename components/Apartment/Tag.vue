@@ -10,12 +10,12 @@ defineProps<{
 <template>
   <NuxtLink
     :to="`/overview?tags=${tag}`"
-    class="py-0.25 flex items-center gap-1 rounded-full px-2.5 text-xs"
+    class="py-0.25 inline-flex items-center gap-1 rounded-full border border-main/10 bg-secondary/60 px-2.5 text-xs font-medium text-accent transition-colors hover:border-accent/40"
   >
     {{ tags[tag] }}
     <svg
       v-if="tag === 'new'"
-      class="h-3 w-3 text-accent"
+      class="h-3 w-3 shrink-0 text-accent"
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 14 14"
     >

@@ -94,7 +94,7 @@ useHead({
         :warm-rent-price="flat.warmRentPrice"
         :tags="flat.tags"
         :usable-area="flat.usableArea"
-        :image-src="getFlatImageUrl(flat)"
+        :has-image="flat.hasImage"
         :url="flat.url"
         :first-seen="new Date(flat.firstSeen)"
         :property-management-id="flat.propertyManagementId"

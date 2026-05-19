@@ -1,4 +1,9 @@
 import { propertyManagementConfigs } from "~/data/propertyManagements/configs";
+import type {
+  ListingFlat,
+  ListingFlatImage,
+  ListingFlatWithCoordinates,
+} from "~/types/listing-flat";
 
 export function getProviderName(
   propertyManagementId: string | null | undefined,
@@ -11,11 +16,14 @@ export function getProviderName(
   return pm?.name ?? null;
 }
 
-export function getFlatImageUrl(flat: { id: string; hasImage: boolean }) {
-  if (!flat.hasImage) return null;
-  const config = useRuntimeConfig();
+export function hasMapCoordinates(
+  flat: ListingFlat,
+): flat is ListingFlatWithCoordinates {
+  const { latitude, longitude } = flat.address;
+  return latitude != null && longitude != null;
+}
 
-  return flat.hasImage
-    ? `${config.public.deploymentUrl}/api/image/${flat.id}`
-    : `${config.public.deploymentUrl}/apartment_example_image.png`;
+export function getFlatImageUrl(flat: ListingFlatImage, deploymentUrl: string) {
+  if (!flat.hasImage) return null;
+  return `${deploymentUrl}/api/image/${flat.id}`;
 }

@@ -1,10 +1,10 @@
 <script lang="ts" setup>
-import type { MapFlat } from "~/types/map-flat";
+import type { ListingFlat } from "~/types/listing-flat";
 import { formatArea, formatPrimaryRent, formatRoomCount } from "~/utils/util";
 
 const props = defineProps<{
   flat: Pick<
-    MapFlat,
+    ListingFlat,
     | "title"
     | "tags"
     | "roomCount"
@@ -24,16 +24,9 @@ const props = defineProps<{
       {{ flat.title }}
     </p>
     <div class="flex flex-wrap gap-1">
-      <ApartmentProvider
-        v-if="getProviderName(flat.propertyManagementId)"
-        :property-management-id="flat.propertyManagementId!"
-        :provider-name="getProviderName(flat.propertyManagementId)!"
-      />
-      <ApartmentTag
-        v-for="tag in flat.tags"
-        :key="tag"
-        :tag="tag"
-        class="py-0.25 rounded-full bg-secondary px-2.5 text-xs text-accent"
+      <ApartmentProviderTags
+        :property-management-id="flat.propertyManagementId"
+        :tags="flat.tags"
       />
     </div>
     <ul class="space-y-0.5 text-xs text-main/70">

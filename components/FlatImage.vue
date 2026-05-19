@@ -2,7 +2,8 @@
 const props = withDefaults(
   defineProps<{
     alt: string;
-    imageSrc: string | null;
+    id: string;
+    hasImage: boolean;
     width?: number;
     height?: number;
     sizes?: string;
@@ -15,15 +16,22 @@ const props = withDefaults(
     loading: "lazy",
   },
 );
+
 const config = useRuntimeConfig();
 const imgClass = computed(() => props.class || "h-16 w-16 rounded-lg");
+
+const src = computed(
+  () =>
+    getFlatImageUrl(
+      { id: props.id, hasImage: props.hasImage },
+      config.public.deploymentUrl,
+    ) ?? `${config.public.deploymentUrl}/apartment_example_image.png`,
+);
 </script>
 
 <template>
   <NuxtImg
-    :src="
-      imageSrc ?? `${config.public.deploymentUrl}/apartment_example_image.png`
-    "
+    :src="src"
     :alt="alt"
     :width="width"
     :height="height"

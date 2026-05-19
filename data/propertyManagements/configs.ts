@@ -1,7 +1,7 @@
 export const propertyManagementConfigs = {
   berlinovo: {
     slug: "berlinovo",
-    name: "Berlinovo",
+    name: "berlinovo",
     website: "https://www.berlinovo.de",
   },
   gewobag: {
@@ -26,7 +26,7 @@ export const propertyManagementConfigs = {
   },
   degewo: {
     slug: "degewo",
-    name: "Degewo",
+    name: "degewo",
     website: "https://www.degewo.de/",
   },
   howoge: {

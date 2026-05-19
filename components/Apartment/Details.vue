@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import type { Tags } from "@/data/tags";
+import type { ListingDetailsProps } from "~/types/listing-flat";
 import {
   formatArea,
   formatPrimaryRent,
@@ -7,42 +7,17 @@ import {
   primaryRentPrice,
 } from "~/utils/util";
 
-const props = withDefaults(
-  defineProps<{
-    id: string;
-    title: string;
-    address: {
-      street: string;
-      postalCode: string;
-      streetNumber: string;
-    };
-    coldRentPrice: number | null;
-    warmRentPrice: number | null;
-    imageSrc: string | null;
-    tags: Tags;
-    usableArea: number | null;
-    url: string;
-    firstSeen: Date;
-    roomCount: number | null;
-    propertyManagementId?: string | null;
-    floor?: number | null;
-    as?: "row" | "card";
-  }>(),
-  {
-    as: "card",
-    propertyManagementId: null,
-    floor: null,
-  },
-);
+const props = withDefaults(defineProps<ListingDetailsProps>(), {
+  as: "card",
+  propertyManagementId: null,
+  floor: null,
+});
 
 const primaryRent = computed(() =>
   primaryRentPrice({
     warmRentPrice: props.warmRentPrice,
     coldRentPrice: props.coldRentPrice,
   }),
-);
-const providerName = computed(() =>
-  getProviderName(props.propertyManagementId),
 );
 </script>
 
@@ -58,7 +33,8 @@ const providerName = computed(() =>
           target="_blank"
         >
           <FlatImage
-            :image-src="imageSrc"
+            :id="id"
+            :has-image="hasImage"
             :alt="`Vorschaubild ${title}`"
           />
         </NuxtLink>
@@ -81,18 +57,10 @@ const providerName = computed(() =>
           <div
             class="mt-1 flex flex-row flex-wrap items-center gap-x-1 gap-y-1"
           >
-            <ApartmentProvider
-              v-if="providerName"
-              :property-management-id="propertyManagementId!"
-              :provider-name="providerName"
+            <ApartmentProviderTags
+              :property-management-id="propertyManagementId"
+              :tags="tags"
             />
-            <ApartmentTag
-              v-for="tag in tags"
-              :key="tag"
-              :tag="tag"
-              class="tag py-0.25 rounded-full bg-secondary px-2.5 text-xs text-accent"
-            >
-            </ApartmentTag>
           </div>
         </div>
       </div>
@@ -146,7 +114,7 @@ const providerName = computed(() =>
     :address="address"
     :cold-rent-price="coldRentPrice"
     :warm-rent-price="warmRentPrice"
-    :image-src="imageSrc"
+    :has-image="hasImage"
     :tags="tags"
     :usable-area="usableArea"
     :url="url"

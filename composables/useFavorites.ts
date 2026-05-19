@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { ListingFlat } from "~/types/listing-flat";
 
 const { set, state: favoritesIds } = useLocalStorage(
   "favorites",
@@ -14,7 +15,7 @@ export const useFavorites = () => {
       ids: favoritesIds.value,
     })),
     {
-      transform: (res) => res.data,
+      transform: (res): ListingFlat[] => res.data,
     },
   );
 

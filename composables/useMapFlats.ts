@@ -1,9 +1,8 @@
 import { berlinCoordinates } from "~/data/coordinates";
-import {
-  hasMapCoordinates,
-  type MapFlat,
-  type MapFlatWithCoordinates,
-} from "~/types/map-flat";
+import type {
+  ListingFlat,
+  ListingFlatWithCoordinates,
+} from "~/types/listing-flat";
 
 const TOOLTIP_OFFSET_X = 16;
 const TOOLTIP_OFFSET_Y = -16;
@@ -30,7 +29,7 @@ export function useMapFlats() {
 
   const flatsQuery = $client.flat.getAll.useQuery(queryParams);
 
-  const selectedFlat = ref<MapFlat | null>(null);
+  const selectedFlat = ref<ListingFlat | null>(null);
   const pinnedFlatId = ref<string | null>(null);
   const preselectDismissed = ref(false);
   const appliedPreselectId = ref<string | null>(null);
@@ -41,11 +40,11 @@ export function useMapFlats() {
   const isTouch = ref(false);
   const preselectReady = ref(false);
 
-  const mapFlats = computed((): MapFlatWithCoordinates[] =>
+  const mapFlats = computed((): ListingFlatWithCoordinates[] =>
     (flatsQuery.data.value?.data ?? []).filter(hasMapCoordinates),
   );
 
-  function findPreselectedFlat(): MapFlat | null {
+  function findPreselectedFlat(): ListingFlat | null {
     const id = preselectedFlatId.value;
     if (!id) return null;
     return flatsQuery.data.value?.data?.find((f) => f.id === id) ?? null;
@@ -63,7 +62,7 @@ export function useMapFlats() {
     return pinnedFlatId.value === flatId;
   }
 
-  function centerOnFlat(flat: MapFlat) {
+  function centerOnFlat(flat: ListingFlat) {
     const { latitude, longitude } = flat.address ?? {};
     if (latitude != null && longitude != null) {
       mapCenter.value = { lat: latitude, lng: longitude };
@@ -71,7 +70,7 @@ export function useMapFlats() {
     }
   }
 
-  function applyPreselectedFlat(flat: MapFlat) {
+  function applyPreselectedFlat(flat: ListingFlat) {
     pinnedFlatId.value = flat.id;
     selectedFlat.value = isTouch.value ? flat : null;
     centerOnFlat(flat);
@@ -133,7 +132,7 @@ export function useMapFlats() {
     tooltipPos.value = { x, y };
   }
 
-  function onMarkerMouseEnter(flat: MapFlat, event: MouseEvent) {
+  function onMarkerMouseEnter(flat: ListingFlat, event: MouseEvent) {
     if (isTouch.value) return;
     selectedFlat.value = flat;
     updateTooltipPos(event);
@@ -149,7 +148,7 @@ export function useMapFlats() {
     updateTooltipPos(event);
   }
 
-  function onMarkerClick(flat: MapFlat, event: MouseEvent) {
+  function onMarkerClick(flat: ListingFlat, event: MouseEvent) {
     if (!isTouch.value) {
       navigateTo(flat.url, { external: true, open: { target: "_blank" } });
       return;

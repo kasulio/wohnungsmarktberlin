@@ -1,34 +1,12 @@
 <script lang="ts" setup>
-import type { Tags } from "@/data/tags";
 import { zipCodeToDistrict } from "~/data/districts";
+import type { ListingCardDetailProps } from "~/types/listing-flat";
 import { formatArea, formatPrice, formatRoomCount } from "~/utils/util";
 
-const props = withDefaults(
-  defineProps<{
-    id: string;
-    title: string;
-    address: {
-      street: string;
-      postalCode: string;
-      streetNumber: string;
-    };
-    coldRentPrice: number | null;
-    warmRentPrice: number | null;
-    imageSrc: string | null;
-    tags: Tags;
-    usableArea: number | null;
-    url: string;
-    firstSeen: Date;
-    roomCount: number | null;
-    propertyManagementId?: string | null;
-    floor?: number | null;
-  }>(),
-  { propertyManagementId: null, floor: null },
-);
-
-const providerName = computed(() =>
-  getProviderName(props.propertyManagementId),
-);
+const props = withDefaults(defineProps<ListingCardDetailProps>(), {
+  propertyManagementId: null,
+  floor: null,
+});
 
 const expanded = ref(false);
 const panelId = useId();
@@ -105,7 +83,8 @@ const tableRows = computed(() => {
         class="shrink-0 self-center"
       >
         <FlatImage
-          :image-src="imageSrc"
+          :id="id"
+          :has-image="hasImage"
           :alt="`Vorschaubild ${title}`"
           class="size-[4.5rem] rounded-lg"
         />
@@ -194,16 +173,9 @@ const tableRows = computed(() => {
             <div class="min-w-0 flex-1">
               <!-- provider + tags + favorite -->
               <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
-                <ApartmentProvider
-                  v-if="providerName"
-                  :property-management-id="propertyManagementId!"
-                  :provider-name="providerName"
-                />
-                <ApartmentTag
-                  v-for="tag in tags"
-                  :key="tag"
-                  :tag="tag"
-                  class="tag rounded-full bg-secondary px-2 py-0.5 text-xs text-accent"
+                <ApartmentProviderTags
+                  :property-management-id="propertyManagementId"
+                  :tags="tags"
                 />
                 <ApartmentFavoriteButton
                   :id="id"

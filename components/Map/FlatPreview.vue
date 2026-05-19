@@ -1,8 +1,8 @@
 <script lang="ts" setup>
-import type { MapFlat } from "~/types/map-flat";
+import type { ListingFlat } from "~/types/listing-flat";
 
 defineProps<{
-  flat: MapFlat;
+  flat: ListingFlat;
   variant: "tooltip" | "card";
   position?: { x: number; y: number };
 }>();
@@ -37,7 +37,8 @@ const emit = defineEmits<{
       "
     >
       <FlatImage
-        :image-src="getFlatImageUrl(flat)"
+        :id="flat.id"
+        :has-image="flat.hasImage"
         :alt="flat.title"
         class="h-32 w-full rounded-none object-cover"
         :width="220"
@@ -73,7 +74,8 @@ const emit = defineEmits<{
         @click.stop
       >
         <FlatImage
-          :image-src="getFlatImageUrl(flat)"
+          :id="flat.id"
+          :has-image="flat.hasImage"
           :alt="flat.title"
           class="w-28 shrink-0 self-stretch rounded-none object-cover object-center"
           :width="112"
