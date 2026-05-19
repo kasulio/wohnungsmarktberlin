@@ -107,30 +107,70 @@ const tableRows = computed(() => {
 <template>
   <article class="w-full overflow-hidden rounded-lg bg-slate-200">
     <!-- collapsed row -->
-    <div class="flex items-center gap-1 px-2.5 py-2.5">
-      <button
-        type="button"
-        class="text-sm min-w-0 flex-1 text-left leading-snug text-main outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary active:opacity-70"
+    <div class="flex items-stretch gap-2.5 px-2.5 py-2.5">
+      <NuxtLink
+        :to="url"
+        target="_blank"
+        class="shrink-0 self-center"
+      >
+        <FlatImage
+          :image-src="imageSrc"
+          :alt="`Vorschaubild ${title}`"
+          class="size-[4.5rem] rounded-lg"
+        />
+      </NuxtLink>
+      <div
+        class="text-sm flex min-w-0 flex-1 cursor-pointer flex-col justify-between leading-tight"
         :aria-expanded="expanded"
         :aria-controls="panelId"
         :aria-label="`Wohnung ${summaryLabel}, Details ${expanded ? 'zuklappen' : 'aufklappen'}`"
         @click="toggleExpanded"
       >
-        <span class="tabular-nums text-main">
-          <span class="font-semibold">{{ roomLabel }}&thinsp;Zi.</span>
-          &nbsp;|&nbsp;
-          <span class="font-semibold">{{ formatArea(usableArea) }}</span>
-          &nbsp;|&nbsp;
-          <span class="font-semibold">{{ rentLabel }}</span>
-        </span>
-        <br />
-        <span class="text-xs text-main/55">
+        <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">
+          <div class="flex min-w-0 items-center gap-1.5">
+            <Icon
+              name="lucide-lab:floor-plan"
+              class="size-3.5 shrink-0 -scale-x-100 text-main/45"
+            />
+            <span class="truncate tabular-nums">{{ roomLabel }} Zimmer</span>
+          </div>
+          <div class="flex min-w-0 items-center gap-1.5">
+            <Icon
+              name="lucide:expand"
+              class="size-3.5 shrink-0 text-main/45"
+            />
+            <span class="truncate tabular-nums">{{
+              formatArea(usableArea)
+            }}</span>
+          </div>
+          <div class="flex min-w-0 items-center gap-1.5">
+            <Icon
+              name="lucide:badge-minus"
+              class="size-3.5 shrink-0 text-main/45"
+              title="Kaltmiete"
+            />
+            <span class="truncate tabular-nums">{{
+              formatPrice(coldRentPrice)
+            }}</span>
+          </div>
+          <div class="flex min-w-0 items-center gap-1.5">
+            <Icon
+              name="lucide:badge-plus"
+              class="size-3.5 shrink-0 text-main/45"
+              title="Warmmiete"
+            />
+            <span class="truncate tabular-nums">{{
+              formatPrice(warmRentPrice)
+            }}</span>
+          </div>
+        </div>
+        <p class="truncate text-xs leading-snug text-main/55">
           {{ address.street }}&nbsp;{{ address.streetNumber }},
           {{ address.postalCode
           }}<template v-if="district">&nbsp;{{ district.name }}</template>
-        </span>
-      </button>
-      <div class="flex shrink-0 items-center gap-0.5">
+        </p>
+      </div>
+      <div class="flex shrink-0 items-center gap-0.5 self-center">
         <button
           type="button"
           class="grid h-7 w-7 place-items-center rounded text-main/50 transition-transform"
@@ -158,20 +198,6 @@ const tableRows = computed(() => {
         >
           <!-- image + [provider + tags + title] -->
           <div class="flex gap-3">
-            <NuxtLink
-              :to="url"
-              target="_blank"
-              class="shrink-0 self-start overflow-hidden rounded-lg ring-1 ring-black/10"
-            >
-              <FlatImage
-                :image-src="imageSrc"
-                :alt="`Vorschaubild ${title}`"
-                class="h-20 w-20 rounded-lg object-cover"
-                :width="80"
-                :height="80"
-                sizes="80px"
-              />
-            </NuxtLink>
             <div class="min-w-0 flex-1">
               <!-- provider + tags + favorite -->
               <div class="mb-1.5 flex flex-wrap items-center gap-1.5">

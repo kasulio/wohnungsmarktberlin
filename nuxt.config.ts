@@ -67,6 +67,7 @@ export default defineNuxtConfig({
     "@nuxt/image",
     "@nuxtjs/sitemap",
     "nuxt-ipx-cache",
+    "@nuxt/icon",
   ],
   ipxCache: {
     maxAge: 60 * 60 * 24 * 7, // 7 days
