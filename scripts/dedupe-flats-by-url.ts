@@ -1,3 +1,4 @@
+import { dedupeFlatsByUrl } from "../server/lib/dedupe-flats-by-url";
 import { eq, sql } from "drizzle-orm";
 import { db } from "../server/db/client";
 import {
@@ -7,7 +8,7 @@ import {
 
 const dryRun = process.argv.includes("--dry-run");
 
-async function dedupeFlatsByUrl() {
+async function logDryRun() {
   const duplicateUrls = await db
     .select({ url: flatTable.url })
     .from(flatTable)
@@ -15,9 +16,7 @@ async function dedupeFlatsByUrl() {
     .having(sql`count(*) > 1`);
 
   console.log(`Found ${duplicateUrls.length} URLs with duplicate flats`);
-  if (dryRun) {
-    console.log("Dry run — no changes will be written");
-  }
+  console.log("Dry run — no changes will be written");
 
   let removed = 0;
 
@@ -33,63 +32,36 @@ async function dedupeFlatsByUrl() {
     const mergedIgnored = rows.some((row) => row.ignored);
     const wouldSetIgnored = mergedIgnored && !keeper.ignored;
 
-    if (dryRun) {
-      console.log(`\n${url}`);
+    console.log(`\n${url}`);
+    console.log(
+      `  keep: ${keeper.id} (lastSeen=${keeper.lastSeen?.toISOString()}, ignored=${keeper.ignored})`,
+    );
+    for (const loser of losers) {
+      const tags = await db
+        .select()
+        .from(flatToTagTable)
+        .where(eq(flatToTagTable.flatId, loser.id));
       console.log(
-        `  keep: ${keeper.id} (lastSeen=${keeper.lastSeen?.toISOString()}, ignored=${keeper.ignored})`,
+        `  delete: ${loser.id} (lastSeen=${loser.lastSeen?.toISOString()}, ignored=${loser.ignored}, tags=${tags.length})`,
       );
-      for (const loser of losers) {
-        const tags = await db
-          .select()
-          .from(flatToTagTable)
-          .where(eq(flatToTagTable.flatId, loser.id));
-        console.log(
-          `  delete: ${loser.id} (lastSeen=${loser.lastSeen?.toISOString()}, ignored=${loser.ignored}, tags=${tags.length})`,
-        );
-        removed++;
-      }
-      if (wouldSetIgnored) {
-        console.log(`  would set keeper ${keeper.id} ignored=true`);
-      }
-      continue;
+      removed++;
     }
-
-    await db.transaction(async (tx) => {
-      for (const loser of losers) {
-        const tags = await tx
-          .select()
-          .from(flatToTagTable)
-          .where(eq(flatToTagTable.flatId, loser.id));
-
-        for (const { tagId } of tags) {
-          await tx
-            .insert(flatToTagTable)
-            .values({ flatId: keeper.id, tagId })
-            .onConflictDoNothing();
-        }
-
-        await tx
-          .delete(flatToTagTable)
-          .where(eq(flatToTagTable.flatId, loser.id));
-
-        await tx.delete(flatTable).where(eq(flatTable.id, loser.id));
-        removed++;
-      }
-
-      if (wouldSetIgnored) {
-        await tx
-          .update(flatTable)
-          .set({ ignored: true })
-          .where(eq(flatTable.id, keeper.id));
-      }
-    });
+    if (wouldSetIgnored) {
+      console.log(`  would set keeper ${keeper.id} ignored=true`);
+    }
   }
 
-  console.log(
-    dryRun
-      ? `\nWould remove ${removed} duplicate flat rows`
-      : `\nRemoved ${removed} duplicate flat rows`,
-  );
+  console.log(`\nWould remove ${removed} duplicate flat rows`);
 }
 
-dedupeFlatsByUrl().catch(console.error);
+async function main() {
+  if (dryRun) {
+    await logDryRun();
+    return;
+  }
+
+  const removed = await dedupeFlatsByUrl();
+  console.log(`Removed ${removed} duplicate flat rows`);
+}
+
+main().catch(console.error);
