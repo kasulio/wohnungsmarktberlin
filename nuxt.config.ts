@@ -95,4 +95,9 @@ export default defineNuxtConfig({
     },
   },
   css: ["~/assets/global.css"],
+  typescript: {
+    tsConfig: {
+      exclude: ["../scripts/**", "../**/*.test.ts"],
+    },
+  },
 });
