@@ -10,6 +10,11 @@ import { channels } from "~/server/lib/notifiers/registry";
 import { staticSubscribers } from "~/server/lib/notifiers/subscribers";
 import { loadSampleNotifiableFlat } from "~/server/lib/notifiers/flat-query";
 import { mintLinkToken } from "~/server/lib/notifiers/telegram/link-token";
+import { takeToken } from "~/server/lib/rate-limit";
+
+/** Public mint spam guard: 5 links per IP per 15 minutes. */
+const TELEGRAM_LINK_LIMIT = 5;
+const TELEGRAM_LINK_WINDOW_MS = 15 * 60_000;
 
 export const notificationRouter = router({
   /**
@@ -18,7 +23,20 @@ export const notificationRouter = router({
    */
   createTelegramLink: publicProcedure
     .input(flatFilterSchema)
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      if (
+        !takeToken(
+          `tg-link:${ctx.ip}`,
+          TELEGRAM_LINK_LIMIT,
+          TELEGRAM_LINK_WINDOW_MS,
+        )
+      ) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message:
+            "Zu viele Anfragen. Bitte warte ein paar Minuten und versuche es erneut.",
+        });
+      }
       if (!env.TELEGRAM_BOT_USERNAME) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",

@@ -233,9 +233,18 @@ const notifyOnTelegram = async () => {
     } else {
       window.location.assign(url);
     }
-  } catch {
+  } catch (e) {
     popup?.close();
-    telegramError.value = "Konnte den Telegram-Link nicht erstellen.";
+    const code =
+      e && typeof e === "object" && "data" in e
+        ? (e as { data?: { code?: string } }).data?.code
+        : undefined;
+    // Only surface server messages we intentionally wrote for the user.
+    telegramError.value =
+      (code === "TOO_MANY_REQUESTS" || code === "PRECONDITION_FAILED") &&
+      e instanceof Error
+        ? e.message
+        : "Konnte den Telegram-Link nicht erstellen.";
   } finally {
     telegramLoading.value = false;
   }
