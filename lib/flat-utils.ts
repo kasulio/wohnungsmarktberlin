@@ -1,37 +1,8 @@
 import sharp from "sharp";
 import { propertyManagements } from "~/data/propertyManagements";
-import { deuwo } from "~/data/propertyManagements/deuwo";
-import { vonovia } from "~/data/propertyManagements/vonovia";
+import { type FlatForIgnoreCheck } from "~/data/schemas";
 
-/** Minimal fields for ignore rules (scraped flat + `propertyManagementId`, or DB row). */
-export type FlatForIgnoreCheck = {
-  title: string;
-  propertyManagementId?: string | null;
-  coldRentPrice?: number | null;
-  warmRentPrice?: number | null;
-  roomCount?: number | null;
-};
-
-function isDeuvonoProvider(
-  propertyManagementId: string | null | undefined,
-): boolean {
-  return (
-    propertyManagementId === deuwo.slug || propertyManagementId === vonovia.slug
-  );
-}
-
-function isDeuvonoCheapListing(flat: FlatForIgnoreCheck): boolean {
-  if (!isDeuvonoProvider(flat.propertyManagementId)) return false;
-  const rent = flat.coldRentPrice ?? flat.warmRentPrice ?? null;
-  return rent !== null && rent <= 100;
-}
-
-/** deuwo/vonovia listings with no rooms are almost always non-residential. */
-export function isDeuvonoZeroRoom(flat: FlatForIgnoreCheck): boolean {
-  if (!isDeuvonoProvider(flat.propertyManagementId)) return false;
-  return flat.roomCount === 0 || flat.roomCount == null;
-}
-
+export type { FlatForIgnoreCheck };
 const COMMERCIAL_TITLE_KEYWORDS = [
   "gewerbe",
   "gewerbefläche",
@@ -133,12 +104,19 @@ export function isParkingByTitle(title: string): boolean {
 }
 
 /**
- * Returns true if the listing should be ignored (not shown): non-residential
- * (commercial, parking, deuwo/vonovia zero-room), or deuwo/vonovia ≤100€ rent.
+ * Returns true if the listing should be ignored (not shown): provider-specific
+ * rules, then non-residential commercial/parking title keywords.
  */
 export function shouldIgnoreListing(flat: FlatForIgnoreCheck): boolean {
-  if (isDeuvonoZeroRoom(flat)) return true;
-  if (isDeuvonoCheapListing(flat)) return true;
+  const { propertyManagementId } = flat;
+  if (
+    propertyManagementId != null &&
+    propertyManagementId in propertyManagements
+  ) {
+    const pm = propertyManagements[propertyManagementId];
+    if ("shouldIgnoreListing" in pm && pm.shouldIgnoreListing?.(flat))
+      return true;
+  }
   if (isParkingByTitle(flat.title)) return true;
   if (isCommercialByTitle(flat.title)) return true;
   return false;

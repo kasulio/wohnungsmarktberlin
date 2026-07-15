@@ -2,7 +2,16 @@ import { parse } from "node-html-parser";
 import { z } from "zod";
 import { fetchJson } from "~/lib/http";
 import { parseNumberString } from "~/lib/parser";
-import type { ScrapedFlat } from "../../schemas";
+import type { FlatForProviderIgnoreCheck, ScrapedFlat } from "../../schemas";
+
+/** Zero-room and ≤100€ listings are almost always non-residential on Deuvono platforms. */
+export function shouldIgnoreDeuvonoListing(
+  flat: FlatForProviderIgnoreCheck,
+): boolean {
+  if (flat.roomCount === 0 || flat.roomCount == null) return true;
+  const rent = flat.coldRentPrice ?? flat.warmRentPrice ?? null;
+  return rent !== null && rent <= 100;
+}
 
 export const extractDeuvonoUrls = async (provider: "vonovia" | "deuwo") => {
   const apiUrl =
