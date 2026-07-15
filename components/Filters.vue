@@ -17,14 +17,23 @@ const props = withDefaults(
   defineProps<{
     resultCount?: number | null;
     totalCount?: number | null;
+    /** When false, count stays off the bar (page title owns it). Sheet footer still uses it. */
+    showBarCount?: boolean;
+    /** Mobile/tablet sort chip in the bar (desktop table owns sort). */
+    showSort?: boolean;
   }>(),
-  { resultCount: null, totalCount: null },
+  { resultCount: null, totalCount: null, showBarCount: true, showSort: false },
 );
 
 const { updateQueryState, urlState } = useFlatFilterUrlState();
 const { $client } = useNuxtApp();
 const config = useRuntimeConfig();
 const telegramEnabled = computed(() => !!config.public.telegramBotUsername);
+
+const districtCountsQuery = await $client.flat.getDistrictCounts.useQuery();
+const districtCounts = computed(
+  () => districtCountsQuery.data.value ?? ({} as Record<string, number>),
+);
 
 type Segment = "price" | "rooms" | "place" | "more";
 
@@ -77,7 +86,7 @@ const filterMetadata = {
 } as const;
 
 const pricePresets = [
-  { label: "bis 900", max: 900 },
+  { label: "bis 800", max: 800 },
   { label: "bis 1200", max: 1200 },
   { label: "bis 1500", max: 1500 },
 ] as const;
@@ -136,8 +145,35 @@ const getFilterMetadata = (key: string) => {
   return null;
 };
 
-const hasRange = (min: number | null, max: number | null) =>
-  typeof min === "number" || typeof max === "number";
+/** Meta min/max alone are no-ops (e.g. roomsMax=10) — treat as unset. */
+const effectiveRange = (
+  kind: keyof typeof filterMetadata,
+  min: number | null,
+  max: number | null,
+) => {
+  const meta = filterMetadata[kind];
+  return {
+    min: min != null && min > meta.min ? min : null,
+    max: max != null && max < meta.max ? max : null,
+  };
+};
+
+const hasMeaningfulRange = (
+  kind: keyof typeof filterMetadata,
+  min: number | null,
+  max: number | null,
+) => {
+  const e = effectiveRange(kind, min, max);
+  return e.min != null || e.max != null;
+};
+
+const isBoundaryValue = (key: string, value: number) => {
+  const meta = getFilterMetadata(key);
+  if (!meta) return false;
+  if (key.endsWith("Min")) return value <= meta.min;
+  if (key.endsWith("Max")) return value >= meta.max;
+  return false;
+};
 
 const clampPreference = (key: string, value: number): number => {
   const meta = getFilterMetadata(key);
@@ -150,7 +186,8 @@ const parsePreferenceNumber = (
 ): number | null => {
   const n = typeof value === "number" ? value : Number(value);
   if (value == null || value === "" || !Number.isFinite(n)) return null;
-  return clampPreference(key, n);
+  const clamped = clampPreference(key, n);
+  return isBoundaryValue(key, clamped) ? null : clamped;
 };
 
 const districtFilterCount = computed(() => {
@@ -161,7 +198,8 @@ const districtFilterCount = computed(() => {
 
 const moreActiveCount = computed(() => {
   let n = 0;
-  if (hasRange(preferences.areaMin, preferences.areaMax)) n += 1;
+  if (hasMeaningfulRange("area", preferences.areaMin, preferences.areaMax))
+    n += 1;
   if (onlyNew.value) n += 1;
   n += preferences.tags.length;
   n += preferences.propertyManagements.length;
@@ -170,8 +208,10 @@ const moreActiveCount = computed(() => {
 
 const activePrefsCount = computed(() => {
   let n = 0;
-  if (hasRange(preferences.priceMin, preferences.priceMax)) n += 1;
-  if (hasRange(preferences.roomsMin, preferences.roomsMax)) n += 1;
+  if (hasMeaningfulRange("price", preferences.priceMin, preferences.priceMax))
+    n += 1;
+  if (hasMeaningfulRange("rooms", preferences.roomsMin, preferences.roomsMax))
+    n += 1;
   n += districtFilterCount.value;
   n += moreActiveCount.value;
   return n;
@@ -185,13 +225,15 @@ const formatRange = (min: number | null, max: number | null, unit: string) => {
 };
 
 const priceLabel = computed(() => {
-  if (!hasRange(preferences.priceMin, preferences.priceMax)) return "Warmmiete";
-  return formatRange(preferences.priceMin, preferences.priceMax, "€");
+  const e = effectiveRange("price", preferences.priceMin, preferences.priceMax);
+  if (e.min == null && e.max == null) return "Warmmiete";
+  return formatRange(e.min, e.max, "€");
 });
 
 const roomsLabel = computed(() => {
-  if (!hasRange(preferences.roomsMin, preferences.roomsMax)) return "Zimmer";
-  return formatRange(preferences.roomsMin, preferences.roomsMax, "Zi.");
+  const e = effectiveRange("rooms", preferences.roomsMin, preferences.roomsMax);
+  if (e.min == null && e.max == null) return "Zimmer";
+  return formatRange(e.min, e.max, "Zi.");
 });
 
 const placeLabel = computed(() => {
@@ -203,16 +245,6 @@ const placeLabel = computed(() => {
     return (
       berlinDistricts[id as keyof typeof berlinDistricts]?.shortName ?? "Ort"
     );
-  }
-  if (n === 2) {
-    return preferences.districts
-      .map((id) => {
-        if (id === UNKNOWN_DISTRICT_ID) return unknownDistrict.shortName;
-        return (
-          berlinDistricts[id as keyof typeof berlinDistricts]?.shortName ?? id
-        );
-      })
-      .join(" / ");
   }
   return `${n} Orte`;
 });
@@ -424,7 +456,22 @@ watch(openSegment, (open) => {
   document.body.style.overflow = open ? "hidden" : "";
 });
 
-onMounted(() => window.addEventListener("keydown", onWindowKeydown));
+const stripNoOpRangeBoundsFromUrl = () => {
+  let dirty = false;
+  for (const key of NUMBER_KEYS) {
+    const raw = preferences[key];
+    if (raw != null && isBoundaryValue(key, raw)) {
+      preferences[key] = null;
+      dirty = true;
+    }
+  }
+  if (dirty) commitFilters();
+};
+
+onMounted(() => {
+  window.addEventListener("keydown", onWindowKeydown);
+  stripNoOpRangeBoundsFromUrl();
+});
 onUnmounted(() => {
   window.removeEventListener("keydown", onWindowKeydown);
   if (numberCommitTimer) clearTimeout(numberCommitTimer);
@@ -433,138 +480,257 @@ onUnmounted(() => {
 
 const segmentBtn = (active: boolean, filled: boolean) =>
   [
-    "rounded-md px-2.5 py-1.5 text-s font-medium transition-colors",
+    "inline-flex shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2.5 py-1.5 text-s transition-colors hover:border-main/15 hover:bg-main/5 hover:text-main",
     active
-      ? "bg-secondary text-primary"
+      ? "font-semibold text-main"
       : filled
-        ? "text-main hover:bg-white"
-        : "text-main/55 hover:bg-white hover:text-main",
+        ? "font-semibold text-main"
+        : "font-medium text-main/55",
   ].join(" ");
 
-const inputClass =
-  "filter-num w-full min-w-0 rounded-md border border-main/20 bg-white py-2 pl-2.5 pr-7 text-center text-s tabular-nums text-main placeholder:text-main/40 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30";
+const segmentChevronClass = (open: boolean) =>
+  ["size-3.5 opacity-60 transition-transform", open ? "rotate-180" : ""].join(
+    " ",
+  );
 
-const presetClass = (active: boolean) =>
+const fieldClass =
+  "w-full min-w-0 rounded-md border border-main/25 bg-transparent py-2 text-s text-main placeholder:text-main/45 focus:border-main/50 focus:outline-none focus:ring-2 focus:ring-main/15";
+
+const inputClass = `filter-num ${fieldClass} pl-2.5 pr-7 text-center tabular-nums placeholder:text-main/40`;
+
+/** Same language as Apartment/Provider + Tag pills. */
+const pillClass = (active: boolean) =>
   [
-    "rounded-md border px-2.5 py-1 text-xs font-medium",
+    "py-0.25 inline-flex shrink-0 items-center rounded-full border px-2.5 text-xs font-medium transition-colors",
     active
-      ? "border-accent bg-secondary text-primary"
-      : "border-main/20 bg-white text-main/65 hover:border-accent hover:text-accent",
-  ].join(" ");
-
-const chipClass = (selected: boolean) =>
-  [
-    "rounded-full border px-3 py-1.5 text-xs font-medium",
-    selected
-      ? "border-accent bg-accent text-white"
-      : "border-main/20 bg-white text-main hover:border-accent hover:text-accent",
+      ? "border-main/40 bg-main/10 text-main"
+      : "border-main/20 bg-transparent text-main/60 hover:border-main/35 hover:text-main",
   ].join(" ");
 
 const labelClass = "mb-1.5 block text-xs font-medium text-main";
 const metaClass = "text-xs text-main/50";
+
+const sortSelectOptions = [
+  { value: "main", label: "Neueste" },
+  { value: "coldRentPrice", label: "Kaltmiete" },
+  { value: "warmRentPrice", label: "Warmmiete" },
+  { value: "rentPricePerSquareMeter", label: "€/m²" },
+  { value: "roomCount", label: "Zimmer" },
+  { value: "usableArea", label: "Fläche" },
+] as const;
+
+type SortValue = (typeof sortSelectOptions)[number]["value"];
+
+const currentSortBy = computed(
+  (): SortValue => (urlState.value.orderBy?.[0] as SortValue) ?? "main",
+);
+const currentSortOrder = computed(
+  () =>
+    urlState.value.order?.[0] ??
+    (currentSortBy.value === "main" ? "desc" : "asc"),
+);
+const sortFilled = computed(() => currentSortBy.value !== "main");
+const currentSortLabel = computed(
+  () =>
+    sortSelectOptions.find((o) => o.value === currentSortBy.value)?.label ??
+    "Neueste",
+);
+
+const setSortBy = (value: string) => {
+  const orderBy = value as SortValue;
+  updateQueryState({
+    orderBy: [orderBy],
+    order: [orderBy === "main" ? "desc" : "asc"],
+  });
+};
+
+const toggleSortOrder = () => {
+  updateQueryState({
+    orderBy: [currentSortBy.value],
+    order: [currentSortOrder.value === "asc" ? "desc" : "asc"],
+  });
+};
 </script>
 
 <template>
-  <div class="filters-root mb-4">
-    <div class="sticky top-0 z-30 rounded-xl bg-background px-3 py-2.5 sm:px-4">
-      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <div class="flex items-center justify-between gap-2 sm:contents">
-          <span class="shrink-0 text-xs font-medium text-main/50">Filter</span>
-          <div class="flex items-center gap-1 sm:order-last sm:ml-auto">
-            <p
-              v-if="resultLabel"
-              class="mr-1 hidden text-xs tabular-nums text-main/55 sm:block"
-            >
-              {{ resultLabel }} Wohnungen
-            </p>
+  <div class="filters-root mb-8">
+    <div class="sticky top-0 z-30 rounded-xl bg-background px-2.5 py-2.5">
+      <div class="flex items-start gap-1">
+        <div class="min-w-0 flex-1">
+          <div class="flex flex-wrap items-center gap-1">
+            <span class="sr-only">Filter</span>
             <button
-              v-if="activePrefsCount"
               type="button"
-              class="inline-flex size-8 items-center justify-center rounded-md text-main/55 hover:bg-white hover:text-accent"
-              aria-label="Filter zurücksetzen"
-              title="Filter zurücksetzen"
-              @click="resetFilters"
-            >
-              <Icon
-                name="lucide:rotate-ccw"
-                class="size-3.5"
-              />
-            </button>
-            <button
-              v-if="telegramEnabled && activePrefsCount"
-              type="button"
-              class="inline-flex size-8 items-center justify-center rounded-md text-accent hover:bg-white disabled:opacity-60"
-              :disabled="telegramLoading"
-              :aria-label="
-                telegramLoading
-                  ? 'Link wird erstellt'
-                  : 'Per Telegram benachrichtigen'
+              :class="
+                segmentBtn(
+                  openSegment === 'price',
+                  hasMeaningfulRange(
+                    'price',
+                    preferences.priceMin,
+                    preferences.priceMax,
+                  ),
+                )
               "
-              :title="'Per Telegram benachrichtigen'"
-              @click="notifyOnTelegram"
+              :aria-expanded="openSegment === 'price'"
+              @click="openPanel('price')"
             >
+              {{ priceLabel }}
               <Icon
-                name="lucide:bell"
-                class="size-4"
+                name="lucide:chevron-down"
+                :class="segmentChevronClass(openSegment === 'price')"
               />
             </button>
+            <button
+              type="button"
+              :class="
+                segmentBtn(
+                  openSegment === 'rooms',
+                  hasMeaningfulRange(
+                    'rooms',
+                    preferences.roomsMin,
+                    preferences.roomsMax,
+                  ),
+                )
+              "
+              :aria-expanded="openSegment === 'rooms'"
+              @click="openPanel('rooms')"
+            >
+              {{ roomsLabel }}
+              <Icon
+                name="lucide:chevron-down"
+                :class="segmentChevronClass(openSegment === 'rooms')"
+              />
+            </button>
+            <button
+              type="button"
+              :class="
+                segmentBtn(openSegment === 'place', districtFilterCount > 0)
+              "
+              :aria-expanded="openSegment === 'place'"
+              @click="openPanel('place')"
+            >
+              {{ placeLabel }}
+              <Icon
+                name="lucide:chevron-down"
+                :class="segmentChevronClass(openSegment === 'place')"
+              />
+            </button>
+            <button
+              type="button"
+              :class="segmentBtn(openSegment === 'more', moreActiveCount > 0)"
+              :aria-expanded="openSegment === 'more'"
+              @click="openPanel('more')"
+            >
+              {{ moreLabel }}
+              <Icon
+                name="lucide:chevron-down"
+                :class="segmentChevronClass(openSegment === 'more')"
+              />
+            </button>
+
+            <div
+              v-if="showSort"
+              class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2.5 py-1.5 text-s transition-colors hover:border-main/15 hover:bg-main/5 hover:text-main lg:hidden"
+              :class="
+                sortFilled
+                  ? 'font-semibold text-main'
+                  : 'font-medium text-main/55'
+              "
+            >
+              <label
+                class="sr-only"
+                for="filter-bar-sort"
+                >Sortierung</label
+              >
+              <span class="relative inline-grid">
+                <span
+                  class="invisible col-start-1 row-start-1 whitespace-nowrap"
+                  aria-hidden="true"
+                  >{{ currentSortLabel }}</span
+                >
+                <select
+                  id="filter-bar-sort"
+                  class="col-start-1 row-start-1 w-full cursor-pointer appearance-none bg-transparent text-s focus:outline-none"
+                  :class="sortFilled ? 'font-semibold' : 'font-medium'"
+                  :value="currentSortBy"
+                  @change="
+                    setSortBy(($event.target as HTMLSelectElement).value)
+                  "
+                >
+                  <option
+                    v-for="opt in sortSelectOptions"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
+                </select>
+              </span>
+              <button
+                type="button"
+                class="inline-flex items-center text-inherit opacity-60 transition-opacity hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                :aria-label="
+                  currentSortOrder === 'asc'
+                    ? 'Aufsteigend, umkehren'
+                    : 'Absteigend, umkehren'
+                "
+                :title="
+                  currentSortOrder === 'asc' ? 'Aufsteigend' : 'Absteigend'
+                "
+                @click="toggleSortOrder"
+              >
+                <Icon
+                  :name="
+                    currentSortOrder === 'asc'
+                      ? 'lucide:arrow-up-narrow-wide'
+                      : 'lucide:arrow-down-wide-narrow'
+                  "
+                  class="size-3.5"
+                />
+              </button>
+            </div>
           </div>
         </div>
 
         <div
-          class="-mx-1 flex min-w-0 items-center gap-1 overflow-x-auto px-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+          v-if="showBarCount || activePrefsCount"
+          class="flex shrink-0 items-start gap-0.5"
         >
-          <button
-            type="button"
-            class="shrink-0"
-            :class="
-              segmentBtn(
-                openSegment === 'price',
-                hasRange(preferences.priceMin, preferences.priceMax),
-              )
-            "
-            :aria-expanded="openSegment === 'price'"
-            @click="openPanel('price')"
+          <p
+            v-if="showBarCount && resultLabel"
+            class="mr-1 hidden text-xs tabular-nums text-main/55 sm:block"
           >
-            {{ priceLabel }}
-          </button>
+            {{ resultLabel }} Wohnungen
+          </p>
           <button
+            v-if="activePrefsCount"
             type="button"
-            class="shrink-0"
-            :class="
-              segmentBtn(
-                openSegment === 'rooms',
-                hasRange(preferences.roomsMin, preferences.roomsMax),
-              )
-            "
-            :aria-expanded="openSegment === 'rooms'"
-            @click="openPanel('rooms')"
+            class="inline-flex size-8 items-center justify-center rounded-md text-main/55 hover:bg-main/5 hover:text-main"
+            aria-label="Filter zurücksetzen"
+            title="Filter zurücksetzen"
+            @click="resetFilters"
           >
-            {{ roomsLabel }}
-          </button>
-          <button
-            type="button"
-            class="shrink-0"
-            :class="
-              segmentBtn(openSegment === 'place', districtFilterCount > 0)
-            "
-            :aria-expanded="openSegment === 'place'"
-            @click="openPanel('place')"
-          >
-            {{ placeLabel }}
-          </button>
-          <button
-            type="button"
-            class="shrink-0"
-            :class="segmentBtn(openSegment === 'more', moreActiveCount > 0)"
-            :aria-expanded="openSegment === 'more'"
-            @click="openPanel('more')"
-          >
-            {{ moreLabel }}
             <Icon
-              name="lucide:chevron-down"
-              class="ml-0.5 inline size-3.5 opacity-60"
-              :class="{ 'rotate-180': openSegment === 'more' }"
+              name="lucide:rotate-ccw"
+              class="size-3.5"
+            />
+          </button>
+          <button
+            v-if="telegramEnabled && activePrefsCount"
+            type="button"
+            class="inline-flex size-8 items-center justify-center rounded-md text-main/55 hover:bg-main/5 hover:text-accent disabled:opacity-60"
+            :disabled="telegramLoading"
+            :aria-label="
+              telegramLoading
+                ? 'Link wird erstellt'
+                : 'Per Telegram benachrichtigen'
+            "
+            :title="'Per Telegram benachrichtigen'"
+            @click="notifyOnTelegram"
+          >
+            <Icon
+              name="lucide:bell"
+              class="size-4"
             />
           </button>
         </div>
@@ -581,33 +747,33 @@ const metaClass = "text-xs text-main/50";
     <Teleport to="body">
       <div
         v-if="openSegment"
-        class="fixed inset-0 z-50 flex items-end justify-center bg-main/40 sm:items-start sm:justify-center sm:px-4 sm:pt-28"
+        class="fixed inset-0 z-50 flex items-end justify-center bg-main/25 sm:items-start sm:justify-center sm:px-4 sm:pt-28"
         @click.self="closePanel"
       >
         <div
-          class="flex max-h-[85vh] w-full flex-col rounded-t-xl bg-white shadow-xl sm:max-h-[min(70vh,32rem)] sm:w-full sm:max-w-md sm:rounded-xl"
+          class="flex max-h-[85vh] w-full flex-col rounded-t-xl bg-white sm:max-h-[min(70vh,32rem)] sm:w-full sm:max-w-md sm:rounded-xl"
           role="dialog"
           aria-modal="true"
           :aria-label="panelTitle"
         >
           <div
-            class="flex items-center justify-between gap-2 border-b border-main/10 px-4 py-3"
+            class="flex items-center justify-between gap-2 border-b border-main/10 px-4 py-2.5"
           >
             <p class="text-s font-medium text-main">{{ panelTitle }}</p>
             <button
               type="button"
-              class="inline-flex size-9 shrink-0 items-center justify-center rounded-full text-main/60 hover:bg-main/5 hover:text-main"
+              class="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-main/55 hover:bg-main/5 hover:text-main"
               aria-label="Schließen"
               @click="closePanel"
             >
               <Icon
                 name="lucide:x"
-                class="size-5"
+                class="size-3.5"
               />
             </button>
           </div>
 
-          <div class="min-h-0 flex-1 overflow-y-auto p-4">
+          <div class="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
             <!-- Price -->
             <div
               v-if="openSegment === 'price'"
@@ -666,7 +832,7 @@ const metaClass = "text-xs text-main/50";
                   :key="p.label"
                   type="button"
                   :class="
-                    presetClass(
+                    pillClass(
                       preferences.priceMin == null &&
                         preferences.priceMax === p.max,
                     )
@@ -736,7 +902,7 @@ const metaClass = "text-xs text-main/50";
                   :key="p.label"
                   type="button"
                   :class="
-                    presetClass(
+                    pillClass(
                       preferences.roomsMin === p.min &&
                         preferences.roomsMax === p.max,
                     )
@@ -793,7 +959,7 @@ const metaClass = "text-xs text-main/50";
                 <input
                   v-model="districtSearch"
                   type="search"
-                  class="w-full rounded-md border border-main/20 bg-white py-2 pl-9 pr-3 text-s text-main placeholder:text-main/45 focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30"
+                  :class="[fieldClass, 'pl-9 pr-3']"
                   placeholder="Bezirk suchen…"
                   aria-label="Bezirk suchen"
                 />
@@ -803,16 +969,24 @@ const metaClass = "text-xs text-main/50";
                   v-for="{ id, title } in filteredDistrictEntries"
                   :key="id"
                   type="button"
-                  class="flex items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left text-s hover:bg-background"
+                  class="grid grid-cols-[minmax(0,1fr)_2.75rem_1rem] items-center gap-x-2 rounded-md px-2.5 py-2 text-left text-s hover:bg-main/5"
                   :aria-pressed="preferences.districts.includes(id)"
                   @click="toggleChip(preferences.districts, id)"
                 >
-                  <span class="text-main">{{ title }}</span>
-                  <Icon
-                    v-if="preferences.districts.includes(id)"
-                    name="lucide:check"
-                    class="size-4 shrink-0 text-accent"
-                  />
+                  <span class="truncate text-main">{{ title }}</span>
+                  <span
+                    :class="[metaClass, 'text-right tabular-nums']"
+                    :aria-label="`${districtCounts[id] ?? 0} Wohnungen`"
+                  >
+                    {{ districtCounts[id] ?? 0 }}
+                  </span>
+                  <span class="flex size-4 items-center justify-center">
+                    <Icon
+                      v-if="preferences.districts.includes(id)"
+                      name="lucide:check"
+                      class="size-4 text-accent"
+                    />
+                  </span>
                 </button>
                 <p
                   v-if="!filteredDistrictEntries.length"
@@ -883,7 +1057,7 @@ const metaClass = "text-xs text-main/50";
                     :key="p.label"
                     type="button"
                     :class="
-                      presetClass(
+                      pillClass(
                         preferences.areaMin === p.min &&
                           preferences.areaMax == null,
                       )
@@ -900,7 +1074,7 @@ const metaClass = "text-xs text-main/50";
                 <div class="flex flex-wrap gap-1.5">
                   <button
                     type="button"
-                    :class="chipClass(onlyNew)"
+                    :class="pillClass(onlyNew)"
                     :aria-pressed="onlyNew"
                     @click="
                       onlyNew = !onlyNew;
@@ -913,7 +1087,7 @@ const metaClass = "text-xs text-main/50";
                     v-for="[id, title] in titleTagEntries"
                     :key="id"
                     type="button"
-                    :class="chipClass(preferences.tags.includes(id))"
+                    :class="pillClass(preferences.tags.includes(id))"
                     :aria-pressed="preferences.tags.includes(id)"
                     @click="toggleChip(preferences.tags, id)"
                   >
@@ -930,7 +1104,7 @@ const metaClass = "text-xs text-main/50";
                     :key="id"
                     type="button"
                     :class="
-                      chipClass(preferences.propertyManagements.includes(id))
+                      pillClass(preferences.propertyManagements.includes(id))
                     "
                     :aria-pressed="preferences.propertyManagements.includes(id)"
                     @click="toggleChip(preferences.propertyManagements, id)"
@@ -939,30 +1113,6 @@ const metaClass = "text-xs text-main/50";
                   </button>
                 </div>
               </div>
-
-              <button
-                v-if="telegramEnabled"
-                type="button"
-                class="inline-flex min-h-10 w-full items-center justify-center gap-1.5 rounded-md border border-accent/30 bg-white px-3 py-2 text-s font-medium text-accent hover:bg-secondary disabled:opacity-60"
-                :disabled="telegramLoading"
-                @click="notifyOnTelegram"
-              >
-                <Icon
-                  name="lucide:bell"
-                  class="size-4 shrink-0"
-                />
-                {{
-                  telegramLoading
-                    ? "Link wird erstellt…"
-                    : "Per Telegram benachrichtigen"
-                }}
-              </button>
-              <p
-                v-if="telegramError"
-                class="text-xs text-red-600"
-              >
-                {{ telegramError }}
-              </p>
             </div>
           </div>
 

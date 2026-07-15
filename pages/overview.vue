@@ -60,41 +60,6 @@ onUnmounted(() => unregisterLoadingRef(flatsQuery.status));
 const sortOptions = flatFilterUrlSchema.shape.orderBy.unwrap().unwrap()
   .element.options;
 
-const sortSelectOptions = [
-  { value: "main", label: "Neueste" },
-  { value: "coldRentPrice", label: "Kaltmiete" },
-  { value: "warmRentPrice", label: "Warmmiete" },
-  { value: "rentPricePerSquareMeter", label: "€/m²" },
-  { value: "roomCount", label: "Zimmer" },
-  { value: "usableArea", label: "Fläche" },
-] as const;
-
-type SortValue = (typeof sortSelectOptions)[number]["value"];
-
-const currentSortBy = computed(
-  (): SortValue => (urlState.value.orderBy?.[0] as SortValue) ?? "main",
-);
-const currentSortOrder = computed(
-  () =>
-    urlState.value.order?.[0] ??
-    (currentSortBy.value === "main" ? "desc" : "asc"),
-);
-
-const setSortBy = (value: string) => {
-  const orderBy = value as SortValue;
-  updateQueryState({
-    orderBy: [orderBy],
-    order: [orderBy === "main" ? "desc" : "asc"],
-  });
-};
-
-const toggleSortOrder = () => {
-  updateQueryState({
-    orderBy: [currentSortBy.value],
-    order: [currentSortOrder.value === "asc" ? "desc" : "asc"],
-  });
-};
-
 const countText = computed(() => {
   const total = flatsQuery.data?.value?.totalElementsCount ?? 0;
   const filtered = flatsQuery.data?.value?.filteredElementsCount ?? 0;
@@ -102,9 +67,9 @@ const countText = computed(() => {
     return "Keine Wohnungen";
   }
   if (filtered === total) {
-    return `Alle Wohnungen (${total})`;
+    return `${total} Wohnungen`;
   }
-  return `Wohnungen (${filtered} von ${total})`;
+  return `${filtered} von ${total} Wohnungen`;
 });
 
 const tableHeaders = computed(
@@ -165,57 +130,16 @@ const sortOrders = computed(() => {
 </script>
 <template>
   <div>
-    <div class="mb-4 flex items-center justify-between gap-3 md:mb-6">
-      <h1 class="min-w-0 flex-1 text-xl leading-tight text-main">
+    <div class="mb-4 md:mb-6">
+      <h1 class="text-xl leading-tight text-main">
         {{ countText }}
       </h1>
-      <div
-        class="flex h-8 shrink-0 items-center overflow-hidden rounded-md bg-background lg:hidden"
-      >
-        <label
-          class="sr-only"
-          for="overview-sort"
-          >Sortierung</label
-        >
-        <select
-          id="overview-sort"
-          class="h-full appearance-none bg-transparent py-0 pl-2.5 pr-1 text-xs font-medium text-main focus:outline-none"
-          :value="currentSortBy"
-          @change="setSortBy(($event.target as HTMLSelectElement).value)"
-        >
-          <option
-            v-for="opt in sortSelectOptions"
-            :key="opt.value"
-            :value="opt.value"
-          >
-            {{ opt.label }}
-          </option>
-        </select>
-        <button
-          type="button"
-          class="flex h-full items-center border-l border-main/10 px-2 text-main/70 transition-colors hover:bg-white hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-          :aria-label="
-            currentSortOrder === 'asc'
-              ? 'Aufsteigend, umkehren'
-              : 'Absteigend, umkehren'
-          "
-          :title="currentSortOrder === 'asc' ? 'Aufsteigend' : 'Absteigend'"
-          @click="toggleSortOrder"
-        >
-          <Icon
-            :name="
-              currentSortOrder === 'asc'
-                ? 'lucide:arrow-up-narrow-wide'
-                : 'lucide:arrow-down-wide-narrow'
-            "
-            class="size-3.5"
-          />
-        </button>
-      </div>
     </div>
     <Filters
       :result-count="flatsQuery.data?.value?.filteredElementsCount ?? null"
       :total-count="flatsQuery.data?.value?.totalElementsCount ?? null"
+      :show-bar-count="false"
+      show-sort
     />
     <div v-if="!flats?.data?.length">
       <h2 class="mt-4 text-xl">
@@ -326,7 +250,7 @@ const sortOrders = computed(() => {
           />
         </div>
       </div>
-      <div class="mt-8 w-full rounded-xl bg-background p-4">
+      <div class="mt-8 w-full">
         <Pagination
           :total-elements-count="flats?.totalElementsCount ?? 0"
           :filtered-elements-count="flats?.filteredElementsCount ?? 0"

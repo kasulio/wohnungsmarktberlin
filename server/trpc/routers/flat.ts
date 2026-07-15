@@ -3,6 +3,11 @@ import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
 import { db } from "~/server/db/client";
 import { address, flat } from "~/server/db/schema";
+import {
+  UNKNOWN_DISTRICT_ID,
+  berlinDistricts,
+  zipCodeToDistrict,
+} from "~/data/districts";
 import { getDisplayTags } from "~/data/tags";
 import { flatFilterUrlSchema } from "~/composables/useUrlState";
 import {
@@ -171,5 +176,29 @@ export const flatRouter = router({
     ).map((x) => x.id);
 
     return await hashString(flatIds.join(""));
+  }),
+  /** Publishable flat counts per Bezirk (incl. Unbekannt). */
+  getDistrictCounts: publicProcedure.query(async () => {
+    const rows = await db
+      .select({
+        postalCode: address.postalCode,
+        count: count(),
+      })
+      .from(flat)
+      .innerJoin(address, eq(flat.addressId, address.id))
+      .where(publishableFlatFilter())
+      .groupBy(address.postalCode);
+
+    const counts: Record<string, number> = Object.fromEntries([
+      ...Object.keys(berlinDistricts).map((id) => [id, 0] as const),
+      [UNKNOWN_DISTRICT_ID, 0] as const,
+    ]);
+
+    for (const row of rows) {
+      const id = zipCodeToDistrict[row.postalCode]?.slug ?? UNKNOWN_DISTRICT_ID;
+      counts[id] = (counts[id] ?? 0) + row.count;
+    }
+
+    return counts;
   }),
 });
