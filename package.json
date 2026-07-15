@@ -14,6 +14,7 @@
     "db:push": "bun --bun drizzle-kit push",
     "db:studio": "bun --bun drizzle-kit studio",
     "seed:admin": "bun --bun scripts/seed-admin-auth.ts",
+    "scrape:canary": "bun --bun scripts/scraper-canary.ts",
     "typecheck": "bun --bun tsgo --noEmit",
     "test": "bun test",
     "postinstall": "bun --bun nuxt prepare"
