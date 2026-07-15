@@ -2,6 +2,8 @@
 
 Nuxt 4 app with TypeScript, SQLite/Drizzle, tRPC, and Bun runtime.
 
+**Full codebase overview for agents:** [docs/AGENT-OVERVIEW.md](docs/AGENT-OVERVIEW.md)
+
 ## Commands
 
 ```bash
