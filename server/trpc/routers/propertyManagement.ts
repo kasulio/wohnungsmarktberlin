@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { and, asc, count, desc, eq, inArray, min, sql } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
+import { type PropertyManagementId } from "~/data/propertyManagements/configs";
 import { env } from "~/env";
 import { db } from "~/server/db/client";
 import {
@@ -27,13 +28,11 @@ const ADMIN_SCRAPE_COOLDOWN_MS = 30_000;
 const adminScrapeCooldownGlobal = "__admin_scrape_all__";
 const adminScrapeLastAt = new Map<string, number>();
 
-const isConfiguredPm = (
-  slug: string,
-): slug is keyof typeof propertyManagements =>
+const isConfiguredPm = (slug: string): slug is PropertyManagementId =>
   Object.hasOwn(propertyManagements, slug);
 
 async function countPendingJobs(
-  propertyManagementIds?: string[],
+  propertyManagementIds?: PropertyManagementId[],
 ): Promise<number> {
   const where =
     propertyManagementIds && propertyManagementIds.length > 0
@@ -83,7 +82,7 @@ export const propertyManagementRouter = router({
       .select({ slug: propertyManagement.slug })
       .from(propertyManagement)
       .where(eq(propertyManagement.active, true))
-      .then((rows) => rows.map((r) => r.slug));
+      .then((rows) => rows.map((r) => r.slug).filter(isConfiguredPm));
 
     const byStatus = await db
       .select({
@@ -263,11 +262,13 @@ export const propertyManagementRouter = router({
       const activeSet = new Set(activeRows.map((r) => r.slug));
       const scoped = Boolean(input.slugs?.length);
 
-      let targetSlugs: string[];
+      let targetSlugs: PropertyManagementId[];
       if (scoped) {
         targetSlugs =
-          input.slugs?.filter((s) => activeSet.has(s) && isConfiguredPm(s)) ??
-          [];
+          input.slugs?.filter(
+            (s): s is PropertyManagementId =>
+              activeSet.has(s) && isConfiguredPm(s),
+          ) ?? [];
       } else {
         targetSlugs = activeRows
           .map((r) => r.slug)

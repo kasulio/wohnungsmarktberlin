@@ -1,3 +1,4 @@
+import { type PropertyManagementId } from "~/data/propertyManagements/configs";
 import { and, asc, count, eq, inArray, lt, sql } from "drizzle-orm";
 import { fetchHtml } from "~/lib/http";
 import { scrapedFlatSchema } from "~/data/schemas";
@@ -20,7 +21,7 @@ export type ProcessFlatUrlJobsStats = {
 
 type ProcessOptions = {
   limit: number;
-  propertyManagementIds?: string[];
+  propertyManagementIds?: PropertyManagementId[];
   sleepBetweenJobs: boolean;
   pruneJobsOlderThanDays?: number;
 };
@@ -77,7 +78,10 @@ export async function processFlatUrlJobs(
     );
 
     try {
-      const html = await fetchHtml(flatUrlJob.url);
+      const html = await fetchHtml(
+        flatUrlJob.url,
+        propertyManagement.getFetchOptions?.(),
+      );
       const scrapedFlat = propertyManagement.extractDataFromHtml(
         html,
         flatUrlJob.url,

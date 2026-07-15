@@ -2,8 +2,16 @@ import { parse } from "node-html-parser";
 import { z } from "zod";
 import { fetchJson } from "~/lib/http";
 import { parseNumberString } from "~/lib/parser";
-import { getApartmentTags } from "../../tags";
-import type { ScrapedFlat } from "../../schemas";
+import type { FlatForProviderIgnoreCheck, ScrapedFlat } from "../../schemas";
+
+/** Zero-room and ≤100€ listings are almost always non-residential on Deuvono platforms. */
+export function shouldIgnoreDeuvonoListing(
+  flat: FlatForProviderIgnoreCheck,
+): boolean {
+  if (flat.roomCount === 0 || flat.roomCount == null) return true;
+  const rent = flat.coldRentPrice ?? flat.warmRentPrice ?? null;
+  return rent !== null && rent <= 100;
+}
 
 export const extractDeuvonoUrls = async (provider: "vonovia" | "deuwo") => {
   const apiUrl =
@@ -15,6 +23,7 @@ export const extractDeuvonoUrls = async (provider: "vonovia" | "deuwo") => {
   url.searchParams.set("rentType", "miete");
   url.searchParams.set("city", "Berlin");
   url.searchParams.set("locationDisplay", "Berlin");
+  url.searchParams.set("immoType", "wohnung");
   url.searchParams.set("dataSet", provider);
 
   const data = await fetchJson(url.toString());
@@ -157,10 +166,9 @@ export function extractDeuvonoDataFromHtml(
     warmRentPrice: warmRent,
     url,
     addressText: addressLine,
-    usableArea: area ?? 0,
-    roomCount: data.numberOfRooms ?? 0,
+    usableArea: area,
+    roomCount: data.numberOfRooms,
     floor,
-    tags: getApartmentTags(title),
     imageUrl: images?.[0] ?? undefined,
   } satisfies ScrapedFlat;
 }

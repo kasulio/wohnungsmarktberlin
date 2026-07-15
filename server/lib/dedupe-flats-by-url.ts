@@ -1,9 +1,6 @@
 import { eq, sql } from "drizzle-orm";
 import { db } from "~/server/db/client";
-import {
-  flat as flatTable,
-  flatToTag as flatToTagTable,
-} from "~/server/db/schema";
+import { flat as flatTable } from "~/server/db/schema";
 
 export async function dedupeFlatsByUrl(): Promise<number> {
   const duplicateUrls = await db
@@ -36,22 +33,6 @@ export async function dedupeFlatsByUrl(): Promise<number> {
 
     await db.transaction(async (tx) => {
       for (const loser of losers) {
-        const tags = await tx
-          .select()
-          .from(flatToTagTable)
-          .where(eq(flatToTagTable.flatId, loser.id));
-
-        for (const { tagId } of tags) {
-          await tx
-            .insert(flatToTagTable)
-            .values({ flatId: keeper.id, tagId })
-            .onConflictDoNothing();
-        }
-
-        await tx
-          .delete(flatToTagTable)
-          .where(eq(flatToTagTable.flatId, loser.id));
-
         await tx.delete(flatTable).where(eq(flatTable.id, loser.id));
         removed++;
       }

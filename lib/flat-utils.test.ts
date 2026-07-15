@@ -1,33 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
   isCommercialByTitle,
-  isDeuvonoZeroRoom,
   isParkingByTitle,
   shouldIgnoreListing,
   type FlatForIgnoreCheck,
 } from "./flat-utils";
-
-describe("isDeuvonoZeroRoom", () => {
-  test("deuwo with 0 rooms", () => {
-    expect(
-      isDeuvonoZeroRoom({
-        title: "Gewerbefläche",
-        propertyManagementId: "deuwo",
-        roomCount: 0,
-      }),
-    ).toBe(true);
-  });
-
-  test("gewobag with 0 rooms is not deuvono rule", () => {
-    expect(
-      isDeuvonoZeroRoom({
-        title: "Neubauwohnung",
-        propertyManagementId: "gewobag",
-        roomCount: 0,
-      }),
-    ).toBe(false);
-  });
-});
 
 describe("shouldIgnoreListing", () => {
   const cases: { name: string; flat: FlatForIgnoreCheck; want: boolean }[] = [
@@ -96,6 +73,25 @@ describe("shouldIgnoreListing", () => {
         coldRentPrice: 80,
       },
       want: true,
+    },
+    {
+      name: "commercial title on deuwo with rooms falls through to title rules",
+      flat: {
+        title: "Attraktive Gewerbefläche in Mitte",
+        propertyManagementId: "deuwo",
+        roomCount: 3,
+        coldRentPrice: 800,
+      },
+      want: true,
+    },
+    {
+      name: "null propertyManagementId skips provider rules",
+      flat: {
+        title: "Familienwohnung im Grünen!",
+        propertyManagementId: null,
+        roomCount: 0,
+      },
+      want: false,
     },
     {
       name: "neutral commercial marketing copy deuwo",

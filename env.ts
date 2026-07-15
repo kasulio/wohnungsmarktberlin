@@ -1,25 +1,25 @@
 import { createEnv } from "@t3-oss/env-nuxt";
 import { z } from "zod";
-import dotenv from "dotenv";
-if (process.env.ENV_FILE_PATH) {
-  dotenv.config({
-    path: process.env.ENV_FILE_PATH,
-  });
-} else {
-  dotenv.config();
-}
 
 export const env = createEnv({
   server: {
     GOOGLE_MAPS_API_KEY: z.string().min(1),
     LOCAL_SQLITE_PATH: z.string().min(1),
-    OPENAI_API_KEY: z.string().min(1).optional(),
     BETTER_AUTH_SECRET: z.string().min(32),
     DEPLOYMENT_URL: z
       .string()
       .min(1)
       .optional()
-      .prefault("http://localhost:3000"),
+      .default("http://localhost:3000"),
+    /** Telegram bot token from BotFather. Optional: absent = telegram channel disabled. */
+    TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
+    /** Bot username (without @), used to build `t.me/<username>?start=…` deep links. */
+    TELEGRAM_BOT_USERNAME: z.string().min(1).optional(),
+    /**
+     * Secret Telegram echoes as `X-Telegram-Bot-Api-Secret-Token`.
+     * Required in production whenever `TELEGRAM_BOT_TOKEN` is set (plugin throws otherwise).
+     */
+    TELEGRAM_WEBHOOK_SECRET: z.string().min(1).optional(),
     /** Max flatUrl jobs processed per admin full / extract_only run (tasks unchanged). */
     ADMIN_SCRAPER_EXTRACT_BATCH: z
       .string()

@@ -1,7 +1,8 @@
+import type { Options as KyOptions } from "ky";
 import { z } from "zod";
 
 import { insertAddressSchema } from "./address";
-import { tagsSchema } from "./tags";
+import type { propertyManagements } from "./propertyManagements";
 
 export const mailingListSignUpSchema = z.object({
   email: z.email("Die E-Mail Adresse ist nicht gültig"),
@@ -20,7 +21,6 @@ export const flatSchema = z.object({
   addressText: z.string(),
   address: insertAddressSchema.optional(),
   floor: z.number().nullable().optional(),
-  tags: tagsSchema,
   imageUrl: z.string().optional().nullable(),
   url: z.string(),
 });
@@ -29,6 +29,21 @@ export const scrapedFlatSchema = flatSchema.omit({ id: true });
 
 export type Flat = z.infer<typeof flatSchema>;
 export type ScrapedFlat = z.infer<typeof scrapedFlatSchema>;
+
+/** Fields provider-specific ignore hooks may use (title handled globally in flat-utils). */
+export type FlatForProviderIgnoreCheck = Pick<
+  FlatForIgnoreCheck,
+  "coldRentPrice" | "warmRentPrice" | "roomCount"
+>;
+
+/** Minimal fields for ignore rules (scraped flat + `propertyManagementId`, or DB row). */
+export type FlatForIgnoreCheck = {
+  title: string;
+  propertyManagementId?: keyof typeof propertyManagements | null;
+  coldRentPrice?: number | null;
+  warmRentPrice?: number | null;
+  roomCount?: number | null;
+};
 
 const propertyManagementSchema = z.object({
   slug: z.string(),
@@ -39,4 +54,6 @@ const propertyManagementSchema = z.object({
 export type PropertyManagement = z.infer<typeof propertyManagementSchema> & {
   extractUrls: () => Promise<string[]>;
   extractDataFromHtml: (html: string, href: string) => ScrapedFlat;
+  getFetchOptions?: () => KyOptions;
+  shouldIgnoreListing?: (flat: FlatForProviderIgnoreCheck) => boolean;
 };

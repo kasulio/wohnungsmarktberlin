@@ -30,3 +30,5 @@ server/db/sqlite.db
 public/map-preview.png
 
 data/html
+data/canary-failures
+docs

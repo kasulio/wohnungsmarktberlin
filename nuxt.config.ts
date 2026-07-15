@@ -6,7 +6,7 @@ export const deploymentUrl = env.DEPLOYMENT_URL;
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: "2026-02-03",
+  compatibilityDate: "2026-07-15",
   routeRules: {
     "/_ipx/**": {
       isr: 60 * 60 * 24 * 7, // 7 days
@@ -46,7 +46,12 @@ export default defineNuxtConfig({
     esbuild: { options: { target: "esnext" } },
     experimental: { tasks: true },
     scheduledTasks: {
-      "* * * * *": ["address-improvement", "extract-flats", "update-flats"],
+      "* * * * *": [
+        "address-improvement",
+        "extract-flats",
+        "update-flats",
+        "notify",
+      ],
       "*/15 * * * *": ["update-map-preview"],
     },
     preset: "bun",
@@ -84,6 +89,7 @@ export default defineNuxtConfig({
       { loc: "/about", changefreq: "monthly", priority: 0.5 },
       { loc: "/privacy", changefreq: "yearly", priority: 0.2 },
     ],
+    zeroRuntime: true,
   },
   build: { transpile: ["trpc-nuxt", "zod"] },
   experimental: { clientFallback: true },
@@ -92,7 +98,26 @@ export default defineNuxtConfig({
       deploymentUrl,
       googleMapsApiKey: env.NUXT_PUBLIC_GOOGLE_MAPS_API_KEY,
       googleMapsId: env.NUXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
+      // Presence gates the "Notify me on Telegram" UI; not a secret.
+      telegramBotUsername: env.TELEGRAM_BOT_USERNAME ?? "",
     },
   },
   css: ["~/assets/global.css"],
+  typescript: {
+    tsConfig: {
+      exclude: ["../scripts/**", "../**/*.test.ts"],
+    },
+  },
+  vite: {
+    optimizeDeps: {
+      include: [
+        "@lordicon/element",
+        "@vue/devtools-core",
+        "@vue/devtools-kit",
+        "better-auth/vue",
+        "drizzle-orm",
+        "lottie-web", // CJS
+      ],
+    },
+  },
 });

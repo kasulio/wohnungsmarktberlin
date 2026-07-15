@@ -11,6 +11,7 @@ export default defineTask({
   run: async () => {
     const caller = createCaller({
       user: "admin",
+      ip: "task",
     });
 
     const mapPreviewHash = await caller.flat.getMapPreviewHash();

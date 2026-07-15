@@ -16,8 +16,9 @@ export const getAddress = async (flatId: string, rawAddressString: string) => {
     .leftJoin(flat, eq(flat.addressId, address.id))
     .where(eq(flat.id, flatId))
     .limit(1);
-  if (existingAddress.length > 0) {
-    return existingAddress[0].address;
+  const existing = existingAddress[0];
+  if (existing?.address) {
+    return existing.address;
   }
 
   const client = new Client({});
@@ -31,6 +32,9 @@ export const getAddress = async (flatId: string, rawAddressString: string) => {
     },
   });
   const addressData = x.data.results[0];
+  if (!addressData) {
+    return null;
+  }
 
   const addressComponentMap = {
     street_number: "streetNumber",
