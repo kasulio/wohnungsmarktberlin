@@ -1,29 +1,38 @@
 <script setup lang="ts">
 import lottie from "lottie-web";
+
 if (import.meta.client) {
-  const { Element, defineElement } = await import("@lordicon/element");
-  async function fetchIcon(name: string) {
-    const response = await fetch(`/icons/${name}.json`);
-    const data = await response.json();
-    return data;
-  }
+  // No top-level await — layout must not suspend on icon boot.
+  void (async () => {
+    const { Element, defineElement } = await import("@lordicon/element");
 
-  const icons = ref<Record<string, any>>({});
+    const icons: Record<string, unknown> = {};
+    const inflight = new Map<string, Promise<unknown>>();
 
-  await Promise.allSettled(
-    ["heart", "arrow"].map(async (icon) => {
-      icons.value[icon] = await fetchIcon(icon);
-    }),
-  );
+    function loadIcon(name: string) {
+      if (icons[name]) return Promise.resolve(icons[name]);
+      const existing = inflight.get(name);
+      if (existing) return existing;
 
-  Element.setIconLoader(async (name: string) => {
-    if (icons.value[name]) {
-      return icons.value[name];
+      const promise = fetch(`/icons/${name}.json`)
+        .then((response) => response.json())
+        .then((data) => {
+          icons[name] = data;
+          return data;
+        })
+        .finally(() => inflight.delete(name));
+
+      inflight.set(name, promise);
+      return promise;
     }
-    return await fetchIcon(name);
-  });
 
-  defineElement(lottie.loadAnimation);
+    Element.setIconLoader((name: string) => loadIcon(name));
+    defineElement(lottie.loadAnimation);
+
+    void Promise.allSettled(
+      ["heart", "arrow", "notification-bell", "trash", "cross"].map(loadIcon),
+    );
+  })();
 }
 </script>
 <template>

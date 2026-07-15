@@ -1,86 +1,59 @@
 <script lang="ts" setup>
-import { zipCodeToDistrict } from "~/data/districts";
 import type { ListingCardDetailProps } from "~/types/listing-flat";
 import { formatArea, formatPrice, formatRoomCount } from "~/utils/util";
 
-const props = withDefaults(defineProps<ListingCardDetailProps>(), {
-  propertyManagementId: null,
-  floor: null,
-});
+const props = withDefaults(
+  defineProps<
+    ListingCardDetailProps & {
+      mode?: "accordion" | "select";
+      selected?: boolean;
+    }
+  >(),
+  {
+    propertyManagementId: null,
+    floor: null,
+    mode: "accordion",
+    selected: false,
+  },
+);
+
+const emit = defineEmits<{
+  select: [];
+}>();
 
 const expanded = ref(false);
 const panelId = useId();
 
-const district = computed(
-  () => zipCodeToDistrict[props.address.postalCode] ?? null,
+const { districtLabel, summaryLabel } = useListingCardMeta(props);
+
+const isOpen = computed(() =>
+  props.mode === "select" ? props.selected : expanded.value,
 );
 
-const districtLabel = computed(() => district.value?.name ?? "Unbekannt");
-
-const firstSeenLabel = computed(() =>
-  props.firstSeen.toLocaleDateString("de-DE", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }),
-);
-
-function toggleExpanded() {
+function activate() {
+  if (props.mode === "select") {
+    emit("select");
+    return;
+  }
   expanded.value = !expanded.value;
 }
-
-const summaryLabel = computed(() => {
-  const plz = props.address.postalCode;
-  const loc = `${plz} ${districtLabel.value}`;
-  return `${props.address.street} ${props.address.streetNumber}, ${loc}`;
-});
-
-const route = useRoute();
-
-const mapTo = computed(() => ({
-  path: "/map",
-  query: {
-    ...route.query,
-    flat: props.id,
-  },
-}));
-
-const tableRows = computed(() => {
-  const rows: { label: string; value: string }[] = [];
-  const { street, streetNumber, postalCode } = props.address;
-  const loc = `${postalCode} ${districtLabel.value}`;
-  rows.push({ label: "Adresse", value: `${street} ${streetNumber}, ${loc}` });
-  if (props.roomCount)
-    rows.push({ label: "Zimmer", value: formatRoomCount(props.roomCount) });
-  if (props.usableArea)
-    rows.push({ label: "Fläche", value: formatArea(props.usableArea) });
-  if (props.floor != null)
-    rows.push({
-      label: "Etage",
-      value: props.floor === 0 ? "EG" : String(props.floor),
-    });
-  if (props.coldRentPrice)
-    rows.push({ label: "Kaltmiete", value: formatPrice(props.coldRentPrice) });
-  if (props.warmRentPrice)
-    rows.push({ label: "Warmmiete", value: formatPrice(props.warmRentPrice) });
-  if ((props.coldRentPrice || props.warmRentPrice) && props.usableArea)
-    rows.push({
-      label: "€/m²",
-      value: `${props.coldRentPrice ? formatPrice(props.coldRentPrice / props.usableArea) : "-"} / ${props.warmRentPrice ? formatPrice(props.warmRentPrice / props.usableArea) : "-"}`,
-    });
-  rows.push({ label: "Gesehen am", value: firstSeenLabel.value });
-  return rows;
-});
 </script>
 
 <template>
-  <article class="w-full overflow-hidden rounded-lg bg-slate-200">
+  <article
+    class="w-full"
+    :class="[
+      mode === 'select' && selected ? 'bg-slate-300' : 'bg-slate-200',
+      expanded ? 'relative z-10 mb-10 overflow-visible' : 'overflow-hidden',
+    ]"
+  >
     <!-- collapsed row -->
-    <div class="flex items-stretch gap-2.5 px-2.5 py-2.5">
+    <div class="flex items-stretch gap-3 px-3 py-3">
       <NuxtLink
         :to="url"
         target="_blank"
         class="shrink-0 self-center"
+        @click.stop
       >
         <FlatImage
           :id="id"
@@ -90,17 +63,23 @@ const tableRows = computed(() => {
         />
       </NuxtLink>
       <div
-        class="text-sm flex min-w-0 flex-1 cursor-pointer flex-col justify-between leading-tight"
-        :aria-expanded="expanded"
-        :aria-controls="panelId"
-        :aria-label="`Wohnung ${summaryLabel}, Details ${expanded ? 'zuklappen' : 'aufklappen'}`"
-        @click="toggleExpanded"
+        class="text-sm flex min-w-0 flex-1 cursor-pointer flex-col justify-between gap-2 leading-tight"
+        :aria-expanded="isOpen"
+        :aria-controls="mode === 'accordion' ? panelId : undefined"
+        :aria-label="
+          mode === 'select'
+            ? `Wohnung ${summaryLabel} auswählen`
+            : `Wohnung ${summaryLabel}, Details ${isOpen ? 'zuklappen' : 'aufklappen'}`
+        "
+        :role="mode === 'select' ? 'option' : undefined"
+        :aria-selected="mode === 'select' ? selected : undefined"
+        @click="activate"
       >
         <div class="grid grid-cols-2 gap-x-3 gap-y-1.5">
           <div class="flex min-w-0 items-center gap-1.5">
             <Icon
               name="lucide-lab:floor-plan"
-              class="size-3.5 shrink-0 -scale-x-100 text-main/45"
+              class="size-3.5 shrink-0 -scale-x-100 text-black"
             />
             <span class="truncate tabular-nums">
               {{ formatRoomCount(roomCount) }} Zimmer
@@ -109,7 +88,7 @@ const tableRows = computed(() => {
           <div class="flex min-w-0 items-center gap-1.5">
             <Icon
               name="lucide:expand"
-              class="size-3.5 shrink-0 text-main/45"
+              class="size-3.5 shrink-0 text-black"
             />
             <span class="truncate tabular-nums">{{
               formatArea(usableArea)
@@ -118,7 +97,7 @@ const tableRows = computed(() => {
           <div class="flex min-w-0 items-center gap-1.5">
             <Icon
               name="lucide:badge-minus"
-              class="size-3.5 shrink-0 text-main/45"
+              class="size-3.5 shrink-0 text-black"
               title="Kaltmiete"
             />
             <span class="truncate tabular-nums">{{
@@ -128,7 +107,7 @@ const tableRows = computed(() => {
           <div class="flex min-w-0 items-center gap-1.5">
             <Icon
               name="lucide:badge-plus"
-              class="size-3.5 shrink-0 text-main/45"
+              class="size-3.5 shrink-0 text-black"
               title="Warmmiete"
             />
             <span class="truncate tabular-nums">{{
@@ -141,96 +120,58 @@ const tableRows = computed(() => {
           {{ address.postalCode }}&nbsp;{{ districtLabel }}
         </p>
       </div>
-      <div class="flex shrink-0 items-center gap-0.5 self-center">
+      <div class="flex shrink-0 items-center self-center">
         <button
           type="button"
-          class="grid h-7 w-7 place-items-center rounded text-main/50 transition-transform"
-          :class="expanded ? 'rotate-0' : 'rotate-45'"
-          :aria-expanded="expanded"
-          :aria-controls="panelId"
-          aria-label="Details aufklappen"
-          @click="toggleExpanded"
+          class="inline-flex size-6 shrink-0 items-center justify-center transition-transform duration-200"
+          :class="isOpen ? 'rotate-0' : 'rotate-45'"
+          :aria-expanded="isOpen"
+          :aria-controls="mode === 'accordion' ? panelId : undefined"
+          :aria-label="
+            mode === 'select' ? 'Wohnung auswählen' : 'Details aufklappen'
+          "
+          @click="activate"
         >
-          <IconCross />
+          <lord-icon
+            icon="cross"
+            src="/icons/cross.json"
+            class="current-color block text-black"
+            style="width: 24px; height: 24px"
+          />
         </button>
       </div>
     </div>
 
-    <!-- expanded panel -->
+    <!-- expanded panel (accordion only) -->
     <div
+      v-if="mode === 'accordion'"
       :id="panelId"
       class="grid transition-[grid-template-rows] duration-200 ease-out"
       :class="expanded ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'"
     >
-      <div class="min-h-0 overflow-hidden">
+      <div
+        class="min-h-0"
+        :class="expanded ? 'overflow-visible' : 'overflow-hidden'"
+      >
         <div
-          class="space-y-3 border-t border-black/10 bg-background/90 px-2.5 pb-3 pt-3"
+          class="relative border-t border-black/10 bg-white px-3 pb-10 pt-3"
           :inert="!expanded"
         >
-          <!-- image + [provider + tags + title] -->
-          <div class="flex gap-3">
-            <div class="min-w-0 flex-1">
-              <!-- provider + tags + favorite -->
-              <div class="mb-1.5 flex flex-wrap items-center gap-1.5">
-                <ApartmentProviderTags
-                  :property-management-id="propertyManagementId"
-                  :tags="tags"
-                />
-                <ApartmentFavoriteButton
-                  :id="id"
-                  class="ml-auto"
-                />
-              </div>
-              <!-- title -->
-              <NuxtLink
-                :to="url"
-                target="_blank"
-                class="text-sm font-medium leading-snug text-main underline-offset-2 hover:underline"
-              >
-                <span class="line-clamp-3">{{ title }}</span>
-              </NuxtLink>
-            </div>
-          </div>
-
-          <!-- info table -->
-          <table class="w-full text-xs">
-            <tbody>
-              <tr
-                v-for="row in tableRows"
-                :key="row.label"
-                class="border-b border-black/5 last:border-0"
-              >
-                <td class="w-px whitespace-nowrap py-1 pr-3 text-main/50">
-                  {{ row.label }}
-                </td>
-                <td class="py-1 tabular-nums text-main">{{ row.value }}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="grid grid-cols-2 gap-2">
-            <StyledNuxtLink
-              :to="mapTo"
-              target="_blank"
-              no-underline
-              class="text-sm inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-main/20 bg-background px-3 font-medium text-main shadow-sm"
-              @click.stop
-            >
-              Zur Karte
-              <Icon
-                name="lucide:map"
-                class="size-4 shrink-0"
-              />
-            </StyledNuxtLink>
-            <StyledNuxtLink
-              :to="url"
-              no-underline
-              class="text-sm inline-flex min-h-10 items-center justify-center rounded-lg bg-accent px-3 font-medium text-white shadow-sm"
-              @click.stop
-            >
-              Zur Wohnung
-            </StyledNuxtLink>
-          </div>
+          <ApartmentListingExpanded
+            :id="id"
+            :title="title"
+            :address="address"
+            :cold-rent-price="coldRentPrice"
+            :warm-rent-price="warmRentPrice"
+            :has-image="hasImage"
+            :tags="tags"
+            :usable-area="usableArea"
+            :url="url"
+            :first-seen="firstSeen"
+            :room-count="roomCount"
+            :property-management-id="propertyManagementId"
+            :floor="floor"
+          />
         </div>
       </div>
     </div>

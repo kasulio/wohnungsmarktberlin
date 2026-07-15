@@ -44,21 +44,25 @@ export const useFavorites = () => {
   };
 };
 
-export const useFavorite = (id: string) => {
+export const useFavorite = (id: MaybeRefOrGetter<string>) => {
+  const resolvedId = computed(() => toValue(id));
+
   const add = () => {
-    const newFavorites = Array.from(new Set([...favoritesIds.value, id]));
+    const flatId = resolvedId.value;
+    const newFavorites = Array.from(new Set([...favoritesIds.value, flatId]));
     set(newFavorites);
   };
 
   const remove = () => {
+    const flatId = resolvedId.value;
     const newFavorites = favoritesIds.value.filter(
-      (favoriteId: string) => favoriteId !== id,
+      (favoriteId: string) => favoriteId !== flatId,
     );
     set(newFavorites);
   };
 
   const toggle = () => {
-    if (favoritesIds.value.includes(id)) {
+    if (favoritesIds.value.includes(resolvedId.value)) {
       remove();
     } else {
       add();
@@ -66,7 +70,7 @@ export const useFavorite = (id: string) => {
   };
 
   const isFavorite = computed(() => {
-    return favoritesIds.value.includes(id);
+    return favoritesIds.value.includes(resolvedId.value);
   });
 
   return {

@@ -480,23 +480,17 @@ onUnmounted(() => {
 
 const segmentBtn = (active: boolean, filled: boolean) =>
   [
-    "inline-flex shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2.5 py-1.5 text-s transition-colors hover:border-main/15 hover:bg-main/5 hover:text-main",
-    active
-      ? "font-semibold text-main"
-      : filled
-        ? "font-semibold text-main"
-        : "font-medium text-main/55",
+    "inline-flex shrink-0 items-center gap-1 text-s text-black",
+    active || filled ? "font-semibold" : "font-medium",
   ].join(" ");
 
 const segmentChevronClass = (open: boolean) =>
-  ["size-3.5 opacity-60 transition-transform", open ? "rotate-180" : ""].join(
-    " ",
-  );
+  ["size-4 transition-transform", open ? "rotate-180" : ""].join(" ");
 
 const fieldClass =
-  "w-full min-w-0 rounded-md border border-main/25 bg-transparent py-2 text-s text-main placeholder:text-main/45 focus:border-main/50 focus:outline-none focus:ring-2 focus:ring-main/15";
+  "w-full min-w-0 rounded-xl border border-black bg-white py-2 text-s text-main placeholder:text-main/45 outline-none ring-0 focus:border-black";
 
-const inputClass = `filter-num ${fieldClass} pl-2.5 pr-7 text-center tabular-nums placeholder:text-main/40`;
+const inputClass = `filter-num ${fieldClass} pl-2.5 pr-7 text-center tabular-nums`;
 
 /** Same language as Apartment/Provider + Tag pills. */
 const pillClass = (active: boolean) =>
@@ -554,10 +548,17 @@ const toggleSortOrder = () => {
 
 <template>
   <div class="filters-root mb-8">
-    <div class="sticky top-0 z-30 rounded-xl bg-background px-2.5 py-2.5">
-      <div class="flex items-start gap-1">
-        <div class="min-w-0 flex-1">
-          <div class="flex flex-wrap items-center gap-1">
+    <div
+      class="sticky top-0 z-10 overflow-hidden rounded-xl border border-black bg-background"
+    >
+      <div
+        class="flex flex-col sm:flex-row sm:items-center sm:gap-4 sm:px-2.5 sm:py-2.5"
+      >
+        <!-- Row 1: filter segments (scroll on narrow) -->
+        <div
+          class="min-w-0 flex-1 overflow-x-auto px-2.5 py-2.5 [-ms-overflow-style:none] [scrollbar-width:none] sm:px-0 sm:py-0 [&::-webkit-scrollbar]:hidden"
+        >
+          <div class="flex w-max min-w-full items-center gap-x-5">
             <span class="sr-only">Filter</span>
             <button
               type="button"
@@ -627,16 +628,66 @@ const toggleSortOrder = () => {
                 :class="segmentChevronClass(openSegment === 'more')"
               />
             </button>
+          </div>
+        </div>
 
+        <!-- Row 2 (mobile) / right cluster (desktop): count · sort · actions -->
+        <div
+          v-if="showBarCount || showSort || activePrefsCount"
+          class="flex items-center gap-3 border-t border-black px-2.5 py-2.5 sm:shrink-0 sm:border-0 sm:px-0 sm:py-0"
+        >
+          <div
+            v-if="(showBarCount && resultLabel) || showSort"
+            class="flex min-w-0 items-center gap-3"
+          >
+            <p
+              v-if="showBarCount && resultLabel"
+              class="text-xs tabular-nums leading-none text-black"
+            >
+              {{ resultLabel }} Wohnungen
+            </p>
             <div
               v-if="showSort"
-              class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-transparent px-2.5 py-1.5 text-s transition-colors hover:border-main/15 hover:bg-main/5 hover:text-main lg:hidden"
-              :class="
-                sortFilled
-                  ? 'font-semibold text-main'
-                  : 'font-medium text-main/55'
-              "
+              class="inline-flex shrink-0 items-center gap-1 text-s text-black"
+              :class="sortFilled ? 'font-semibold' : 'font-medium'"
             >
+              <button
+                type="button"
+                class="inline-flex size-6 shrink-0 items-center justify-center"
+                :aria-label="
+                  currentSortOrder === 'asc'
+                    ? 'Aufsteigend, umkehren'
+                    : 'Absteigend, umkehren'
+                "
+                :title="
+                  currentSortOrder === 'asc' ? 'Aufsteigend' : 'Absteigend'
+                "
+                @click="toggleSortOrder"
+                @mouseenter="
+                  (e) => {
+                    const icon = (e.currentTarget as HTMLElement).querySelector(
+                      'lord-icon',
+                    ) as any;
+                    if (
+                      icon?.playerInstance &&
+                      !icon.playerInstance.isPlaying
+                    ) {
+                      icon.playerInstance.playFromBeginning();
+                    }
+                  }
+                "
+              >
+                <lord-icon
+                  icon="arrow"
+                  src="/icons/arrow.json"
+                  state="hover-pinch"
+                  class="block -rotate-90 text-black transition-all duration-500"
+                  :class="{
+                    '-scale-x-100': currentSortOrder === 'desc',
+                  }"
+                  style="width: 22px; height: 22px"
+                />
+              </button>
               <label
                 class="sr-only"
                 for="filter-bar-sort"
@@ -650,7 +701,7 @@ const toggleSortOrder = () => {
                 >
                 <select
                   id="filter-bar-sort"
-                  class="col-start-1 row-start-1 w-full cursor-pointer appearance-none bg-transparent text-s focus:outline-none"
+                  class="col-start-1 row-start-1 w-full cursor-pointer appearance-none bg-transparent text-s text-black focus:outline-none"
                   :class="sortFilled ? 'font-semibold' : 'font-medium'"
                   :value="currentSortBy"
                   @change="
@@ -666,73 +717,49 @@ const toggleSortOrder = () => {
                   </option>
                 </select>
               </span>
-              <button
-                type="button"
-                class="inline-flex items-center text-inherit opacity-60 transition-opacity hover:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-                :aria-label="
-                  currentSortOrder === 'asc'
-                    ? 'Aufsteigend, umkehren'
-                    : 'Absteigend, umkehren'
-                "
-                :title="
-                  currentSortOrder === 'asc' ? 'Aufsteigend' : 'Absteigend'
-                "
-                @click="toggleSortOrder"
-              >
-                <Icon
-                  :name="
-                    currentSortOrder === 'asc'
-                      ? 'lucide:arrow-up-narrow-wide'
-                      : 'lucide:arrow-down-wide-narrow'
-                  "
-                  class="size-3.5"
-                />
-              </button>
             </div>
           </div>
-        </div>
-
-        <div
-          v-if="showBarCount || activePrefsCount"
-          class="flex shrink-0 items-start gap-0.5"
-        >
-          <p
-            v-if="showBarCount && resultLabel"
-            class="mr-1 hidden text-xs tabular-nums text-main/55 sm:block"
-          >
-            {{ resultLabel }} Wohnungen
-          </p>
-          <button
+          <div
             v-if="activePrefsCount"
-            type="button"
-            class="inline-flex size-8 items-center justify-center rounded-md text-main/55 hover:bg-main/5 hover:text-main"
-            aria-label="Filter zurücksetzen"
-            title="Filter zurücksetzen"
-            @click="resetFilters"
+            class="ml-auto flex shrink-0 items-center gap-1"
           >
-            <Icon
-              name="lucide:rotate-ccw"
-              class="size-3.5"
-            />
-          </button>
-          <button
-            v-if="telegramEnabled && activePrefsCount"
-            type="button"
-            class="inline-flex size-8 items-center justify-center rounded-md text-main/55 hover:bg-main/5 hover:text-accent disabled:opacity-60"
-            :disabled="telegramLoading"
-            :aria-label="
-              telegramLoading
-                ? 'Link wird erstellt'
-                : 'Per Telegram benachrichtigen'
-            "
-            :title="'Per Telegram benachrichtigen'"
-            @click="notifyOnTelegram"
-          >
-            <Icon
-              name="lucide:bell"
-              class="size-4"
-            />
-          </button>
+            <button
+              type="button"
+              class="inline-flex size-6 shrink-0 items-center justify-center"
+              aria-label="Filter zurücksetzen"
+              title="Filter zurücksetzen"
+              @click="resetFilters"
+            >
+              <lord-icon
+                icon="trash"
+                src="/icons/trash.json"
+                trigger="hover"
+                class="current-color block text-black md:hover:animate-zoombounce"
+                style="width: 24px; height: 24px"
+              />
+            </button>
+            <button
+              v-if="telegramEnabled"
+              type="button"
+              class="inline-flex size-6 shrink-0 items-center justify-center disabled:opacity-60"
+              :disabled="telegramLoading"
+              :aria-label="
+                telegramLoading
+                  ? 'Link wird erstellt'
+                  : 'Per Telegram benachrichtigen'
+              "
+              title="Per Telegram benachrichtigen"
+              @click="notifyOnTelegram"
+            >
+              <lord-icon
+                icon="notification-bell"
+                src="/icons/notification-bell.json"
+                trigger="hover"
+                class="current-color block text-black md:hover:animate-zoombounce"
+                style="width: 24px; height: 24px"
+              />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -751,29 +778,29 @@ const toggleSortOrder = () => {
         @click.self="closePanel"
       >
         <div
-          class="flex max-h-[85vh] w-full flex-col rounded-t-xl bg-white sm:max-h-[min(70vh,32rem)] sm:w-full sm:max-w-md sm:rounded-xl"
+          class="flex max-h-[85vh] w-full flex-col rounded-t-xl border border-black bg-white sm:max-h-[min(70vh,32rem)] sm:w-full sm:max-w-md sm:rounded-xl"
           role="dialog"
           aria-modal="true"
           :aria-label="panelTitle"
         >
           <div
-            class="flex items-center justify-between gap-2 border-b border-main/10 px-4 py-2.5"
+            class="flex items-center justify-between gap-3 px-5 pb-1 pt-4 sm:px-6"
           >
-            <p class="text-s font-medium text-main">{{ panelTitle }}</p>
+            <p class="text-m font-semibold text-main">{{ panelTitle }}</p>
             <button
               type="button"
-              class="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-main/55 hover:bg-main/5 hover:text-main"
+              class="shrink-0 text-black"
               aria-label="Schließen"
               @click="closePanel"
             >
               <Icon
                 name="lucide:x"
-                class="size-3.5"
+                class="size-6 stroke-[2.5]"
               />
             </button>
           </div>
 
-          <div class="min-h-0 flex-1 overflow-y-auto p-3 sm:p-4">
+          <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4 sm:px-6">
             <!-- Price -->
             <div
               v-if="openSegment === 'price'"
@@ -1116,14 +1143,13 @@ const toggleSortOrder = () => {
             </div>
           </div>
 
-          <div class="border-t border-main/10 p-3 sm:p-4">
-            <button
-              type="button"
-              class="inline-flex min-h-10 w-full items-center justify-center rounded-md bg-accent px-4 py-2.5 text-s font-medium text-white hover:bg-primary"
-              @click="closePanel"
+          <div class="pb-5 pl-7 pr-5 pt-1 sm:pb-6 sm:pl-8 sm:pr-6">
+            <FatButton
+              class="w-full"
+              :action="closePanel"
             >
               {{ resultLabel ? `${resultLabel} Wohnungen anzeigen` : "Fertig" }}
-            </button>
+            </FatButton>
           </div>
         </div>
       </div>

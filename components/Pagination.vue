@@ -51,7 +51,7 @@ const navBtn =
 </script>
 
 <template>
-  <div class="rounded-xl bg-background px-2.5 py-2.5">
+  <div class="rounded-xl border border-black bg-background px-2.5 py-2.5">
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-1.5">
         <label

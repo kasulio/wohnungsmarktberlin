@@ -3,7 +3,7 @@ const props = defineProps<{
   id: string;
 }>();
 
-const { isFavorite, toggle } = useFavorite(props.id);
+const { isFavorite, toggle } = useFavorite(() => props.id);
 const icon = ref<null | Element>(null);
 
 watch(isFavorite, (newValue) => {
