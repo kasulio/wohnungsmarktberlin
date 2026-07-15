@@ -89,7 +89,6 @@ export default defineNuxtConfig({
       { loc: "/about", changefreq: "monthly", priority: 0.5 },
       { loc: "/privacy", changefreq: "yearly", priority: 0.2 },
     ],
-    zeroRuntime: true,
   },
   build: { transpile: ["trpc-nuxt", "zod"] },
   experimental: { clientFallback: true },
