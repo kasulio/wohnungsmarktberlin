@@ -2,8 +2,12 @@
 import { berlinDistricts } from "~/data/districts";
 import { propertyManagementConfigs } from "~/data/propertyManagements/configs";
 import { tags } from "~/data/tags";
+import { type FlatFilter } from "~/lib/flat-filters";
 
 const { updateQueryState, urlState } = useFlatFilterUrlState();
+const { $client } = useNuxtApp();
+const config = useRuntimeConfig();
+const telegramEnabled = computed(() => !!config.public.telegramBotUsername);
 const modalOpen = ref(false);
 
 const modalPreferences = reactive({
@@ -162,6 +166,14 @@ const removeFilter = (filterObj: UiFilter) => {
   updateQueryState({ [filterObj.id]: undefined });
 };
 
+const telegramLoading = ref(false);
+const telegramError = ref<string | null>(null);
+
+const clampPreference = (key: string, value: number): number => {
+  const meta = getFilterMetadata(key);
+  return meta ? Math.min(Math.max(value, meta.min), meta.max) : value;
+};
+
 const applyFilters = () => {
   modalOpen.value = false;
 
@@ -175,11 +187,7 @@ const applyFilters = () => {
     }
 
     if (typeof value === "number") {
-      const meta = getFilterMetadata(key);
-      const clamped = meta
-        ? Math.min(Math.max(value, meta.min), meta.max)
-        : value;
-      query[key] = [clamped];
+      query[key] = [clampPreference(key, value)];
       continue;
     }
 
@@ -187,6 +195,50 @@ const applyFilters = () => {
   }
 
   updateQueryState(query);
+};
+
+const buildFilter = (): FlatFilter => {
+  const num = (key: ModalPreferenceKey, v: number | string | null) => {
+    const n = typeof v === "number" ? v : Number(v);
+    if (v == null || v === "" || !Number.isFinite(n)) return undefined;
+    return clampPreference(key, n);
+  };
+  const arr = (v: string[]) => (v.length ? v : undefined);
+  return {
+    priceMin: num("priceMin", modalPreferences.priceMin),
+    priceMax: num("priceMax", modalPreferences.priceMax),
+    roomsMin: num("roomsMin", modalPreferences.roomsMin),
+    roomsMax: num("roomsMax", modalPreferences.roomsMax),
+    areaMin: num("areaMin", modalPreferences.areaMin),
+    areaMax: num("areaMax", modalPreferences.areaMax),
+    tags: arr(modalPreferences.tags),
+    districts: arr(modalPreferences.districts),
+    propertyManagements: arr(
+      modalPreferences.propertyManagements,
+    ) as FlatFilter["propertyManagements"],
+  };
+};
+
+const notifyOnTelegram = async () => {
+  telegramError.value = null;
+  telegramLoading.value = true;
+  // Open sync so the browser keeps the gesture; set URL after mint.
+  const popup = window.open("about:blank", "_blank");
+  try {
+    const { url } =
+      await $client.notification.createTelegramLink.mutate(buildFilter());
+    if (popup) {
+      popup.opener = null;
+      popup.location.replace(url);
+    } else {
+      window.location.assign(url);
+    }
+  } catch {
+    popup?.close();
+    telegramError.value = "Konnte den Telegram-Link nicht erstellen.";
+  } finally {
+    telegramLoading.value = false;
+  }
 };
 
 const tagsSuggestions = Object.entries(tags).map(([id, title]) => ({
@@ -319,6 +371,29 @@ const propertyManagementSuggestions = Object.values(
       >
         Anwenden
       </button>
+      <template v-if="telegramEnabled">
+        <button
+          class="flex items-center justify-center gap-2 rounded-md border-2 border-accent px-4 py-2 text-m text-accent disabled:opacity-60"
+          :disabled="telegramLoading"
+          @click="notifyOnTelegram"
+        >
+          <Icon
+            name="lucide:bell"
+            class="size-4 shrink-0"
+          />
+          {{
+            telegramLoading
+              ? "Link wird erstellt…"
+              : "Auf Telegram benachrichtigen"
+          }}
+        </button>
+        <p
+          v-if="telegramError"
+          class="text-sm text-red-600"
+        >
+          {{ telegramError }}
+        </p>
+      </template>
     </Modal>
     <div
       v-if="activePrefsCount"

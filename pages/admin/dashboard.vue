@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { describeFlatFilter } from "~/lib/describe-flat-filter";
+
 useHead({ title: "Admin Dashboard" });
 
 const { $client } = useNuxtApp();
@@ -201,6 +203,42 @@ const runKindLabel = (kind: string) => {
     "extract-flats": "Extraktion",
   };
   return map[kind] ?? kind;
+};
+
+// --- Notification subscribers ---------------------------------------------
+const subscribers = await $client.notification.listSubscribers.useQuery();
+
+const testingSubscriberId = ref<string | null>(null);
+const notifyFeedback = ref<{ id: string; ok: boolean; msg: string } | null>(
+  null,
+);
+
+
+const sendTestNotification = async (subscriberId: string) => {
+  if (testingSubscriberId.value) return;
+  testingSubscriberId.value = subscriberId;
+  notifyFeedback.value = null;
+  try {
+    const res = await $client.notification.sendTest.mutate({ subscriberId });
+    notifyFeedback.value = {
+      id: subscriberId,
+      ok: res.ok,
+      msg: res.ok
+        ? `Testbenachrichtigung gesendet (Wohnung ${res.flatId}).`
+        : res.blocked
+          ? "Empfänger blockiert oder nicht erreichbar."
+          : "Senden fehlgeschlagen (siehe Server-Logs).",
+    };
+  } catch (e) {
+    notifyFeedback.value = {
+      id: subscriberId,
+      ok: false,
+      msg: e instanceof Error ? e.message : "Anfrage fehlgeschlagen.",
+    };
+  } finally {
+    testingSubscriberId.value = null;
+    await subscribers.refresh();
+  }
 };
 </script>
 
@@ -538,6 +576,108 @@ const runKindLabel = (kind: string) => {
             >
           </li>
         </ul>
+      </div>
+    </section>
+
+    <section class="space-y-3">
+      <h2 class="text-l font-semibold text-main">Benachrichtigungen</h2>
+      <div
+        v-if="notifyFeedback"
+        role="status"
+        class="text-sm rounded-2xl border px-4 py-3"
+        :class="
+          notifyFeedback.ok
+            ? 'border-green-800/35 bg-green-100/90 text-green-950'
+            : 'border-red-600 bg-red-50 text-red-900'
+        "
+      >
+        {{ notifyFeedback.msg }}
+      </div>
+      <div class="overflow-x-auto rounded-3xl border border-black bg-white">
+        <table class="text-sm w-full min-w-[48rem] border-collapse text-left">
+          <thead>
+            <tr class="border-b border-black bg-background/50">
+              <th scope="col" class="px-3 py-3 font-semibold text-main">
+                Kanal / Ziel
+              </th>
+              <th scope="col" class="px-3 py-3 font-semibold text-main">
+                Filter
+              </th>
+              <th scope="col" class="px-3 py-3 font-semibold text-main">
+                Status
+              </th>
+              <th
+                scope="col"
+                class="px-3 py-3 text-right font-semibold tabular-nums text-main"
+              >
+                Gesendet
+              </th>
+              <th scope="col" class="px-3 py-3 font-semibold text-main">
+                Erstellt
+              </th>
+              <th scope="col" class="px-3 py-3 font-semibold text-main">
+                Aktion
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="sub in subscribers.data.value ?? []"
+              :key="sub.id"
+              class="border-b border-black/10 last:border-b-0"
+            >
+              <td class="max-w-[16rem] px-3 py-3 align-top">
+                <span class="font-medium text-main">{{ sub.channel }}</span>
+                <span
+                  class="ml-1.5 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-main"
+                  >{{ sub.source }}</span
+                >
+                <p class="truncate text-xs text-gray-500" :title="sub.target">
+                  {{ sub.target }}
+                </p>
+              </td>
+              <td class="max-w-[18rem] px-3 py-3 align-top text-main">
+                {{ describeFlatFilter(sub.filter) }}
+              </td>
+              <td class="px-3 py-3 align-top">
+                <span class="inline-flex items-center gap-1.5">
+                  <span
+                    class="h-2 w-2 shrink-0 rounded-full"
+                    :class="sub.active ? 'bg-green-600' : 'bg-gray-400'"
+                  />
+                  <span class="text-xs font-medium text-main">{{
+                    sub.active ? "Aktiv" : "Inaktiv"
+                  }}</span>
+                </span>
+              </td>
+              <td class="px-3 py-3 text-right align-top tabular-nums text-main">
+                {{ sub.sentCount }}
+              </td>
+              <td class="px-3 py-3 align-top text-gray-600">
+                {{ formatAgo(sub.createdAt) }}
+              </td>
+              <td class="px-3 py-3 align-top">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1 rounded-lg border border-black/80 bg-white px-2 py-1.5 text-xs font-medium text-main shadow-sm hover:bg-black/[0.03] disabled:opacity-50"
+                  :disabled="testingSubscriberId != null"
+                  @click="() => void sendTestNotification(sub.id)"
+                >
+                  Test senden
+                  <LoadingSpinner
+                    v-if="testingSubscriberId === sub.id"
+                    class="!h-4 !w-4"
+                  />
+                </button>
+              </td>
+            </tr>
+            <tr v-if="!(subscribers.data.value ?? []).length">
+              <td colspan="6" class="px-3 py-6 text-center text-gray-500">
+                Keine Abonnenten.
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </section>
   </div>

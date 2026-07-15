@@ -18,6 +18,14 @@ const STATIC_SINCE = new Date();
  */
 export const staticSubscribers: Subscriber[] = [
   {
+    id: "log:all",
+    channel: "log",
+    target: "all",
+    filter: {},
+    createdAt: STATIC_SINCE,
+    source: "static",
+  },
+  {
     id: "log:cheap",
     channel: "log",
     target: "cheap",

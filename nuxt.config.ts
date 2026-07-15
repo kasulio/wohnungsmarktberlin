@@ -98,6 +98,8 @@ export default defineNuxtConfig({
       deploymentUrl,
       googleMapsApiKey: env.NUXT_PUBLIC_GOOGLE_MAPS_API_KEY,
       googleMapsId: env.NUXT_PUBLIC_GOOGLE_MAPS_MAP_ID,
+      // Presence gates the "Notify me on Telegram" UI; not a secret.
+      telegramBotUsername: env.TELEGRAM_BOT_USERNAME ?? "",
     },
   },
   css: ["~/assets/global.css"],

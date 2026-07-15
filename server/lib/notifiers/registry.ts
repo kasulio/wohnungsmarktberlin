@@ -1,4 +1,5 @@
 import { logChannel } from "./log";
+import { telegramChannel } from "./telegram/channel";
 import type { Channel } from "./types";
 
 /**
@@ -8,4 +9,5 @@ import type { Channel } from "./types";
  */
 export const channels: Record<string, Channel> = {
   log: logChannel,
+  telegram: telegramChannel,
 };

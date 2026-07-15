@@ -128,7 +128,10 @@ export const flatToTagRelations = relations(flatToTag, ({ one }) => ({
  * here — they live in `server/lib/notifiers/subscribers.ts`.
  */
 export const notificationSubscriber = sqliteTable("notificationSubscriber", {
-  /** Stable id, convention `${channel}:${target}`; also the ledger key. */
+  /**
+   * Stable, unique id; also the ledger key. Static hooks use `${channel}:${target}`;
+   * DB rows (e.g. telegram) use a generated id so one target can hold many filters.
+   */
   id: text("id").primaryKey(),
   /** Delivery channel, resolved via the channel registry. */
   channel: text("channel").notNull(),
@@ -154,6 +157,18 @@ export const notificationSent = sqliteTable(
   },
   (t) => [primaryKey({ columns: [t.subscriberId, t.flatId] })],
 );
+
+/**
+ * Single-use tokens backing Telegram deep links. The website mints a row when a
+ * visitor clicks "Notify me on Telegram"; the bot consumes it on `/start <token>`
+ * to create a `notificationSubscriber`. Sidesteps Telegram's 64-char start-param
+ * limit by keeping only the short token in the URL and the filter in the row.
+ */
+export const telegramLinkToken = sqliteTable("telegramLinkToken", {
+  token: text("token").primaryKey(),
+  filterJson: text("filterJson", { mode: "json" }).$type<FlatFilter | null>(),
+  createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
+});
 
 export const address = sqliteTable("address", {
   id: text("id").primaryKey(),

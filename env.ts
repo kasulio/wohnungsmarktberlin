@@ -10,7 +10,16 @@ export const env = createEnv({
       .string()
       .min(1)
       .optional()
-      .prefault("http://localhost:3000"),
+      .default("http://localhost:3000"),
+    /** Telegram bot token from BotFather. Optional: absent = telegram channel disabled. */
+    TELEGRAM_BOT_TOKEN: z.string().min(1).optional(),
+    /** Bot username (without @), used to build `t.me/<username>?start=…` deep links. */
+    TELEGRAM_BOT_USERNAME: z.string().min(1).optional(),
+    /**
+     * Secret Telegram echoes as `X-Telegram-Bot-Api-Secret-Token`.
+     * Required in production whenever `TELEGRAM_BOT_TOKEN` is set (plugin throws otherwise).
+     */
+    TELEGRAM_WEBHOOK_SECRET: z.string().min(1).optional(),
     /** Max flatUrl jobs processed per admin full / extract_only run (tasks unchanged). */
     ADMIN_SCRAPER_EXTRACT_BATCH: z
       .string()
