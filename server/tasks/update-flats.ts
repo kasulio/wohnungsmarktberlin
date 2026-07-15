@@ -1,7 +1,9 @@
 import { propertyManagements } from "~/data/propertyManagements";
+import { PropertyManagementId } from "~/data/propertyManagements/configs";
 import { logScraperRun } from "~/server/lib/scraper/log-scraper-run";
 import { pruneFlatsNotSeenForDays } from "~/server/lib/scraper/prune-stale-flats";
 import { syncListingsForPropertyManagement } from "~/server/lib/scraper/sync-listings";
+import { typedObjectKeys } from "~/utils/typeHelper";
 
 let lastIndex = 0;
 
@@ -16,9 +18,9 @@ export default defineTask({
     await pruneFlatsNotSeenForDays(7);
 
     const index = lastIndex++ % Object.values(propertyManagements).length;
-    const propertyManagement = Object.values(propertyManagements)[index];
+    const propertyManagementId = typedObjectKeys(propertyManagements)[index];
 
-    if (!propertyManagement) {
+    if (!propertyManagementId) {
       return {
         result: {
           success: true,
@@ -35,11 +37,10 @@ export default defineTask({
       };
     }
 
-    console.log(`[task:update-flats] Processing ${propertyManagement.slug}`);
+    console.log(`[task:update-flats] Processing ${propertyManagementId}`);
 
-    const { success, stats, error } = await syncListingsForPropertyManagement(
-      propertyManagement.slug,
-    );
+    const { success, stats, error } =
+      await syncListingsForPropertyManagement(propertyManagementId);
 
     console.log(
       `[task:update-flats] ${stats.flatsDeleted} deleted, ${stats.newJobsCreated} new jobs, ${stats.duplicateJobsFiltered} duplicates filtered, ${stats.flatsUpdated} updated, ${stats.jobsReset} jobs reset to pending`,
@@ -47,7 +48,7 @@ export default defineTask({
 
     await logScraperRun({
       kind: "update-flats",
-      propertyManagementId: propertyManagement.slug,
+      propertyManagementId,
       success,
       stats,
       errorMessage: error ?? null,
