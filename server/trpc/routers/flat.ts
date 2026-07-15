@@ -16,17 +16,19 @@ import {
 import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
 import { db } from "~/server/db/client";
-import { address, flat, flatToTag } from "~/server/db/schema";
-import { omit } from "~/utils/typeHelper";
+import { address, flat } from "~/server/db/schema";
 import { berlinDistricts, districtIdSchema } from "~/data/districts";
-import { type Tags, tagsSchema } from "~/data/tags";
+import {
+  getDisplayTags,
+  tagsSchema,
+  titleMatchesAnyTagFilter,
+} from "~/data/tags";
 import { flatFilterUrlSchema } from "~/composables/useUrlState";
 import { hashString } from "~/server/util";
 
 const countsAsNewTime = 60 * 60 * 12;
-export const countsAsNewFilter = sql<
-  0 | 1
->`strftime('%s', 'now') - firstSeen < ${countsAsNewTime}`.as("isNew");
+const isFlatNew = sql`strftime('%s', 'now') - ${flat.firstSeen} < ${countsAsNewTime}`;
+export const countsAsNewFilter = sql<0 | 1>`${isFlatNew}`.as("isNew");
 
 const queryOptions = {
   where: and(
@@ -34,14 +36,13 @@ const queryOptions = {
     isNotNull(flat.addressId),
     eq(flat.ignored, false),
   ),
-  with: { address: true, flatToTag: true },
+  with: { address: true },
   columns: {
     id: true,
     addressId: true,
     coldRentPrice: true,
     floor: true,
     propertyManagementId: true,
-    tags: true,
     title: true,
     firstSeen: true,
     lastSeen: true,
@@ -70,13 +71,10 @@ export const flatRouter = router({
           limit: input.limit,
           orderBy: [desc(flat.firstSeen)],
         })
-      ).map((flat) => {
-        const tags = flat.flatToTag.map((flatToTag) => flatToTag.tagId);
-        if (flat.isNew) {
-          tags.push("new");
-        }
-        return { ...flat, tags };
-      });
+      ).map((flat) => ({
+        ...flat,
+        tags: getDisplayTags(flat.title, !!flat.isNew),
+      }));
     }),
   getAll: publicProcedure
     .input(
@@ -98,29 +96,22 @@ export const flatRouter = router({
         }),
     )
     .query(async ({ input }) => {
-      // when filtering for "new", we need to filter
-      // for the timestamp instead of the tag
       const onlyShowNew = input.tags?.includes("new");
-      if (onlyShowNew) {
-        input.tags = input.tags?.filter((tag) => tag !== "new");
-      }
-      const tagsToFilterFor = tagsSchema.safeParse(input.tags ?? []);
+      const tagsWithoutNew = input.tags?.filter((tag) => tag !== "new");
+      const tagsToFilterFor = tagsSchema.safeParse(tagsWithoutNew ?? []);
+
+      const tagFilter =
+        tagsToFilterFor.success && tagsToFilterFor.data.length > 0
+          ? titleMatchesAnyTagFilter(flat.title, tagsToFilterFor.data)
+          : undefined;
+
       const filters = [
-        // not deleted
         isNull(flat.deleted),
-
-        // not ignored
         eq(flat.ignored, false),
-
-        // id filter
         input.ids &&
           (input.ids.length ? inArray(flat.id, input.ids) : sql`FALSE`),
-
-        // property management filter
         input.propertyManagements &&
           inArray(flat.propertyManagementId, input.propertyManagements),
-
-        // district filter
         input.districts &&
           inArray(
             address.postalCode,
@@ -132,17 +123,8 @@ export const flatRouter = router({
               })
               .flat(),
           ),
-
-        // countsAsNew filter
-        onlyShowNew && sql`isNew = 1`,
-
-        // tag filter
-        tagsToFilterFor.success &&
-          tagsToFilterFor.data.length > 0 &&
-          inArray(flatToTag.tagId, tagsToFilterFor.data),
-
-        // price filter
-        // TODO: besseres handling für kalt/warmmiete
+        onlyShowNew && isFlatNew,
+        tagFilter,
         input.priceMin &&
           or(
             gte(flat.warmRentPrice, input.priceMin),
@@ -153,35 +135,27 @@ export const flatRouter = router({
             lte(flat.warmRentPrice, input.priceMax),
             lte(flat.coldRentPrice, input.priceMax),
           ),
-
-        // room count filter
         input.roomsMin && gte(flat.roomCount, input.roomsMin),
         input.roomsMax && lte(flat.roomCount, input.roomsMax),
-
-        // usable area filter
         input.areaMin && gte(flat.usableArea, input.areaMin),
         input.areaMax && lte(flat.usableArea, input.areaMax),
       ].filter(Boolean);
 
-      const filteredElementsCount = (
-        await db
-          .select({
-            count: count(),
-            isNew: countsAsNewFilter,
-          })
-          .from(flat)
-          .leftJoin(flatToTag, eq(flat.id, flatToTag.flatId))
-          .innerJoin(address, eq(flat.addressId, address.id))
-          .groupBy(flat.id)
-          .where(and(...filters))
-      ).length;
+      const whereClause = and(...filters);
+
+      const filteredElementsCount =
+        (
+          await db
+            .select({ count: count() })
+            .from(flat)
+            .innerJoin(address, eq(flat.addressId, address.id))
+            .where(whereClause)
+        )[0]?.count ?? 0;
 
       const totalElementsCount =
         (
           await db
-            .select({
-              count: count(),
-            })
+            .select({ count: count() })
             .from(flat)
             .where(
               and(
@@ -213,69 +187,32 @@ export const flatRouter = router({
         orderByInput.push(orderFunc(flat[input.orderBy?.[0]]));
       }
 
-      // get the flatIds of all flats that fulfill the filters
-      const flatIdsQuery = db
+      const rows = await db
         .select({
-          id: flat.id,
-          isNew: countsAsNewFilter,
-          postalCode: address.postalCode,
+          flat: { ...getTableColumns(flat), isNew: countsAsNewFilter },
+          address: getTableColumns(address),
         })
         .from(flat)
-        .leftJoin(flatToTag, eq(flat.id, flatToTag.flatId))
         .innerJoin(address, eq(flat.addressId, address.id))
-        .groupBy(flat.id)
-        .where(and(...filters))
+        .where(whereClause)
         .orderBy(...orderByInput)
         .limit(input.pageSize)
         .offset((input.page - 1) * input.pageSize);
 
-      // run the full query, there will be multiples, because of the m:n relation to the tags
-      const query = db
-        .select({
-          flat: { ...getTableColumns(flat), isNew: sql`isNew` },
-          address: getTableColumns(address),
-          flatToTag: getTableColumns(flatToTag),
-        })
-        .from(flatIdsQuery.as("flatIdQuery"))
-        .innerJoin(flat, eq(flat.id, sql`flatIdQuery.id`))
-        .innerJoin(address, eq(flat.addressId, address.id))
-        .leftJoin(flatToTag, eq(flat.id, flatToTag.flatId));
-
-      // filter out the multiples and bring it into the correct format
-      const data = (await query).reduce(
-        (acc, dataPoint) => {
-          const flat = omit(dataPoint.flat, ["deleted", "image"]);
-          // create the flat object for the first time
-          if (!acc[dataPoint.flat.id]) {
-            acc[dataPoint.flat.id] = {
-              ...flat,
-              tags: flat.isNew ? ["new"] : [],
-              hasImage: !!dataPoint.flat.image,
-              address: dataPoint.address,
-            };
-          }
-
-          // add current tag
-          if (dataPoint.flatToTag?.tagId) {
-            acc[dataPoint.flat.id]!.tags.push(dataPoint.flatToTag.tagId);
-          }
-
-          return acc;
-        },
-        {} as Record<
-          string,
-          Omit<typeof flat.$inferSelect, "image" | "deleted"> & {
-            tags: Tags;
-            hasImage: boolean;
-            address: typeof address.$inferSelect;
-          }
-        >,
-      );
+      const data = rows.map(({ flat: flatRow, address: flatAddress }) => {
+        const { image, isNew, ...rest } = flatRow;
+        return {
+          ...rest,
+          tags: getDisplayTags(flatRow.title, !!isNew),
+          hasImage: !!image,
+          address: flatAddress,
+        };
+      });
 
       return {
         totalElementsCount,
         filteredElementsCount,
-        data: Object.values(data),
+        data,
       };
     }),
   getMapPreviewHash: publicProcedure.query(async () => {

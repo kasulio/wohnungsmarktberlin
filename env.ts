@@ -13,7 +13,6 @@ export const env = createEnv({
   server: {
     GOOGLE_MAPS_API_KEY: z.string().min(1),
     LOCAL_SQLITE_PATH: z.string().min(1),
-    OPENAI_API_KEY: z.string().min(1).optional(),
     BETTER_AUTH_SECRET: z.string().min(32),
     DEPLOYMENT_URL: z
       .string()

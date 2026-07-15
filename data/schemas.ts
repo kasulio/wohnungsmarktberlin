@@ -1,7 +1,6 @@
 import { z } from "zod";
 
 import { insertAddressSchema } from "./address";
-import { tagsSchema } from "./tags";
 
 export const mailingListSignUpSchema = z.object({
   email: z.email("Die E-Mail Adresse ist nicht gültig"),
@@ -20,7 +19,6 @@ export const flatSchema = z.object({
   addressText: z.string(),
   address: insertAddressSchema.optional(),
   floor: z.number().nullable().optional(),
-  tags: tagsSchema,
   imageUrl: z.string().optional().nullable(),
   url: z.string(),
 });

@@ -1,5 +1,4 @@
 import { HTMLElement, parse } from "node-html-parser";
-import { getApartmentTags } from "../tags";
 import { type PropertyManagement, type ScrapedFlat } from "../schemas";
 import { fetchHtml } from "~/lib/http";
 import { parseNumberString } from "~/lib/parser";
@@ -60,7 +59,6 @@ function extractDataFromHtml(html: string, href: string) {
     usableArea: generalData.area ?? 0,
     roomCount: generalData.rooms ?? 0,
     floor: generalData.floor,
-    tags: getApartmentTags(title),
     imageUrl: images[0] ?? undefined,
   } satisfies ScrapedFlat;
 }

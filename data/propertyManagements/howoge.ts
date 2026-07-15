@@ -1,7 +1,6 @@
 import { parse } from "node-html-parser";
 import { z } from "zod";
 
-import { getApartmentTags } from "../tags";
 import {
   scrapedFlatSchema,
   type PropertyManagement,
@@ -115,11 +114,9 @@ function extractDataFromHtml(html: string, href: string) {
   const floor = parseNumberStringToInt(floorText);
 
   // Main featured image is inside <a class="image--large ...">
-  const mainImg = root.querySelector("a.image--large img[data-number=\"1\"]");
+  const mainImg = root.querySelector('a.image--large img[data-number="1"]');
   const imageSrc = mainImg?.getAttribute("src");
-  const imageUrl = imageSrc
-    ? `${howogeUrl}${imageSrc}`
-    : undefined;
+  const imageUrl = imageSrc ? `${howogeUrl}${imageSrc}` : undefined;
 
   return {
     title,
@@ -130,7 +127,6 @@ function extractDataFromHtml(html: string, href: string) {
     usableArea: area ?? 0,
     roomCount: rooms ?? 0,
     floor,
-    tags: getApartmentTags(title),
     imageUrl,
   } satisfies ScrapedFlat;
 }

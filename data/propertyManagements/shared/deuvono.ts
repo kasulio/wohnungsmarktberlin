@@ -2,7 +2,6 @@ import { parse } from "node-html-parser";
 import { z } from "zod";
 import { fetchJson } from "~/lib/http";
 import { parseNumberString } from "~/lib/parser";
-import { getApartmentTags } from "../../tags";
 import type { ScrapedFlat } from "../../schemas";
 
 export const extractDeuvonoUrls = async (provider: "vonovia" | "deuwo") => {
@@ -160,7 +159,6 @@ export function extractDeuvonoDataFromHtml(
     usableArea: area ?? 0,
     roomCount: data.numberOfRooms ?? 0,
     floor,
-    tags: getApartmentTags(title),
     imageUrl: images?.[0] ?? undefined,
   } satisfies ScrapedFlat;
 }
