@@ -1,6 +1,6 @@
 import { scrapedFlatSchema, type ScrapedFlat } from "~/data/schemas";
 
-export function assertFlatShape(flat: ScrapedFlat, ctx: string): void {
+export function assertScrapedFlatSchema(flat: ScrapedFlat, ctx: string): void {
   const parsed = scrapedFlatSchema.safeParse(flat);
   if (!parsed.success) {
     throw new Error(
@@ -22,14 +22,6 @@ export function assertFlatShape(flat: ScrapedFlat, ctx: string): void {
     );
   }
 
-  if (flat.roomCount == null || flat.roomCount < 1) {
-    throw new Error(`${ctx}: roomCount must be >= 1, got ${flat.roomCount}`);
-  }
-
-  if (flat.usableArea == null || flat.usableArea <= 0) {
-    throw new Error(`${ctx}: usableArea must be > 0, got ${flat.usableArea}`);
-  }
-
   if (flat.warmRentPrice != null && flat.warmRentPrice < flat.coldRentPrice) {
     throw new Error(
       `${ctx}: warmRentPrice (${flat.warmRentPrice}) must be >= coldRentPrice (${flat.coldRentPrice})`,
@@ -49,5 +41,17 @@ export function assertFlatShape(flat: ScrapedFlat, ctx: string): void {
     if (flat.floor < -5 || flat.floor > 50) {
       throw new Error(`${ctx}: floor must be in -5..50, got ${flat.floor}`);
     }
+  }
+}
+
+export function assertFlatShape(flat: ScrapedFlat, ctx: string): void {
+  assertScrapedFlatSchema(flat, ctx);
+
+  if (flat.roomCount == null || flat.roomCount < 1) {
+    throw new Error(`${ctx}: roomCount must be >= 1, got ${flat.roomCount}`);
+  }
+
+  if (flat.usableArea == null || flat.usableArea <= 0) {
+    throw new Error(`${ctx}: usableArea must be > 0, got ${flat.usableArea}`);
   }
 }

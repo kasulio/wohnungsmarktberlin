@@ -135,10 +135,14 @@ export const flatRouter = router({
             lte(flat.warmRentPrice, input.priceMax),
             lte(flat.coldRentPrice, input.priceMax),
           ),
-        input.roomsMin && gte(flat.roomCount, input.roomsMin),
-        input.roomsMax && lte(flat.roomCount, input.roomsMax),
-        input.areaMin && gte(flat.usableArea, input.areaMin),
-        input.areaMax && lte(flat.usableArea, input.areaMax),
+        input.roomsMin &&
+          and(isNotNull(flat.roomCount), gte(flat.roomCount, input.roomsMin)),
+        input.roomsMax &&
+          and(isNotNull(flat.roomCount), lte(flat.roomCount, input.roomsMax)),
+        input.areaMin &&
+          and(isNotNull(flat.usableArea), gte(flat.usableArea, input.areaMin)),
+        input.areaMax &&
+          and(isNotNull(flat.usableArea), lte(flat.usableArea, input.areaMax)),
       ].filter(Boolean);
 
       const whereClause = and(...filters);
@@ -180,7 +184,7 @@ export const flatRouter = router({
       } else if (input.orderBy?.[0] === "rentPricePerSquareMeter") {
         orderByInput.push(
           orderFunc(
-            sql`COALESCE(${flat.warmRentPrice}, ${flat.coldRentPrice}) / ${flat.usableArea}`,
+            sql`COALESCE(${flat.warmRentPrice}, ${flat.coldRentPrice}) / NULLIF(${flat.usableArea}, 0) NULLS LAST`,
           ),
         );
       } else {

@@ -14,6 +14,85 @@ type ExpectedFlat = {
   | "imageUrl"
 >;
 
+export const expectedMissingRoomsArea: Record<string, ExpectedFlat> = {
+  "berlinovo--missing-rooms-area.html": {
+    slug: "berlinovo",
+    title: "Stellplatz P.01.05",
+    coldRentPrice: 120,
+    warmRentPrice: 150,
+    roomCount: null,
+    usableArea: null,
+    addressText: "Musterstraße 1, 12345 Berlin",
+    floor: 0,
+    imageUrl:
+      "https://www.berlinovo.de/sites/default/files/example.jpg",
+  },
+  "degewo--missing-rooms-area.html": {
+    slug: "degewo",
+    title: "Gewerbeeinheit in Mitte",
+    coldRentPrice: 500,
+    warmRentPrice: 650,
+    roomCount: null,
+    usableArea: null,
+    addressText: "Teststraße 10, 10115 Berlin",
+    imageUrl:
+      "https://www.degewo.de/fileadmin/example.jpg",
+  },
+  "deuwo--missing-rooms-area.html": {
+    slug: "deuwo",
+    title: "Gewerbefläche im Erdgeschoss",
+    coldRentPrice: 800,
+    warmRentPrice: 950,
+    roomCount: null,
+    usableArea: null,
+    addressText: "Testweg 5",
+    floor: 0,
+    imageUrl:
+      "https://cdn.expose.vonovia.de/test.jpg?width=538&crop=3:2",
+  },
+  "gewobag--missing-rooms-area.html": {
+    slug: "gewobag",
+    title: "Stellplatz in Spandau",
+    coldRentPrice: 80,
+    warmRentPrice: 95,
+    roomCount: null,
+    usableArea: null,
+    addressText: "Testplatz 3, 13599 Berlin",
+    floor: 0,
+    imageUrl:
+      "https://www.gewobag.de/wp-content/uploads/test.jpg",
+  },
+  "howoge--missing-rooms-area.html": {
+    slug: "howoge",
+    title: "Stellplatz (kein WBS)",
+    coldRentPrice: 45,
+    warmRentPrice: 60,
+    roomCount: null,
+    usableArea: null,
+    addressText: "Musterallee 12, 13587 Berlin",
+  },
+  "stadtundland--missing-rooms-area.html": {
+    slug: "stadtundland",
+    title: "Stellplatz Tiefgarage",
+    coldRentPrice: 75,
+    warmRentPrice: 90,
+    roomCount: null,
+    usableArea: null,
+    addressText: "Sterndamm 80, 12487 Berlin",
+  },
+  "vonovia--missing-rooms-area.html": {
+    slug: "vonovia",
+    title: "Stellplatz in Mariendorf",
+    coldRentPrice: 90,
+    warmRentPrice: undefined,
+    roomCount: null,
+    usableArea: null,
+    addressText: "Rixdorfer Str. 68",
+    imageUrl:
+      "https://cdn.expose.vonovia.de/test.jpg?width=538&crop=3:2",
+  },
+};
+
 export const expectedValues: Record<string, ExpectedFlat> = {
   "berlinovo--standard-listing.html": {
     slug: "berlinovo",

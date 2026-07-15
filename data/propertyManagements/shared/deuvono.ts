@@ -166,8 +166,8 @@ export function extractDeuvonoDataFromHtml(
     warmRentPrice: warmRent,
     url,
     addressText: addressLine,
-    usableArea: area ?? 0,
-    roomCount: data.numberOfRooms ?? 0,
+    usableArea: area,
+    roomCount: data.numberOfRooms,
     floor,
     imageUrl: images?.[0] ?? undefined,
   } satisfies ScrapedFlat;

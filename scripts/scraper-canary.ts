@@ -162,7 +162,7 @@ async function runCanary(): Promise<ScraperReport[]> {
           report.passed < FLATS_PER_SCRAPER &&
           attempts < MAX_ATTEMPTS_PER_SCRAPER;
         if (needsMore) {
-          await Bun.sleep(1000 + Math.random() * 5000);
+          await Bun.sleep(500 + Math.random() * 1000);
         }
       }
 

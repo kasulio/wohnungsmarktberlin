@@ -124,8 +124,8 @@ function extractDataFromHtml(html: string, href: string) {
     warmRentPrice: warmRent,
     url: href,
     addressText: address,
-    usableArea: area ?? 0,
-    roomCount: rooms ?? 0,
+    usableArea: area,
+    roomCount: rooms,
     floor,
     imageUrl,
   } satisfies ScrapedFlat;
