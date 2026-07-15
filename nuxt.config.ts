@@ -6,7 +6,7 @@ export const deploymentUrl = env.DEPLOYMENT_URL;
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: "2026-02-03",
+  compatibilityDate: "2026-07-15",
   routeRules: {
     "/_ipx/**": {
       isr: 60 * 60 * 24 * 7, // 7 days
@@ -84,6 +84,7 @@ export default defineNuxtConfig({
       { loc: "/about", changefreq: "monthly", priority: 0.5 },
       { loc: "/privacy", changefreq: "yearly", priority: 0.2 },
     ],
+    zeroRuntime: true,
   },
   build: { transpile: ["trpc-nuxt", "zod"] },
   experimental: { clientFallback: true },
@@ -98,6 +99,18 @@ export default defineNuxtConfig({
   typescript: {
     tsConfig: {
       exclude: ["../scripts/**", "../**/*.test.ts"],
+    },
+  },
+  vite: {
+    optimizeDeps: {
+      include: [
+        "@lordicon/element",
+        "@vue/devtools-core",
+        "@vue/devtools-kit",
+        "better-auth/vue",
+        "drizzle-orm",
+        "lottie-web", // CJS
+      ],
     },
   },
 });

@@ -73,6 +73,7 @@ export const flatRouter = router({
         })
       ).map((flat) => ({
         ...flat,
+        hasImage: !!flat.hasImage,
         tags: getDisplayTags(flat.title, !!flat.isNew),
       }));
     }),

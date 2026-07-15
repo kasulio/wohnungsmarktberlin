@@ -1,13 +1,5 @@
 import { createEnv } from "@t3-oss/env-nuxt";
 import { z } from "zod";
-import dotenv from "dotenv";
-if (process.env.ENV_FILE_PATH) {
-  dotenv.config({
-    path: process.env.ENV_FILE_PATH,
-  });
-} else {
-  dotenv.config();
-}
 
 export const env = createEnv({
   server: {
