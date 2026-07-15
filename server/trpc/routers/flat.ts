@@ -125,11 +125,9 @@ export const flatRouter = router({
           ),
         );
       } else if (input.orderBy?.[0] === "rentPricePerSquareMeter") {
-        orderByInput.push(
-          orderFunc(
-            sql`COALESCE(${flat.warmRentPrice}, ${flat.coldRentPrice}) / NULLIF(${flat.usableArea}, 0) NULLS LAST`,
-          ),
-        );
+        // SQLite rejects `NULLS LAST` before ASC/DESC; use IS NULL instead.
+        const pricePerSqm = sql`COALESCE(${flat.warmRentPrice}, ${flat.coldRentPrice}) / NULLIF(${flat.usableArea}, 0)`;
+        orderByInput.push(sql`${pricePerSqm} IS NULL`, orderFunc(pricePerSqm));
       } else {
         orderByInput.push(orderFunc(flat[input.orderBy?.[0]]));
       }

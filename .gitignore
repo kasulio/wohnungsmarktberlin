@@ -32,3 +32,6 @@ public/map-preview.png
 data/html
 data/canary-failures
 docs
+
+# Local filter UI design shots (not shipped)
+archive/filter-ui-shots/

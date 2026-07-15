@@ -165,7 +165,54 @@ const sortOrders = computed(() => {
 </script>
 <template>
   <div>
-    <h1 class="sr-only">Alle Mietwohnungen in Berlin</h1>
+    <div class="mb-4 flex items-center justify-between gap-3 md:mb-6">
+      <h1 class="min-w-0 flex-1 text-xl leading-tight text-main">
+        {{ countText }}
+      </h1>
+      <div
+        class="flex h-8 shrink-0 items-center overflow-hidden rounded-md bg-background lg:hidden"
+      >
+        <label
+          class="sr-only"
+          for="overview-sort"
+          >Sortierung</label
+        >
+        <select
+          id="overview-sort"
+          class="h-full appearance-none bg-transparent py-0 pl-2.5 pr-1 text-xs font-medium text-main focus:outline-none"
+          :value="currentSortBy"
+          @change="setSortBy(($event.target as HTMLSelectElement).value)"
+        >
+          <option
+            v-for="opt in sortSelectOptions"
+            :key="opt.value"
+            :value="opt.value"
+          >
+            {{ opt.label }}
+          </option>
+        </select>
+        <button
+          type="button"
+          class="flex h-full items-center border-l border-main/10 px-2 text-main/70 transition-colors hover:bg-white hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          :aria-label="
+            currentSortOrder === 'asc'
+              ? 'Aufsteigend, umkehren'
+              : 'Absteigend, umkehren'
+          "
+          :title="currentSortOrder === 'asc' ? 'Aufsteigend' : 'Absteigend'"
+          @click="toggleSortOrder"
+        >
+          <Icon
+            :name="
+              currentSortOrder === 'asc'
+                ? 'lucide:arrow-up-narrow-wide'
+                : 'lucide:arrow-down-wide-narrow'
+            "
+            class="size-3.5"
+          />
+        </button>
+      </div>
+    </div>
     <Filters
       :result-count="flatsQuery.data?.value?.filteredElementsCount ?? null"
       :total-count="flatsQuery.data?.value?.totalElementsCount ?? null"
@@ -180,57 +227,6 @@ const sortOrders = computed(() => {
       </p>
     </div>
     <div v-else>
-      <div
-        class="mb-3 flex flex-wrap items-center justify-between gap-2 lg:hidden"
-      >
-        <h2 class="text-xl">
-          {{ countText }}
-        </h2>
-        <div
-          class="flex h-8 items-center overflow-hidden rounded-md border border-black/30 bg-white"
-        >
-          <label
-            class="sr-only"
-            for="overview-sort"
-            >Sortierung</label
-          >
-          <select
-            id="overview-sort"
-            class="h-full appearance-none bg-transparent py-0 pl-2.5 pr-1 text-xs font-medium text-main focus:outline-none"
-            :value="currentSortBy"
-            @change="setSortBy(($event.target as HTMLSelectElement).value)"
-          >
-            <option
-              v-for="opt in sortSelectOptions"
-              :key="opt.value"
-              :value="opt.value"
-            >
-              {{ opt.label }}
-            </option>
-          </select>
-          <button
-            type="button"
-            class="flex h-full items-center border-l border-black/20 px-2 text-main/70 transition-colors hover:bg-secondary hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-            :aria-label="
-              currentSortOrder === 'asc'
-                ? 'Aufsteigend, umkehren'
-                : 'Absteigend, umkehren'
-            "
-            :title="currentSortOrder === 'asc' ? 'Aufsteigend' : 'Absteigend'"
-            @click="toggleSortOrder"
-          >
-            <Icon
-              :name="
-                currentSortOrder === 'asc'
-                  ? 'lucide:arrow-up-narrow-wide'
-                  : 'lucide:arrow-down-wide-narrow'
-              "
-              class="size-3.5"
-            />
-          </button>
-        </div>
-      </div>
-
       <table
         class="hidden w-full table-fixed border-separate border-spacing-y-4 text-center lg:table"
       >
