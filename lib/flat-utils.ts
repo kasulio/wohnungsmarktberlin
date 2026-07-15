@@ -1,6 +1,10 @@
 import sharp from "sharp";
 import { propertyManagements } from "~/data/propertyManagements";
-import { type FlatForIgnoreCheck } from "~/data/schemas";
+import { type PropertyManagementId } from "~/data/propertyManagements/configs";
+import {
+  type FlatForIgnoreCheck,
+  type PropertyManagement,
+} from "~/data/schemas";
 
 export type { FlatForIgnoreCheck };
 const COMMERCIAL_TITLE_KEYWORDS = [
@@ -126,11 +130,10 @@ export function shouldIgnoreListing(flat: FlatForIgnoreCheck): boolean {
  * Gets a property management configuration by ID.
  * Throws an error if the property management is not found.
  */
-export function getPropertyManagement(propertyManagementId: string) {
-  const propertyManagement =
-    propertyManagements[
-      propertyManagementId as keyof typeof propertyManagements
-    ];
+export function getPropertyManagement(
+  propertyManagementId: PropertyManagementId,
+): PropertyManagement {
+  const propertyManagement = propertyManagements[propertyManagementId];
   if (!propertyManagement) {
     throw new Error(`Property management not found: ${propertyManagementId}`);
   }

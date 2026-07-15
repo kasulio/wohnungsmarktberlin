@@ -1,3 +1,4 @@
+import { type PropertyManagementId } from "~/data/propertyManagements/configs";
 import { db } from "~/server/db/client";
 import { scraperRun } from "~/server/db/schema";
 
@@ -5,7 +6,7 @@ export type ScraperRunTrigger = "scheduled" | "admin";
 
 export async function logScraperRun(params: {
   kind: string;
-  propertyManagementId?: string | null;
+  propertyManagementId?: PropertyManagementId | null;
   success: boolean;
   stats: unknown;
   errorMessage?: string | null;

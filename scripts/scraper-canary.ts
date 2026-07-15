@@ -1,4 +1,6 @@
 import { propertyManagements } from "~/data/propertyManagements";
+import { type PropertyManagementId } from "~/data/propertyManagements/configs";
+import { type PropertyManagement } from "~/data/schemas";
 import { assertFlatShape } from "~/data/propertyManagements/shape-contract";
 import { shouldIgnoreListing } from "~/lib/flat-utils";
 import { fetchHtml } from "~/lib/http";
@@ -28,10 +30,7 @@ type CheckResult =
 const FLATS_PER_SCRAPER = 2;
 const MAX_ATTEMPTS_PER_SCRAPER = 5;
 const scraperEntries = Object.entries(propertyManagements) as Array<
-  [
-    keyof typeof propertyManagements,
-    (typeof propertyManagements)[keyof typeof propertyManagements],
-  ]
+  [PropertyManagementId, PropertyManagement]
 >;
 
 function shortUrl(url: string): string {
@@ -50,9 +49,9 @@ function failurePath(url: string, slug: string): string {
 }
 
 async function checkUrl(
-  scraper: (typeof propertyManagements)[keyof typeof propertyManagements],
+  scraper: PropertyManagement,
   url: string,
-  propertyManagementId: keyof typeof propertyManagements,
+  propertyManagementId: PropertyManagementId,
 ): Promise<CheckResult> {
   try {
     const html = await fetchHtml(url, scraper.getFetchOptions?.());

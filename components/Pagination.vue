@@ -12,12 +12,13 @@ const maxPage = computed(() => {
   return Math.ceil(props.filteredElementsCount / props.pageSize);
 });
 
-const pageSizeOptions = [25, 50, 100];
+const pageSizeOptions = [25, 50, 100] as const;
+const defaultPageSize = pageSizeOptions[0];
 
 const updatePagination = (page: number, pageSize: number, replace = true) => {
   const pageSizeToGoTo = pageSizeOptions.includes(pageSize)
     ? pageSize
-    : pageSizeOptions[0];
+    : defaultPageSize;
 
   // automatically fix page, when it is out of bounds
   const pageToGoTo = Math.min(

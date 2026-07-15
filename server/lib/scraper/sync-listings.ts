@@ -1,6 +1,6 @@
 import { and, eq, type InferInsertModel, inArray, isNull } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
-import { PropertyManagementId } from "~/data/propertyManagements/configs";
+import { type PropertyManagementId } from "~/data/propertyManagements/configs";
 import { db } from "~/server/db/client";
 import { flat, flatUrlJob } from "~/server/db/schema";
 

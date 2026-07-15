@@ -89,7 +89,7 @@ useHead({
         :id="flat.id"
         :key="flat.id"
         :title="flat.title"
-        :address="flat.address"
+        :address="flat.address!"
         :cold-rent-price="flat.coldRentPrice"
         :warm-rent-price="flat.warmRentPrice"
         :tags="flat.tags"

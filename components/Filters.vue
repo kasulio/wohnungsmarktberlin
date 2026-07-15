@@ -16,32 +16,31 @@ const modalPreferences = reactive({
   tags: [] as string[],
   districts: [] as string[],
   propertyManagements: [] as string[],
-} as Record<
-  "priceMin" | "priceMax" | "roomsMin" | "roomsMax" | "areaMin" | "areaMax",
-  number | null
-> &
-  Record<"tags" | "districts" | "propertyManagements", string[]>);
-
-interface Metadata {
-  [key: string]: {
-    min: number;
-    max: number;
-    unit: string;
-  };
-}
-
-const activePrefsCount = computed(() => {
-  return Object.keys(urlState.value).filter(
-    (key) =>
-      modalPreferences[key as keyof typeof modalPreferences] !== undefined,
-  ).length;
+} as {
+  priceMin: number | null;
+  priceMax: number | null;
+  roomsMin: number | null;
+  roomsMax: number | null;
+  areaMin: number | null;
+  areaMax: number | null;
+  tags: string[];
+  districts: string[];
+  propertyManagements: string[];
 });
 
-const filterMetadata: Metadata = {
+type ModalPreferenceKey = keyof typeof modalPreferences;
+
+const filterMetadata = {
   price: { min: 100, max: 10000, unit: "€" },
   rooms: { min: 1, max: 10, unit: "Zimmer" },
   area: { min: 1, max: 1000, unit: "m²" },
-};
+} as const;
+
+const activePrefsCount = computed(() => {
+  return Object.keys(urlState.value).filter(
+    (key) => modalPreferences[key as ModalPreferenceKey] !== undefined,
+  ).length;
+});
 
 watch(urlState, () => {
   syncStateWithUrl();
@@ -66,6 +65,12 @@ const getFilterMetadata = (key: string) => {
   return null;
 };
 
+type UiFilter = {
+  filter: string;
+  id: ModalPreferenceKey;
+  title?: string;
+};
+
 const getLimitByKeyName = (keyName: string) => {
   if (keyName.toLowerCase().includes("min")) {
     return "≥";
@@ -88,29 +93,35 @@ const createFilter = (
 };
 
 const uiFilters = computed(() => {
-  const filters: any[] = [];
+  const filters: UiFilter[] = [];
 
-  for (const [key, value] of Object.entries(modalPreferences)) {
+  for (const key of typedObjectKeys(modalPreferences)) {
     if (key === "tags") {
-      for (const tag of value) {
-        filters.push({ filter: tag, id: key, title: tags[tag] });
+      for (const tag of modalPreferences.tags) {
+        filters.push({
+          filter: tag,
+          id: key,
+          title: tags[tag as keyof typeof tags],
+        });
       }
       continue;
     }
 
     if (key === "districts") {
-      for (const district of value) {
+      for (const district of modalPreferences.districts) {
+        const districtData =
+          berlinDistricts[district as keyof typeof berlinDistricts];
         filters.push({
           filter: district,
           id: key,
-          title: berlinDistricts[district].name,
+          title: districtData?.name ?? district,
         });
       }
       continue;
     }
 
     if (key === "propertyManagements") {
-      for (const slug of value) {
+      for (const slug of modalPreferences.propertyManagements) {
         const cfg =
           propertyManagementConfigs[
             slug as keyof typeof propertyManagementConfigs
@@ -124,18 +135,32 @@ const uiFilters = computed(() => {
       continue;
     }
 
-    if (value) {
+    const value = modalPreferences[key];
+    if (typeof value === "number") {
       const filter = createFilter(
         value,
         getFilterMetadata(key)?.unit ?? "",
         getLimitByKeyName(key),
       );
-      filters.push({ filter, id: key });
+      if (filter) {
+        filters.push({ filter, id: key });
+      }
     }
   }
 
   return filters;
 });
+
+const removeFilter = (filterObj: UiFilter) => {
+  const current = urlState.value[filterObj.id];
+  if (Array.isArray(current) && current.length > 1) {
+    updateQueryState({
+      [filterObj.id]: current.filter((item) => item !== filterObj.filter),
+    });
+    return;
+  }
+  updateQueryState({ [filterObj.id]: undefined });
+};
 
 const applyFilters = () => {
   modalOpen.value = false;
@@ -149,14 +174,16 @@ const applyFilters = () => {
       continue;
     }
 
-    if (typeof value === "number" && filterMetadata[key]) {
-      query[key] = Math.min(
-        Math.max(value, filterMetadata[key].min),
-        filterMetadata[key].max,
-      );
+    if (typeof value === "number") {
+      const meta = getFilterMetadata(key);
+      const clamped = meta
+        ? Math.min(Math.max(value, meta.min), meta.max)
+        : value;
+      query[key] = [clamped];
+      continue;
     }
 
-    query[key] = value ? [value].flat() : null;
+    query[key] = null;
   }
 
   updateQueryState(query);
@@ -305,19 +332,7 @@ const propertyManagementSuggestions = Object.values(
         {{ filterObj.title ?? filterObj.filter }}
         <span
           class="cursor-pointer text-accent"
-          @click="
-            () => {
-              if (urlState[filterObj.id].length > 1) {
-                updateQueryState({
-                  [filterObj.id]: urlState[filterObj.id].filter(
-                    (item) => item !== filterObj.filter,
-                  ),
-                });
-                return;
-              }
-              updateQueryState({ [filterObj.id]: undefined });
-            }
-          "
+          @click="removeFilter(filterObj)"
           >x</span
         >
       </div>
