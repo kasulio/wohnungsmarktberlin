@@ -35,3 +35,5 @@ export const propertyManagementConfigs = {
     website: "https://www.howoge.de",
   },
 } as const;
+
+export type PropertyManagementId = keyof typeof propertyManagementConfigs;

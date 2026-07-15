@@ -9,6 +9,7 @@ import {
   primaryKey,
   index,
 } from "drizzle-orm/sqlite-core";
+import type { PropertyManagementId } from "~/data/propertyManagements/configs";
 import type { Tags } from "~/data/tags";
 
 export const signups = sqliteTable("signups", {
@@ -43,7 +44,9 @@ export const flat = sqliteTable("flat", {
   addressId: text("addressId"),
   addressText: text("addressText").notNull().default(""),
   addressImprovement: text("addressImprovement").default("pending"),
-  propertyManagementId: text("propertyManagementId"),
+  propertyManagementId: text(
+    "propertyManagementId",
+  ).$type<PropertyManagementId>(),
   firstSeen: integer("firstSeen", { mode: "timestamp" }).notNull(),
   lastSeen: integer("lastSeen", { mode: "timestamp" }).notNull(),
   deleted: integer("deleted", { mode: "timestamp" }),
@@ -53,7 +56,9 @@ export const flat = sqliteTable("flat", {
 
 export const flatUrlJob = sqliteTable("flatUrlJob", {
   url: text("url").notNull().primaryKey(),
-  propertyManagementId: text("propertyManagementId").notNull(),
+  propertyManagementId: text("propertyManagementId")
+    .$type<PropertyManagementId>()
+    .notNull(),
   status: text("status").notNull().default("pending"),
   createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
   /** Capped error string from last failed extract attempt (see process-flat-url-jobs). */
@@ -68,7 +73,9 @@ export const scraperRun = sqliteTable(
       .primaryKey()
       .$defaultFn(() => Bun.randomUUIDv7()),
     kind: text("kind").notNull(),
-    propertyManagementId: text("propertyManagementId"),
+    propertyManagementId: text(
+      "propertyManagementId",
+    ).$type<PropertyManagementId | null>(),
     success: integer("success", { mode: "boolean" }).notNull(),
     statsJson: text("statsJson").notNull(),
     errorMessage: text("errorMessage"),
