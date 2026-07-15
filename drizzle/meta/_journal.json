@@ -57,6 +57,13 @@
       "when": 1779216219138,
       "tag": "0007_shiny_vampiro",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1784133495158,
+      "tag": "0008_eager_shiva",
+      "breakpoints": true
     }
   ]
 }

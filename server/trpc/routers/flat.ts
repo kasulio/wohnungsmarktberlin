@@ -1,41 +1,22 @@
-import {
-  and,
-  eq,
-  inArray,
-  isNull,
-  sql,
-  getTableColumns,
-  gte,
-  lte,
-  count,
-  or,
-  asc,
-  desc,
-  isNotNull,
-} from "drizzle-orm";
+import { and, eq, sql, getTableColumns, count, asc, desc } from "drizzle-orm";
 import { z } from "zod";
 import { publicProcedure, router } from "../trpc";
 import { db } from "~/server/db/client";
 import { address, flat } from "~/server/db/schema";
-import { berlinDistricts, districtIdSchema } from "~/data/districts";
-import {
-  getDisplayTags,
-  tagsSchema,
-  titleMatchesAnyTagFilter,
-} from "~/data/tags";
+import { getDisplayTags } from "~/data/tags";
 import { flatFilterUrlSchema } from "~/composables/useUrlState";
+import {
+  flatFilterToSql,
+  isFlatNew,
+  type FlatFilter,
+} from "~/lib/flat-filters";
+import { publishableFlatFilter } from "~/lib/flat-publishability";
 import { hashString } from "~/server/util";
 
-const countsAsNewTime = 60 * 60 * 12;
-const isFlatNew = sql`strftime('%s', 'now') - ${flat.firstSeen} < ${countsAsNewTime}`;
 export const countsAsNewFilter = sql<0 | 1>`${isFlatNew}`.as("isNew");
 
 const queryOptions = {
-  where: and(
-    isNull(flat.deleted),
-    isNotNull(flat.addressId),
-    eq(flat.ignored, false),
-  ),
+  where: publishableFlatFilter(),
   with: { address: true },
   columns: {
     id: true,
@@ -97,56 +78,23 @@ export const flatRouter = router({
         }),
     )
     .query(async ({ input }) => {
-      const onlyShowNew = input.tags?.includes("new");
-      const tagsWithoutNew = input.tags?.filter((tag) => tag !== "new");
-      const tagsToFilterFor = tagsSchema.safeParse(tagsWithoutNew ?? []);
+      const filter: FlatFilter = {
+        ids: input.ids ?? undefined,
+        tags: input.tags ?? undefined,
+        propertyManagements: input.propertyManagements ?? undefined,
+        districts: input.districts ?? undefined,
+        priceMin: input.priceMin,
+        priceMax: input.priceMax,
+        roomsMin: input.roomsMin,
+        roomsMax: input.roomsMax,
+        areaMin: input.areaMin,
+        areaMax: input.areaMax,
+      };
 
-      const tagFilter =
-        tagsToFilterFor.success && tagsToFilterFor.data.length > 0
-          ? titleMatchesAnyTagFilter(flat.title, tagsToFilterFor.data)
-          : undefined;
-
-      const filters = [
-        isNull(flat.deleted),
-        eq(flat.ignored, false),
-        input.ids &&
-          (input.ids.length ? inArray(flat.id, input.ids) : sql`FALSE`),
-        input.propertyManagements &&
-          inArray(flat.propertyManagementId, input.propertyManagements),
-        input.districts &&
-          inArray(
-            address.postalCode,
-            input.districts
-              .map((inputDistrict) => {
-                const res = districtIdSchema.safeParse(inputDistrict);
-                if (!res.success) return [];
-                return berlinDistricts[res.data].zipCodes;
-              })
-              .flat(),
-          ),
-        onlyShowNew && isFlatNew,
-        tagFilter,
-        input.priceMin &&
-          or(
-            gte(flat.warmRentPrice, input.priceMin),
-            gte(flat.coldRentPrice, input.priceMin),
-          ),
-        input.priceMax &&
-          or(
-            lte(flat.warmRentPrice, input.priceMax),
-            lte(flat.coldRentPrice, input.priceMax),
-          ),
-        input.roomsMin &&
-          and(isNotNull(flat.roomCount), gte(flat.roomCount, input.roomsMin)),
-        input.roomsMax &&
-          and(isNotNull(flat.roomCount), lte(flat.roomCount, input.roomsMax)),
-        input.areaMin &&
-          and(isNotNull(flat.usableArea), gte(flat.usableArea, input.areaMin)),
-        input.areaMax &&
-          and(isNotNull(flat.usableArea), lte(flat.usableArea, input.areaMax)),
-      ].filter(Boolean);
-
-      const whereClause = and(...filters);
+      const whereClause = and(
+        publishableFlatFilter(),
+        ...flatFilterToSql(filter),
+      );
 
       const filteredElementsCount =
         (
@@ -162,13 +110,7 @@ export const flatRouter = router({
           await db
             .select({ count: count() })
             .from(flat)
-            .where(
-              and(
-                isNull(flat.deleted),
-                isNotNull(flat.addressId),
-                eq(flat.ignored, false),
-              ),
-            )
+            .where(publishableFlatFilter())
         )[0]?.count ?? 0;
 
       const orderByInput = [];
@@ -227,7 +169,7 @@ export const flatRouter = router({
           id: flat.id,
         })
         .from(flat)
-        .where(and(isNull(flat.deleted), eq(flat.ignored, false)))
+        .where(publishableFlatFilter())
     ).map((x) => x.id);
 
     return await hashString(flatIds.join(""));
