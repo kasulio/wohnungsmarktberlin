@@ -15,6 +15,8 @@ const district = computed(
   () => zipCodeToDistrict[props.address.postalCode] ?? null,
 );
 
+const districtLabel = computed(() => district.value?.name ?? "Unbekannt");
+
 const firstSeenLabel = computed(() =>
   props.firstSeen.toLocaleDateString("de-DE", {
     day: "numeric",
@@ -29,7 +31,7 @@ function toggleExpanded() {
 
 const summaryLabel = computed(() => {
   const plz = props.address.postalCode;
-  const loc = district.value ? `${plz} ${district.value.name}` : plz;
+  const loc = `${plz} ${districtLabel.value}`;
   return `${props.address.street} ${props.address.streetNumber}, ${loc}`;
 });
 
@@ -46,9 +48,7 @@ const mapTo = computed(() => ({
 const tableRows = computed(() => {
   const rows: { label: string; value: string }[] = [];
   const { street, streetNumber, postalCode } = props.address;
-  const loc = district.value
-    ? `${postalCode} ${district.value.name}`
-    : postalCode;
+  const loc = `${postalCode} ${districtLabel.value}`;
   rows.push({ label: "Adresse", value: `${street} ${streetNumber}, ${loc}` });
   if (props.roomCount)
     rows.push({ label: "Zimmer", value: formatRoomCount(props.roomCount) });
@@ -138,8 +138,7 @@ const tableRows = computed(() => {
         </div>
         <p class="truncate text-xs leading-snug text-main/55">
           {{ address.street }}&nbsp;{{ address.streetNumber }},
-          {{ address.postalCode
-          }}<template v-if="district">&nbsp;{{ district.name }}</template>
+          {{ address.postalCode }}&nbsp;{{ districtLabel }}
         </p>
       </div>
       <div class="flex shrink-0 items-center gap-0.5 self-center">

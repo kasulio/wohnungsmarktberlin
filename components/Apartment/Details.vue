@@ -2,7 +2,7 @@
 import type { ListingDetailsProps } from "~/types/listing-flat";
 import {
   formatArea,
-  formatPrimaryRent,
+  formatPrice,
   formatRoomCount,
   primaryRentPrice,
 } from "~/utils/util";
@@ -66,12 +66,10 @@ const primaryRent = computed(() =>
       </div>
     </td>
     <td class="align-top">
-      <span>{{ formatPrimaryRent($props) }}</span>
-      <span
-        v-if="$props.warmRentPrice"
-        class="block text-s opacity-80"
-        >Warmmiete</span
-      >
+      {{ formatPrice(coldRentPrice) }}
+    </td>
+    <td class="align-top">
+      {{ formatPrice(warmRentPrice) }}
     </td>
     <td class="align-top">
       {{ formatRoomCount(roomCount) }}

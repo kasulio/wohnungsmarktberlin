@@ -1,391 +1,289 @@
 import { z } from "zod";
 import { typedObjectKeys } from "~/utils/typeHelper";
 
+/**
+ * Berlin's 12 administrative Bezirke → PLZ.
+ *
+ * Source: Amt für Statistik Berlin-Brandenburg, Regionales Bezugssystem (RBS) Adressen
+ * (WFS https://gdi.berlin.de/services/wfs/adressen_rbs), CC-BY-3.0.
+ * Each PLZ is assigned to the Bezirk with the majority of RBS address points
+ * (fetched 2026-07-15, 404105 addresses, 193 PLZ).
+ * Border PLZs that span Bezirke use the majority assignment only.
+ */
 export const berlinDistricts = {
-  charlottenburg: {
-    name: "Charlottenburg",
+  mitte: {
+    name: "Mitte",
+    shortName: "Mitte",
     zipCodes: [
-      "10627",
-      "14057",
-      "10625",
-      "10589",
-      "10587",
-      "10585",
-      "10629",
-      "14059",
-      "10623",
-      "10623",
+      "10115",
+      "10117",
+      "10119",
+      "10178",
+      "10179",
+      "10551",
+      "10553",
+      "10555",
+      "10557",
+      "10559",
+      "10785",
+      "10787",
+      "13347",
+      "13349",
+      "13351",
+      "13353",
+      "13355",
+      "13357",
+      "13359",
     ],
   },
-  maerkischesviertel: {
-    name: "Märkisches Viertel",
-    zipCodes: ["13439", "13435"],
-  },
-  rosenthal: {
-    name: "Rosenthal",
-    zipCodes: ["13158"],
+  "friedrichshain-kreuzberg": {
+    name: "Friedrichshain-Kreuzberg",
+    shortName: "Fhain-Kreuzberg",
+    zipCodes: [
+      "10243",
+      "10245",
+      "10247",
+      "10249",
+      "10961",
+      "10963",
+      "10965",
+      "10967",
+      "10969",
+      "10997",
+      "10999",
+    ],
   },
   pankow: {
     name: "Pankow",
-    zipCodes: ["13189", "13187"],
-  },
-  britz: {
-    name: "Britz",
-    zipCodes: ["12347", "12359"],
-  },
-  koepenick: {
-    name: "Köpenick",
-    zipCodes: ["12559", "12559"],
-  },
-  wannsee: {
-    name: "Wannsee",
-    zipCodes: ["14109"],
-  },
-  westend: {
-    name: "Westend",
-    zipCodes: ["14053", "14052", "14055", "14050"],
-  },
-  lichterfelde: {
-    name: "Lichterfelde",
-    zipCodes: ["12209"],
-  },
-  wedding: {
-    name: "Wedding",
-    zipCodes: ["13351", "13353", "13347", "13405", "13349", "13355"],
-  },
-  altglienicke: {
-    name: "Altglienicke",
-    zipCodes: ["12524"],
-  },
-  tegel: {
-    name: "Tegel",
-    zipCodes: ["13503", "13507", "13505"],
-  },
-  moabit: {
-    name: "Moabit",
-    zipCodes: ["10559", "10557", "10555", "10551", "10553"],
-  },
-  mitte: {
-    name: "Mitte",
-    zipCodes: ["10179", "10115", "10178", "10119", "10117"],
-  },
-  berlin: {
-    name: "Berlin",
+    shortName: "Pankow",
     zipCodes: [
-      "12487",
-      "12305",
-      "12277",
-      "10319",
-      "12309",
-      "10827",
-      "12679",
-      "12307",
-      "12687",
-      "12685",
-      "10825",
-      "12305",
-      "12619",
-      "12629",
-      "12685",
-      "12679",
-      "12557",
-      "12681",
-      "12279",
-      "12689",
+      "10405",
+      "10407",
+      "10409",
+      "10435",
+      "10437",
+      "10439",
+      "13086",
+      "13088",
+      "13089",
+      "13125",
+      "13127",
+      "13129",
+      "13156",
+      "13158",
+      "13159",
+      "13187",
+      "13189",
     ],
   },
-  nikolassee: {
-    name: "Nikolassee",
-    zipCodes: ["14129"],
-  },
-  tiergarten: {
-    name: "Tiergarten",
-    zipCodes: ["10787", "10785"],
-  },
-  tempelhof: {
-    name: "Tempelhof",
-    zipCodes: ["12101", "12099", "12103"],
-  },
-  prenzlauerberg: {
-    name: "Prenzlauer Berg",
-    zipCodes: ["10437", "10405", "10409", "10435", "10407", "10439"],
-  },
-  buckow: {
-    name: "Buckow",
-    zipCodes: ["12351", "12349"],
-  },
-  friedrichshain: {
-    name: "Friedrichshain",
-    zipCodes: ["10247", "10243", "10249", "10245"],
-  },
-  schmoeckwitz: {
-    name: "Schmöckwitz",
-    zipCodes: ["12527"],
-  },
-  hakenfelde: {
-    name: "Hakenfelde",
-    zipCodes: ["13587"],
-  },
-  lichtenberg: {
-    name: "Lichtenberg",
-    zipCodes: ["10367", "10369", "10365"],
-  },
-  steglitz: {
-    name: "Steglitz",
-    zipCodes: ["12169", "12163", "12167", "12165"],
-  },
-  friedenau: {
-    name: "Friedenau",
-    zipCodes: ["12159", "12161"],
-  },
-  kreuzberg: {
-    name: "Kreuzberg",
+  "charlottenburg-wilmersdorf": {
+    name: "Charlottenburg-Wilmersdorf",
+    shortName: "Charlottenburg",
     zipCodes: [
-      "10963",
-      "10997",
-      "10965",
-      "10961",
-      "10969",
-      "10999",
-      "12047",
-      "10967",
+      "10585",
+      "10587",
+      "10589",
+      "10623",
+      "10625",
+      "10627",
+      "10629",
+      "10707",
+      "10709",
+      "10711",
+      "10713",
+      "10715",
+      "10717",
+      "10719",
+      "10789",
+      "13627",
+      "14050",
+      "14052",
+      "14053",
+      "14055",
+      "14057",
+      "14059",
+      "14193",
+      "14197",
+      "14199",
     ],
-  },
-  gropiusstadt: {
-    name: "Gropiusstadt",
-    zipCodes: ["12353"],
-  },
-  alttreptow: {
-    name: "Alt Treptow",
-    zipCodes: ["12435"],
-  },
-  biesdorf: {
-    name: "Biesdorf",
-    zipCodes: ["12683"],
-  },
-  reinickendorf: {
-    name: "Reinickendorf",
-    zipCodes: ["13403", "13509", "13437"],
-  },
-  wilmersdorf: {
-    name: "Wilmersdorf",
-    zipCodes: ["10719", "10713", "10707", "10777", "10709", "10717", "14197"],
-  },
-  lankwitz: {
-    name: "Lankwitz",
-    zipCodes: ["12249", "12247"],
-  },
-  schoeneberg: {
-    name: "Schöneberg",
-    zipCodes: ["10829", "10789", "10781", "10783", "10779", "12157"],
-  },
-  bohnsdorf: {
-    name: "Bohnsdorf",
-    zipCodes: ["12526"],
-  },
-  mariendorf: {
-    name: "Mariendorf",
-    zipCodes: ["12107", "12109", "12105", "12107"],
-  },
-  gesundbrunnen: {
-    name: "Gesundbrunnen",
-    zipCodes: ["13357", "13359"],
-  },
-  neukoelln: {
-    name: "Neukölln",
-    zipCodes: [
-      "12043",
-      "12059",
-      "12051",
-      "12053",
-      "12059",
-      "12049",
-      "12045",
-      "12057",
-      "12055",
-    ],
-  },
-  niederschoeneweide: {
-    name: "Niederschöneweide",
-    zipCodes: ["12439"],
-  },
-  lichtenfelde: {
-    name: "Lichtenfelde",
-    zipCodes: ["12203", "12207", "12205"],
-  },
-  wilhelmsdorf: {
-    name: "Wilhelmsdorf",
-    zipCodes: ["10715"],
-  },
-  wartenberg: {
-    name: "Wartenberg",
-    zipCodes: ["13059"],
-  },
-  falkenberg: {
-    name: "Falkenberg",
-    zipCodes: ["13057"],
-  },
-  niederschoenhausen: {
-    name: "Niederschönhausen",
-    zipCodes: ["13156"],
-  },
-  rudow: {
-    name: "Rudow",
-    zipCodes: ["12355", "12357"],
-  },
-  mahlsdorf: {
-    name: "Mahlsdorf",
-    zipCodes: ["12623", "12623"],
   },
   spandau: {
     name: "Spandau",
-    zipCodes: ["13585", "13597", "13581", "13583"],
+    shortName: "Spandau",
+    zipCodes: [
+      "13581",
+      "13583",
+      "13585",
+      "13587",
+      "13589",
+      "13591",
+      "13593",
+      "13595",
+      "13597",
+      "13599",
+      "13629",
+      "14089",
+    ],
   },
-  haselhorst: {
-    name: "Haselhorst",
-    zipCodes: ["13599"],
+  "steglitz-zehlendorf": {
+    name: "Steglitz-Zehlendorf",
+    shortName: "Steglitz",
+    zipCodes: [
+      "12163",
+      "12165",
+      "12167",
+      "12169",
+      "12203",
+      "12205",
+      "12207",
+      "12209",
+      "12247",
+      "12249",
+      "14109",
+      "14129",
+      "14163",
+      "14165",
+      "14167",
+      "14169",
+      "14195",
+    ],
   },
-  luebars: {
-    name: "Lübars",
-    zipCodes: ["13469"],
+  "tempelhof-schoeneberg": {
+    name: "Tempelhof-Schöneberg",
+    shortName: "Tempelhof",
+    zipCodes: [
+      "10777",
+      "10779",
+      "10781",
+      "10783",
+      "10823",
+      "10825",
+      "10827",
+      "10829",
+      "12099",
+      "12101",
+      "12103",
+      "12105",
+      "12107",
+      "12109",
+      "12157",
+      "12159",
+      "12161",
+      "12277",
+      "12279",
+      "12305",
+      "12307",
+      "12309",
+    ],
   },
-  halensee: {
-    name: "Halensee",
-    zipCodes: ["10711"],
+  neukoelln: {
+    name: "Neukölln",
+    shortName: "Neukölln",
+    zipCodes: [
+      "12043",
+      "12045",
+      "12047",
+      "12049",
+      "12051",
+      "12053",
+      "12055",
+      "12057",
+      "12059",
+      "12347",
+      "12349",
+      "12351",
+      "12353",
+      "12355",
+      "12357",
+      "12359",
+    ],
   },
-  west: {
-    name: "West",
-    zipCodes: ["13409", "13407", "10823"],
+  "treptow-koepenick": {
+    name: "Treptow-Köpenick",
+    shortName: "Treptow",
+    zipCodes: [
+      "12435",
+      "12437",
+      "12439",
+      "12459",
+      "12487",
+      "12489",
+      "12524",
+      "12526",
+      "12527",
+      "12555",
+      "12557",
+      "12559",
+      "12587",
+      "12589",
+      "15537",
+      "15566",
+      "15569",
+    ],
   },
-  weissensee: {
-    name: "Weißensee",
-    zipCodes: ["13086", "13088"],
+  "marzahn-hellersdorf": {
+    name: "Marzahn-Hellersdorf",
+    shortName: "Marzahn",
+    zipCodes: [
+      "12619",
+      "12621",
+      "12623",
+      "12627",
+      "12629",
+      "12679",
+      "12681",
+      "12683",
+      "12685",
+      "12687",
+      "12689",
+    ],
   },
-  gatow: {
-    name: "Gatow",
-    zipCodes: ["14089"],
+  lichtenberg: {
+    name: "Lichtenberg",
+    shortName: "Lichtenberg",
+    zipCodes: [
+      "10315",
+      "10317",
+      "10318",
+      "10319",
+      "10365",
+      "10367",
+      "10369",
+      "13051",
+      "13053",
+      "13055",
+      "13057",
+      "13059",
+    ],
   },
-  franzoesischbuchholz: {
-    name: "Französisch Buchholz",
-    zipCodes: ["13127"],
+  reinickendorf: {
+    name: "Reinickendorf",
+    shortName: "Reinickendorf",
+    zipCodes: [
+      "13403",
+      "13405",
+      "13407",
+      "13409",
+      "13435",
+      "13437",
+      "13439",
+      "13465",
+      "13467",
+      "13469",
+      "13503",
+      "13505",
+      "13507",
+      "13509",
+    ],
   },
-  blankenfelde: {
-    name: "Blankenfelde",
-    zipCodes: ["13159"],
-  },
-  zehlendorf: {
-    name: "Zehlendorf",
-    zipCodes: ["14165", "14167", "14163", "14169"],
-  },
-  oberschoeneweide: {
-    name: "Oberschöneweide",
-    zipCodes: ["12459"],
-  },
-  wilhelmstadt: {
-    name: "Wilhelmstadt",
-    zipCodes: ["13593", "13595"],
-  },
-  falkenhagenerfeld: {
-    name: "Falkenhagener Feld",
-    zipCodes: ["13589"],
-  },
-  schmargendorf: {
-    name: "Schmargendorf",
-    zipCodes: ["14199"],
-  },
-  althohenschoenhausen: {
-    name: "Alt-Hohenschönhausen",
-    zipCodes: ["13055", "13053"],
-  },
-  friedrichsfelde: {
-    name: "Friedrichsfelde",
-    zipCodes: ["10315"],
-  },
-  heinelsdorf: {
-    name: "Heinelsdorf",
-    zipCodes: ["13089"],
-  },
-  rummelsburg: {
-    name: "Rummelsburg",
-    zipCodes: ["10317"],
-  },
-  schoeneichebeiberlin: {
-    name: "Schöneiche bei Berlin",
-    zipCodes: ["15566"],
-  },
-  staaken: {
-    name: "Staaken",
-    zipCodes: ["13591"],
-  },
-  siemensstadt: {
-    name: "Siemensstadt",
-    zipCodes: ["13629"],
-  },
-  karlshorst: {
-    name: "Karlshorst",
-    zipCodes: ["10318"],
-  },
-  frohnau: {
-    name: "Frohnau",
-    zipCodes: ["13465"],
-  },
-  teltowkanaliii: {
-    name: "Teltowkanal III",
-    zipCodes: ["12489"],
-  },
-  hellersdorf: {
-    name: "Hellersdorf",
-    zipCodes: ["12627"],
-  },
-  dahlem: {
-    name: "Dahlem",
-    zipCodes: ["14195"],
-  },
-  hermsdorf: {
-    name: "Hermsdorf",
-    zipCodes: ["13467"],
-  },
-  koepenik: {
-    name: "Köpenik",
-    zipCodes: ["12555"],
-  },
-  buch: {
-    name: "Buch",
-    zipCodes: ["13125"],
-  },
-  grunewald: {
-    name: "Grunewald",
-    zipCodes: ["14193"],
-  },
-  baumschulenweg: {
-    name: "Baumschulenweg",
-    zipCodes: ["12437"],
-  },
-  wiesengrund: {
-    name: "Wiesengrund",
-    zipCodes: ["12587"],
-  },
-  rahnsdorf: {
-    name: "Rahnsdorf",
-    zipCodes: ["12589"],
-  },
+} as const;
 
-  blankenburg: {
-    name: "Blankenburg",
-    zipCodes: ["13129"],
-  },
-  kaulsdorf: {
-    name: "Kaulsdorf",
-    zipCodes: ["12621"],
-  },
-  charlottenburgnord: {
-    name: "Charlottenburg-Nord",
-    zipCodes: ["13627"],
-  },
-  neuschoenhausen: {
-    name: "Neu-Schönhausen",
-    zipCodes: ["13051"],
-  },
+/** Virtual Bezirk for flats whose PLZ is not mapped to any Berlin district. */
+export const UNKNOWN_DISTRICT_ID = "unbekannt" as const;
+
+export const unknownDistrict = {
+  name: "Unbekannt",
+  shortName: "Unbekannt",
 } as const;
 
 export const zipCodeToDistrict = Object.entries(berlinDistricts).reduce(
@@ -401,13 +299,26 @@ export const zipCodeToDistrict = Object.entries(berlinDistricts).reduce(
   >,
 );
 
-// this is necessary for the type to be inferred correctly
+/** All PLZs assigned to a real Berlin Bezirk. */
+export const allBerlinZipCodes = Object.keys(zipCodeToDistrict);
+
+/** True when the PLZ maps to one of the 12 Bezirke. */
+export function isMappedPostalCode(postalCode: string): boolean {
+  return postalCode in zipCodeToDistrict;
+}
+
 const districts = typedObjectKeys(berlinDistricts);
 
 export const districtIdSchema = z.enum(districts);
+/** Real Bezirke plus the virtual "unbekannt" filter id. */
+export const filterDistrictIdSchema = z.enum([
+  ...districts,
+  UNKNOWN_DISTRICT_ID,
+]);
 export const districtSchema = z.object({
   title: z.string(),
   zipCodes: z.array(z.string()),
 });
 
 export type DistrictId = z.infer<typeof districtIdSchema>;
+export type FilterDistrictId = z.infer<typeof filterDistrictIdSchema>;

@@ -50,7 +50,7 @@ const cases: {
     want: false,
   },
 
-  // price: OR over warm/cold, null-safe
+  // price: COALESCE(warm, cold)
   {
     name: "priceMin met by warm",
     filter: { priceMin: 900 },
@@ -63,7 +63,13 @@ const cases: {
     want: true,
   },
   {
-    name: "priceMin unmet by both",
+    name: "priceMin prefers warm over cold",
+    flat: { warmRentPrice: 1000, coldRentPrice: 400 },
+    filter: { priceMin: 900 },
+    want: true,
+  },
+  {
+    name: "priceMin unmet by effective rent",
     flat: { warmRentPrice: 500, coldRentPrice: 400 },
     filter: { priceMin: 900 },
     want: false,
@@ -75,10 +81,10 @@ const cases: {
     want: false,
   },
   {
-    name: "priceMax met by cold (OR keeps it even though warm exceeds)",
+    name: "priceMax uses warm even when cold is lower",
     flat: { warmRentPrice: 2000, coldRentPrice: 800 },
     filter: { priceMax: 900 },
-    want: true,
+    want: false,
   },
 
   // rooms / area: null-guarded
@@ -99,17 +105,45 @@ const cases: {
     want: false,
   },
 
-  // districts → zipCodes
+  // districts → zipCodes (12 Berlin Bezirke)
   {
     name: "district matches by zip",
-    filter: { districts: ["moabit"] },
+    filter: { districts: ["mitte"] },
     want: true,
   },
   {
     name: "district no match",
     flat: { postalCode: "99999" },
-    filter: { districts: ["moabit"] },
+    filter: { districts: ["mitte"] },
     want: false,
+  },
+  {
+    name: "unbekannt matches unmapped zip",
+    flat: { postalCode: "99999" },
+    filter: { districts: ["unbekannt"] },
+    want: true,
+  },
+  {
+    name: "unbekannt matches null postalCode",
+    flat: { postalCode: null },
+    filter: { districts: ["unbekannt"] },
+    want: true,
+  },
+  {
+    name: "unbekannt rejects mapped zip",
+    filter: { districts: ["unbekannt"] },
+    want: false,
+  },
+  {
+    name: "mitte + unbekannt matches mapped",
+    filter: { districts: ["mitte", "unbekannt"] },
+    want: true,
+  },
+  {
+    name: "mitte + unbekannt matches unmapped",
+    flat: { postalCode: "99999" },
+    filter: { districts: ["mitte", "unbekannt"] },
+    want: true,
   },
 
   // "new" pseudo-tag
@@ -147,7 +181,7 @@ const cases: {
       priceMin: 900,
       roomsMin: 2,
       areaMax: 70,
-      districts: ["moabit"],
+      districts: ["mitte"],
     },
     want: true,
   },

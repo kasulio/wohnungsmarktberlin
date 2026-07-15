@@ -1,7 +1,7 @@
 import { computed } from "vue";
 import { useRouter } from "vue-router";
 import { type ZodNullable, type ZodObject, type ZodOptional, z } from "zod";
-import { berlinDistricts } from "~/data/districts";
+import { UNKNOWN_DISTRICT_ID, berlinDistricts } from "~/data/districts";
 import {
   propertyManagementConfigs,
   propertyManagementIdSchema,
@@ -100,6 +100,8 @@ export const flatFilterUrlSchema = z
         z.enum([
           "main",
           "price",
+          "coldRentPrice",
+          "warmRentPrice",
           "usableArea",
           "roomCount",
           "rentPricePerSquareMeter",
@@ -121,7 +123,8 @@ export const useFlatFilterUrlState = () => {
     typedObjectKeys(tags).includes(tag as keyof typeof tags),
   );
   const validDistricts = url.urlState.value.districts?.filter(
-    (district: string) => district in berlinDistricts,
+    (district: string) =>
+      district in berlinDistricts || district === UNKNOWN_DISTRICT_ID,
   );
 
   const validPropertyManagements =

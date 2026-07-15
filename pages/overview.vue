@@ -60,6 +60,41 @@ onUnmounted(() => unregisterLoadingRef(flatsQuery.status));
 const sortOptions = flatFilterUrlSchema.shape.orderBy.unwrap().unwrap()
   .element.options;
 
+const sortSelectOptions = [
+  { value: "main", label: "Neueste" },
+  { value: "coldRentPrice", label: "Kaltmiete" },
+  { value: "warmRentPrice", label: "Warmmiete" },
+  { value: "rentPricePerSquareMeter", label: "€/m²" },
+  { value: "roomCount", label: "Zimmer" },
+  { value: "usableArea", label: "Fläche" },
+] as const;
+
+type SortValue = (typeof sortSelectOptions)[number]["value"];
+
+const currentSortBy = computed(
+  (): SortValue => (urlState.value.orderBy?.[0] as SortValue) ?? "main",
+);
+const currentSortOrder = computed(
+  () =>
+    urlState.value.order?.[0] ??
+    (currentSortBy.value === "main" ? "desc" : "asc"),
+);
+
+const setSortBy = (value: string) => {
+  const orderBy = value as SortValue;
+  updateQueryState({
+    orderBy: [orderBy],
+    order: [orderBy === "main" ? "desc" : "asc"],
+  });
+};
+
+const toggleSortOrder = () => {
+  updateQueryState({
+    orderBy: [currentSortBy.value],
+    order: [currentSortOrder.value === "asc" ? "desc" : "asc"],
+  });
+};
+
 const countText = computed(() => {
   const total = flatsQuery.data?.value?.totalElementsCount ?? 0;
   const filtered = flatsQuery.data?.value?.filteredElementsCount ?? 0;
@@ -79,22 +114,25 @@ const tableHeaders = computed(
         title: countText.value,
         class: "w-[30%] rounded-l-xl px-4 text-left",
       },
-      price: {
-        title: "Preis (kalt)",
+      coldRentPrice: {
+        title: "Kalt",
+      },
+      warmRentPrice: {
+        title: "Warm",
       },
       roomCount: {
-        title: "Zimmer",
-        class: "w-[10%]",
+        title: "Zi.",
+        class: "w-[8%]",
       },
       usableArea: {
-        title: "Fläche",
+        title: "m²",
       },
       rentPricePerSquareMeter: {
         title: "€/m²",
       },
       district: {
         title: "Bezirk",
-        class: "w-[20%]",
+        class: "w-[16%]",
       },
       favorite: {
         title: "",
@@ -128,7 +166,10 @@ const sortOrders = computed(() => {
 <template>
   <div>
     <h1 class="sr-only">Alle Mietwohnungen in Berlin</h1>
-    <Filters />
+    <Filters
+      :result-count="flatsQuery.data?.value?.filteredElementsCount ?? null"
+      :total-count="flatsQuery.data?.value?.totalElementsCount ?? null"
+    />
     <div v-if="!flats?.data?.length">
       <h2 class="mt-4 text-xl">
         Es wurden keine Wohnungen gefunden
@@ -139,6 +180,57 @@ const sortOrders = computed(() => {
       </p>
     </div>
     <div v-else>
+      <div
+        class="mb-3 flex flex-wrap items-center justify-between gap-2 lg:hidden"
+      >
+        <h2 class="text-xl">
+          {{ countText }}
+        </h2>
+        <div
+          class="flex h-8 items-center overflow-hidden rounded-md border border-black/30 bg-white"
+        >
+          <label
+            class="sr-only"
+            for="overview-sort"
+            >Sortierung</label
+          >
+          <select
+            id="overview-sort"
+            class="h-full appearance-none bg-transparent py-0 pl-2.5 pr-1 text-xs font-medium text-main focus:outline-none"
+            :value="currentSortBy"
+            @change="setSortBy(($event.target as HTMLSelectElement).value)"
+          >
+            <option
+              v-for="opt in sortSelectOptions"
+              :key="opt.value"
+              :value="opt.value"
+            >
+              {{ opt.label }}
+            </option>
+          </select>
+          <button
+            type="button"
+            class="flex h-full items-center border-l border-black/20 px-2 text-main/70 transition-colors hover:bg-secondary hover:text-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            :aria-label="
+              currentSortOrder === 'asc'
+                ? 'Aufsteigend, umkehren'
+                : 'Absteigend, umkehren'
+            "
+            :title="currentSortOrder === 'asc' ? 'Aufsteigend' : 'Absteigend'"
+            @click="toggleSortOrder"
+          >
+            <Icon
+              :name="
+                currentSortOrder === 'asc'
+                  ? 'lucide:arrow-up-narrow-wide'
+                  : 'lucide:arrow-down-wide-narrow'
+              "
+              class="size-3.5"
+            />
+          </button>
+        </div>
+      </div>
+
       <table
         class="hidden w-full table-fixed border-separate border-spacing-y-4 text-center lg:table"
       >
@@ -217,9 +309,6 @@ const sortOrders = computed(() => {
       </table>
 
       <div class="lg:hidden">
-        <h2 class="mb-4 text-xl">
-          {{ countText }}
-        </h2>
         <div class="flex flex-col gap-3">
           <ApartmentDetails
             v-for="flat in flats?.data"

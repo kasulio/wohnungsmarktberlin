@@ -7,7 +7,9 @@ export function describeFlatFilter(
   if (!filter) return "alle neuen Inserate";
   const parts: string[] = [];
   if (filter.priceMin != null || filter.priceMax != null) {
-    parts.push(`Preis ${filter.priceMin ?? "0"}–${filter.priceMax ?? "∞"} €`);
+    parts.push(
+      `Warmmiete ${filter.priceMin ?? "0"}–${filter.priceMax ?? "∞"} €`,
+    );
   }
   if (filter.roomsMin != null || filter.roomsMax != null) {
     parts.push(`${filter.roomsMin ?? "0"}–${filter.roomsMax ?? "∞"} Zi.`);

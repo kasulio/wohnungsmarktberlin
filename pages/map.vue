@@ -48,7 +48,10 @@ await flatsQuery;
 <template>
   <div class="flex h-full w-full flex-col">
     <h1 class="sr-only">Berliner Mietwohnungen auf der Karte</h1>
-    <Filters />
+    <Filters
+      :result-count="flatsQuery.data.value?.filteredElementsCount ?? null"
+      :total-count="flatsQuery.data.value?.totalElementsCount ?? null"
+    />
     <div
       ref="mapContainer"
       class="relative h-full min-h-[70vh] grow overflow-hidden rounded-xl bg-background"

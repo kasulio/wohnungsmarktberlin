@@ -1,15 +1,13 @@
-import {
-  and,
-  gte,
-  inArray,
-  lte,
-  or,
-  sql,
-  type SQL,
-} from "drizzle-orm";
+import { gte, inArray, lte, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { z } from "zod";
 import { address, flat } from "~/server/db/schema";
-import { berlinDistricts, districtIdSchema } from "~/data/districts";
+import {
+  UNKNOWN_DISTRICT_ID,
+  allBerlinZipCodes,
+  berlinDistricts,
+  districtIdSchema,
+  isMappedPostalCode,
+} from "~/data/districts";
 import { propertyManagementIdSchema } from "~/data/propertyManagements/configs";
 import {
   getApartmentTags,
@@ -48,15 +46,46 @@ export const flatFilterSchema = z.object({
 
 export type FlatFilter = z.infer<typeof flatFilterSchema>;
 
-/** Resolve district ids to the union of their zip codes. */
+/** Resolve real district ids to the union of their zip codes (skips "unbekannt"). */
 function districtsToZipCodes(districts: string[]): string[] {
   return districts
     .map((inputDistrict) => {
+      if (inputDistrict === UNKNOWN_DISTRICT_ID) return [];
       const res = districtIdSchema.safeParse(inputDistrict);
       if (!res.success) return [];
       return berlinDistricts[res.data].zipCodes;
     })
     .flat();
+}
+
+/**
+ * District filter: real Bezirke → PLZ IN …; virtual "unbekannt" → PLZ not
+ * mapped to any Bezirk. Combined with OR when both are selected.
+ */
+function districtFilterSql(districts: string[]): SQL | undefined {
+  const wantsUnknown = districts.includes(UNKNOWN_DISTRICT_ID);
+  const zipCodes = districtsToZipCodes(districts);
+  const knownMatch =
+    zipCodes.length > 0 ? inArray(address.postalCode, zipCodes) : undefined;
+  const unknownMatch = wantsUnknown
+    ? notInArray(address.postalCode, allBerlinZipCodes)
+    : undefined;
+
+  if (knownMatch && unknownMatch) return or(knownMatch, unknownMatch);
+  return knownMatch ?? unknownMatch;
+}
+
+function matchesDistrictFilter(
+  postalCode: string | null,
+  districts: string[],
+): boolean {
+  const wantsUnknown = districts.includes(UNKNOWN_DISTRICT_ID);
+  const zipCodes = new Set(districtsToZipCodes(districts));
+  const matchesKnown =
+    postalCode != null && zipCodes.size > 0 && zipCodes.has(postalCode);
+  const matchesUnknown =
+    wantsUnknown && (postalCode == null || !isMappedPostalCode(postalCode));
+  return matchesKnown || matchesUnknown;
 }
 
 /** The subset of `tags` that are title-derived (i.e. not the "new" pseudo-tag). */
@@ -80,22 +109,21 @@ export function flatFilterToSql(filter: FlatFilter): SQL[] {
       (filter.ids.length ? inArray(flat.id, filter.ids) : sql`FALSE`),
     filter.propertyManagements &&
       inArray(flat.propertyManagementId, filter.propertyManagements),
-    filter.districts &&
-      inArray(address.postalCode, districtsToZipCodes(filter.districts)),
+    filter.districts ? districtFilterSql(filter.districts) : undefined,
     filter.tags?.includes("new") ? isFlatNew : undefined,
     titleTags.length > 0
       ? titleMatchesAnyTagFilter(flat.title, tagsSchema.parse(titleTags))
       : undefined,
     filter.priceMin != null
-      ? or(
-          gte(flat.warmRentPrice, filter.priceMin),
-          gte(flat.coldRentPrice, filter.priceMin),
+      ? gte(
+          sql`COALESCE(${flat.warmRentPrice}, ${flat.coldRentPrice})`,
+          filter.priceMin,
         )
       : undefined,
     filter.priceMax != null
-      ? or(
-          lte(flat.warmRentPrice, filter.priceMax),
-          lte(flat.coldRentPrice, filter.priceMax),
+      ? lte(
+          sql`COALESCE(${flat.warmRentPrice}, ${flat.coldRentPrice})`,
+          filter.priceMax,
         )
       : undefined,
     filter.roomsMin != null ? gte(flat.roomCount, filter.roomsMin) : undefined,
@@ -140,9 +168,11 @@ export function matchesFilter(
     return false;
   }
 
-  if (filter.districts) {
-    const zipCodes = new Set(districtsToZipCodes(filter.districts));
-    if (flat.postalCode == null || !zipCodes.has(flat.postalCode)) return false;
+  if (
+    filter.districts &&
+    !matchesDistrictFilter(flat.postalCode, filter.districts)
+  ) {
+    return false;
   }
 
   if (filter.tags?.includes("new") && !flatIsNew(flat.firstSeen, now)) {
@@ -155,35 +185,45 @@ export function matchesFilter(
     if (!titleTags.some((t) => flatTags.has(t as never))) return false;
   }
 
-  if (
-    filter.priceMin != null &&
-    !gtePrice(flat.warmRentPrice, filter.priceMin) &&
-    !gtePrice(flat.coldRentPrice, filter.priceMin)
-  ) {
+  const rent = effectiveRent(flat);
+  if (filter.priceMin != null && !gtePrice(rent, filter.priceMin)) {
     return false;
   }
-  if (
-    filter.priceMax != null &&
-    !ltePrice(flat.warmRentPrice, filter.priceMax) &&
-    !ltePrice(flat.coldRentPrice, filter.priceMax)
-  ) {
+  if (filter.priceMax != null && !ltePrice(rent, filter.priceMax)) {
     return false;
   }
 
-  if (filter.roomsMin != null && !(flat.roomCount != null && flat.roomCount >= filter.roomsMin)) {
+  if (
+    filter.roomsMin != null &&
+    !(flat.roomCount != null && flat.roomCount >= filter.roomsMin)
+  ) {
     return false;
   }
-  if (filter.roomsMax != null && !(flat.roomCount != null && flat.roomCount <= filter.roomsMax)) {
+  if (
+    filter.roomsMax != null &&
+    !(flat.roomCount != null && flat.roomCount <= filter.roomsMax)
+  ) {
     return false;
   }
-  if (filter.areaMin != null && !(flat.usableArea != null && flat.usableArea >= filter.areaMin)) {
+  if (
+    filter.areaMin != null &&
+    !(flat.usableArea != null && flat.usableArea >= filter.areaMin)
+  ) {
     return false;
   }
-  if (filter.areaMax != null && !(flat.usableArea != null && flat.usableArea <= filter.areaMax)) {
+  if (
+    filter.areaMax != null &&
+    !(flat.usableArea != null && flat.usableArea <= filter.areaMax)
+  ) {
     return false;
   }
 
   return true;
+}
+
+/** Warmmiete when present, otherwise Kaltmiete — matches SQL COALESCE. */
+function effectiveRent(flat: FilterableFlat): number | null {
+  return flat.warmRentPrice ?? flat.coldRentPrice ?? null;
 }
 
 /** null-safe `>=`, matching SQL where `NULL >= x` is not true. */
