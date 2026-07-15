@@ -1,3 +1,4 @@
+import type { Options as KyOptions } from "ky";
 import { z } from "zod";
 
 import { insertAddressSchema } from "./address";
@@ -53,5 +54,6 @@ const propertyManagementSchema = z.object({
 export type PropertyManagement = z.infer<typeof propertyManagementSchema> & {
   extractUrls: () => Promise<string[]>;
   extractDataFromHtml: (html: string, href: string) => ScrapedFlat;
+  getFetchOptions?: () => KyOptions;
   shouldIgnoreListing?: (flat: FlatForProviderIgnoreCheck) => boolean;
 };

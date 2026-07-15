@@ -77,7 +77,10 @@ export async function processFlatUrlJobs(
     );
 
     try {
-      const html = await fetchHtml(flatUrlJob.url);
+      const html = await fetchHtml(
+        flatUrlJob.url,
+        propertyManagement.getFetchOptions?.(),
+      );
       const scrapedFlat = propertyManagement.extractDataFromHtml(
         html,
         flatUrlJob.url,
