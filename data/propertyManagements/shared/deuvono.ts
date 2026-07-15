@@ -23,6 +23,7 @@ export const extractDeuvonoUrls = async (provider: "vonovia" | "deuwo") => {
   url.searchParams.set("rentType", "miete");
   url.searchParams.set("city", "Berlin");
   url.searchParams.set("locationDisplay", "Berlin");
+  url.searchParams.set("immoType", "wohnung");
   url.searchParams.set("dataSet", provider);
 
   const data = await fetchJson(url.toString());
