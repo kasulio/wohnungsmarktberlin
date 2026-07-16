@@ -29,6 +29,22 @@ export type LottieIconPlayer = {
   readonly isPlaying: boolean;
 };
 
+export type LottieIconExpose = {
+  ensureLoaded: () => Promise<LottieIconPlayer | null>;
+  readonly playerInstance: LottieIconPlayer | null;
+};
+
+export type LottieIconHost = HTMLElement & {
+  playerInstance?: LottieIconPlayer;
+  ensureLoaded?: () => Promise<LottieIconPlayer | null>;
+};
+
+export function getLottieIconHost(
+  el: Element | null | undefined,
+): LottieIconHost | undefined {
+  return el ? (el as LottieIconHost) : undefined;
+}
+
 let lottiePromise: Promise<LottieLight> | null = null;
 const iconCache = new Map<string, unknown>();
 const inflight = new Map<string, Promise<unknown>>();

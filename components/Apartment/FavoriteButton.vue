@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { LottieIconPlayer } from "~/utils/lottieIcons";
+import type { LottieIconExpose, LottieIconPlayer } from "~/utils/lottieIcons";
 
 const props = defineProps<{
   id: string;
@@ -7,6 +7,7 @@ const props = defineProps<{
 
 const { isFavorite, toggle } = useFavorite(() => props.id);
 const player = shallowRef<LottieIconPlayer | null>(null);
+const heartIcon = ref<LottieIconExpose | null>(null);
 
 watch(isFavorite, (newValue) => {
   const playerInstance = player.value;
@@ -21,6 +22,12 @@ function onIconReady(playerInstance: LottieIconPlayer) {
     playerInstance.goToLastFrame();
   }
 }
+
+async function onFavoriteClick() {
+  const instance = await heartIcon.value?.ensureLoaded();
+  if (instance) player.value = instance;
+  toggle();
+}
 </script>
 
 <template>
@@ -29,7 +36,7 @@ function onIconReady(playerInstance: LottieIconPlayer) {
     :title="`${
       isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'
     }`"
-    @click="() => toggle()"
+    @click="onFavoriteClick"
   >
     <span
       class="flex transition-colors delay-200 duration-300"
@@ -40,6 +47,7 @@ function onIconReady(playerInstance: LottieIconPlayer) {
     >
       <ClientOnly>
         <LottieIcon
+          ref="heartIcon"
           src="/icons/heart.json"
           state="morph-heart"
           class="current-color -m-1 md:hover:animate-zoombounce"

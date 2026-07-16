@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { LottieIconPlayer } from "~/utils/lottieIcons";
+import type { LottieIconExpose, LottieIconPlayer } from "~/utils/lottieIcons";
 
 const modalOpen = ref(false);
 const player = shallowRef<LottieIconPlayer | null>(null);
+const heartIcon = ref<LottieIconExpose | null>(null);
 const { favorites } = useFavorites();
 
 watch(modalOpen, (newValue) => {
@@ -19,16 +20,23 @@ function onIconReady(playerInstance: LottieIconPlayer) {
     playerInstance.goToLastFrame();
   }
 }
+
+async function openFavorites() {
+  const instance = await heartIcon.value?.ensureLoaded();
+  if (instance) player.value = instance;
+  modalOpen.value = true;
+}
 </script>
 <template>
   <div class="favorites relative cursor-pointer">
     <LottieIcon
+      ref="heartIcon"
       src="/icons/heart.json"
       state="morph-heart"
       class="hover:animate-zoombounce"
       style="width: 32px; height: 32px"
       @ready="onIconReady"
-      @click="() => (modalOpen = true)"
+      @click="openFavorites"
     >
       <img
         src="/icons/heart.svg"

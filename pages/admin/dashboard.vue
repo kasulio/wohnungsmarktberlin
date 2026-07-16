@@ -213,7 +213,6 @@ const notifyFeedback = ref<{ id: string; ok: boolean; msg: string } | null>(
   null,
 );
 
-
 const sendTestNotification = async (subscriberId: string) => {
   if (testingSubscriberId.value) return;
   testingSubscriberId.value = subscriberId;
@@ -597,13 +596,22 @@ const sendTestNotification = async (subscriberId: string) => {
         <table class="text-sm w-full min-w-[48rem] border-collapse text-left">
           <thead>
             <tr class="border-b border-black bg-background/50">
-              <th scope="col" class="px-3 py-3 font-semibold text-main">
+              <th
+                scope="col"
+                class="px-3 py-3 font-semibold text-main"
+              >
                 Kanal / Ziel
               </th>
-              <th scope="col" class="px-3 py-3 font-semibold text-main">
+              <th
+                scope="col"
+                class="px-3 py-3 font-semibold text-main"
+              >
                 Filter
               </th>
-              <th scope="col" class="px-3 py-3 font-semibold text-main">
+              <th
+                scope="col"
+                class="px-3 py-3 font-semibold text-main"
+              >
                 Status
               </th>
               <th
@@ -612,10 +620,16 @@ const sendTestNotification = async (subscriberId: string) => {
               >
                 Gesendet
               </th>
-              <th scope="col" class="px-3 py-3 font-semibold text-main">
+              <th
+                scope="col"
+                class="px-3 py-3 font-semibold text-main"
+              >
                 Erstellt
               </th>
-              <th scope="col" class="px-3 py-3 font-semibold text-main">
+              <th
+                scope="col"
+                class="px-3 py-3 font-semibold text-main"
+              >
                 Aktion
               </th>
             </tr>
@@ -632,7 +646,10 @@ const sendTestNotification = async (subscriberId: string) => {
                   class="ml-1.5 rounded-full bg-secondary px-1.5 py-0.5 text-xs text-main"
                   >{{ sub.source }}</span
                 >
-                <p class="truncate text-xs text-gray-500" :title="sub.target">
+                <p
+                  class="truncate text-xs text-gray-500"
+                  :title="sub.target"
+                >
                   {{ sub.target }}
                 </p>
               </td>
@@ -672,7 +689,10 @@ const sendTestNotification = async (subscriberId: string) => {
               </td>
             </tr>
             <tr v-if="!(subscribers.data.value ?? []).length">
-              <td colspan="6" class="px-3 py-6 text-center text-gray-500">
+              <td
+                colspan="6"
+                class="px-3 py-6 text-center text-gray-500"
+              >
                 Keine Abonnenten.
               </td>
             </tr>

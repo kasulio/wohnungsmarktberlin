@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import {
-  createLottieIconPlayer,
-  type LottieIconPlayer,
-} from "~/utils/lottieIcons";
+import { getLottieIconHost, type LottieIconPlayer } from "~/utils/lottieIcons";
 
 const props = withDefaults(
   defineProps<{
@@ -27,58 +24,99 @@ const player = shallowRef<LottieIconPlayer | null>(null);
 
 let destroyPlayer: (() => void) | null = null;
 let cancelled = false;
+let loadPromise: Promise<LottieIconPlayer | null> | null = null;
+
+function bindHostApi() {
+  const el = getLottieIconHost(root.value);
+  if (!el) return;
+  el.ensureLoaded = ensureLoaded;
+  el.playerInstance = player.value ?? undefined;
+}
+
+function clearHostApi() {
+  const el = getLottieIconHost(root.value);
+  if (!el) return;
+  delete el.ensureLoaded;
+  delete el.playerInstance;
+}
 
 function attachPlayer(instance: LottieIconPlayer | null) {
   player.value = instance;
-  if (root.value) {
-    (
-      root.value as HTMLElement & { playerInstance?: LottieIconPlayer }
-    ).playerInstance = instance ?? undefined;
-  }
+  const el = getLottieIconHost(root.value);
+  if (el) el.playerInstance = instance ?? undefined;
+}
+
+async function ensureLoaded(): Promise<LottieIconPlayer | null> {
+  if (player.value) return player.value;
+  if (!import.meta.client || !host.value || !root.value) return null;
+
+  loadPromise ??= (async () => {
+    try {
+      const { createLottieIconPlayer } = await import("~/utils/lottieIcons");
+      const { player: instance, destroy } = await createLottieIconPlayer({
+        container: host.value!,
+        src: props.src,
+        state: props.state,
+      });
+      if (cancelled) {
+        destroy();
+        loadPromise = null;
+        return null;
+      }
+      destroyPlayer = destroy;
+      attachPlayer(instance);
+      ready.value = true;
+      emit("ready", instance);
+      return instance;
+    } catch (error) {
+      loadPromise = null;
+      console.warn(`[LottieIcon] failed to load ${props.src}`, error);
+      return null;
+    }
+  })();
+
+  return loadPromise;
 }
 
 function onHover() {
-  const instance = player.value;
-  if (!instance || instance.isPlaying) return;
-  instance.playFromBeginning();
+  void ensureLoaded().then((instance) => {
+    if (!instance || instance.isPlaying) return;
+    instance.playFromBeginning();
+  });
 }
 
-onMounted(async () => {
-  if (!import.meta.client || !host.value || !root.value) return;
+function onInteraction() {
+  void ensureLoaded();
+}
 
-  try {
-    const { player: instance, destroy } = await createLottieIconPlayer({
-      container: host.value,
-      src: props.src,
-      state: props.state,
-    });
-    if (cancelled) {
-      destroy();
-      return;
-    }
-    destroyPlayer = destroy;
-    attachPlayer(instance);
-    ready.value = true;
-    emit("ready", instance);
+onMounted(() => {
+  if (!import.meta.client || !root.value) return;
 
-    if (props.trigger === "hover") {
-      root.value.addEventListener("mouseenter", onHover);
-    }
-  } catch (error) {
-    // Keep static fallback visible if animation boot fails.
-    console.warn(`[LottieIcon] failed to load ${props.src}`, error);
+  bindHostApi();
+
+  if (props.trigger === "hover") {
+    root.value.addEventListener("pointerenter", onHover);
+    return;
   }
+
+  root.value.addEventListener("pointerenter", onInteraction, { once: true });
+  root.value.addEventListener("pointerdown", onInteraction, { once: true });
 });
 
 onBeforeUnmount(() => {
   cancelled = true;
-  root.value?.removeEventListener("mouseenter", onHover);
+  root.value?.removeEventListener("pointerenter", onHover);
+  root.value?.removeEventListener("pointerenter", onInteraction);
+  root.value?.removeEventListener("pointerdown", onInteraction);
   destroyPlayer?.();
   destroyPlayer = null;
+  loadPromise = null;
   attachPlayer(null);
+  clearHostApi();
 });
 
 defineExpose({
+  ensureLoaded,
   get playerInstance() {
     return player.value;
   },
