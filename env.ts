@@ -18,8 +18,17 @@ export const env = createEnv({
     /**
      * Secret Telegram echoes as `X-Telegram-Bot-Api-Secret-Token`.
      * Required in production whenever `TELEGRAM_BOT_TOKEN` is set (plugin throws otherwise).
+     * Telegram only allows A-Z, a-z, 0-9, _ and - (1–256 chars). No base64.
      */
-    TELEGRAM_WEBHOOK_SECRET: z.string().min(1).optional(),
+    TELEGRAM_WEBHOOK_SECRET: z
+      .string()
+      .min(1)
+      .max(256)
+      .regex(
+        /^[A-Za-z0-9_-]+$/,
+        "TELEGRAM_WEBHOOK_SECRET: only A-Z, a-z, 0-9, _ and - allowed (Telegram API)",
+      )
+      .optional(),
     /** Max flatUrl jobs processed per admin full / extract_only run (tasks unchanged). */
     ADMIN_SCRAPER_EXTRACT_BATCH: z
       .string()

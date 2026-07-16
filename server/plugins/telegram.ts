@@ -4,24 +4,36 @@ import {
   isTelegramConfigured,
 } from "~/server/lib/notifiers/telegram/bot";
 
+async function startLongPolling(
+  bot: ReturnType<typeof getBot>,
+  reason: string,
+) {
+  // Detach webhook first so getUpdates isn't rejected; don't await start()
+  // (it resolves only when the bot stops).
+  await bot.api.deleteWebhook({ drop_pending_updates: true });
+  void bot.start({
+    onStart: (me) =>
+      console.log(`[telegram] long-polling as @${me.username} (${reason})`),
+  });
+}
+
 /**
- * Boots the Telegram transport. In dev we long-poll (no public URL needed); in
- * production we register a webhook pointing at `/api/telegram/webhook`. A no-op
- * when `TELEGRAM_BOT_TOKEN` is unset, so the app runs fine without telegram.
+ * Boots the Telegram transport. Dev / non-HTTPS DEPLOYMENT_URL → long-poll.
+ * Production with HTTPS → webhook at `/api/telegram/webhook`. No-op when
+ * `TELEGRAM_BOT_TOKEN` is unset.
  */
 export default defineNitroPlugin(async () => {
   if (!isTelegramConfigured) return;
 
   const bot = getBot();
+  const deploymentUrl = env.DEPLOYMENT_URL;
+  const canUseWebhook = deploymentUrl.startsWith("https://");
 
-  if (import.meta.dev) {
-    // Long-poll locally. Detach webhook first so getUpdates isn't rejected, and
-    // don't await start() (it resolves only when the bot stops).
-    await bot.api.deleteWebhook({ drop_pending_updates: true });
-    void bot.start({
-      onStart: (me) =>
-        console.log(`[telegram] long-polling as @${me.username}`),
-    });
+  if (import.meta.dev || !canUseWebhook) {
+    await startLongPolling(
+      bot,
+      import.meta.dev ? "dev" : `DEPLOYMENT_URL is not HTTPS: ${deploymentUrl}`,
+    );
     return;
   }
 
@@ -31,7 +43,7 @@ export default defineNitroPlugin(async () => {
     );
   }
 
-  const url = `${env.DEPLOYMENT_URL}/api/telegram/webhook`;
+  const url = `${deploymentUrl}/api/telegram/webhook`;
   await bot.api.setWebhook(url, {
     secret_token: env.TELEGRAM_WEBHOOK_SECRET,
     drop_pending_updates: true,
