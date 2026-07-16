@@ -61,7 +61,7 @@ watch(
       lat: selectedFlat.value.address.latitude,
       lng: selectedFlat.value.address.longitude,
     });
-    mapRef.value.map.setZoom(15);
+    mapRef.value.map.setZoom(12);
   },
 );
 </script>
@@ -93,7 +93,7 @@ watch(
         ref="mapRef"
         class="h-full w-full"
         :center="center"
-        :zoom="15"
+        :zoom="12"
         :api-key="$config.public.googleMapsApiKey"
         :map-id="$config.public.googleMapsId"
         :disable-default-ui="true"

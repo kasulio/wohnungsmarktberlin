@@ -31,13 +31,16 @@ export function useListingCardMeta(props: ListingCardDetailProps) {
 
   const route = useRoute();
 
-  const mapTo = computed(() => ({
-    path: "/map",
-    query: {
-      ...route.query,
-      flat: props.id,
-    },
-  }));
+  const mapTo = computed(() => {
+    const { page: _page, pageSize: _pageSize, ...filterQuery } = route.query;
+    return {
+      path: "/map",
+      query: {
+        ...filterQuery,
+        flat: props.id,
+      },
+    };
+  });
 
   const tableRows = computed(() => {
     const rows: { label: string; value: string }[] = [];
