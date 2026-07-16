@@ -144,8 +144,9 @@ export const notificationSubscriber = sqliteTable("notificationSubscriber", {
 });
 
 /**
- * Append-only ledger of `(subscriber, flat)` pairs already delivered. A row
- * exists iff the notification was sent successfully, making the sweep
+ * Append-only ledger of `(subscriber, flat)` pairs already accounted for. A row
+ * exists after a successful send, or when the destination already received the
+ * flat via a sibling subscription (same channel+target). Makes the sweep
  * idempotent and crash-safe. `subscriberId` spans both static and DB sources.
  */
 export const notificationSent = sqliteTable(

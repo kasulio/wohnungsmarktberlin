@@ -45,10 +45,17 @@ export type RunNotifySweepOptions = {
   channels?: Record<string, Channel>;
 };
 
+/** Destination-level key: one physical delivery per (channel, target, flat). */
+function deliveryKey(channel: string, target: string, flatId: string): string {
+  return `${channel}\0${target}\0${flatId}`;
+}
+
 /**
  * Channel-agnostic sweep + append-only ledger. Idempotent and crash-safe: it
  * reads "publishable AND not yet sent", matches each subscriber's filter,
- * dispatches through that subscriber's channel, and records only on success.
+ * dispatches through that subscriber's channel, and records on success.
+ * Multiple subscriptions sharing a channel+target get one send per flat; each
+ * matching subscriber still gets a ledger row (per-filter sent counts).
  * Touches no scraper write-path code.
  */
 export async function runNotifySweep(
@@ -116,7 +123,7 @@ export async function runNotifySweep(
     return stats;
   }
 
-  // 4. Existing ledger rows for these candidates → dedup set.
+  // 4. Existing ledger rows → per-subscriber + per-destination dedup sets.
   const candidateIds = candidateRows.map((r) => r.id);
   const ledgerRows = await db
     .select({
@@ -129,7 +136,50 @@ export async function runNotifySweep(
     ledgerRows.map((r) => `${r.subscriberId} ${r.flatId}`),
   );
 
-  // 5. For each (subscriber, candidate) first-publish match: send once.
+  const destinationBySubId = new Map(
+    subscribers.map((s) => [s.id, { channel: s.channel, target: s.target }]),
+  );
+  // Inactive / deleted-from-active subs may still own ledger rows — resolve
+  // their destinations so a sibling subscription on the same target won't re-send.
+  const unresolvedIds = [
+    ...new Set(
+      ledgerRows
+        .map((r) => r.subscriberId)
+        .filter((id) => !destinationBySubId.has(id)),
+    ),
+  ];
+  if (unresolvedIds.length > 0) {
+    const inactiveRows = await db
+      .select({
+        id: notificationSubscriber.id,
+        channel: notificationSubscriber.channel,
+        target: notificationSubscriber.target,
+      })
+      .from(notificationSubscriber)
+      .where(inArray(notificationSubscriber.id, unresolvedIds));
+    for (const r of inactiveRows) {
+      destinationBySubId.set(r.id, { channel: r.channel, target: r.target });
+    }
+  }
+
+  const deliveredToTarget = new Set<string>();
+  for (const r of ledgerRows) {
+    const dest = destinationBySubId.get(r.subscriberId);
+    if (dest) {
+      deliveredToTarget.add(deliveryKey(dest.channel, dest.target, r.flatId));
+    }
+  }
+
+  async function stampLedger(subscriberId: string, flatId: string) {
+    await db
+      .insert(notificationSent)
+      .values({ subscriberId, flatId, sentAt: new Date() })
+      .onConflictDoNothing();
+    alreadySent.add(`${subscriberId} ${flatId}`);
+  }
+
+  // 5. For each (subscriber, candidate) first-publish match: deliver once per
+  //    destination; stamp every matching subscriber's ledger row.
   for (const sub of subscribers) {
     const channel = channels[sub.channel];
     if (!channel) {
@@ -149,15 +199,19 @@ export async function runNotifySweep(
       if (alreadySent.has(`${sub.id} ${row.id}`)) continue;
       if (!matchesFilter(row, sub.filter, now)) continue;
 
+      const destKey = deliveryKey(sub.channel, sub.target, row.id);
+      if (deliveredToTarget.has(destKey)) {
+        // Same chat/address already got this flat via another subscription.
+        await stampLedger(sub.id, row.id);
+        continue;
+      }
+
       const flat: NotifiableFlat = row;
       const result = await channel.send(sub.target, flat);
 
       if (result.ok) {
-        await db
-          .insert(notificationSent)
-          .values({ subscriberId: sub.id, flatId: row.id, sentAt: new Date() })
-          .onConflictDoNothing();
-        alreadySent.add(`${sub.id} ${row.id}`);
+        await stampLedger(sub.id, row.id);
+        deliveredToTarget.add(destKey);
         stats.sent++;
         if (sendIntervalMs > 0) await Bun.sleep(sendIntervalMs);
       } else if (result.blocked) {
