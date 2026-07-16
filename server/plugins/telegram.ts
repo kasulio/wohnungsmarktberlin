@@ -22,31 +22,38 @@ async function startLongPolling(
  * Production with HTTPS → webhook at `/api/telegram/webhook`. No-op when
  * `TELEGRAM_BOT_TOKEN` is unset.
  */
-export default defineNitroPlugin(async () => {
+export default defineNitroPlugin(async (nitroApp) => {
   if (!isTelegramConfigured) return;
 
   const bot = getBot();
   const deploymentUrl = env.DEPLOYMENT_URL;
   const canUseWebhook = deploymentUrl.startsWith("https://");
+  let longPolling = false;
 
   if (import.meta.dev || !canUseWebhook) {
     await startLongPolling(
       bot,
       import.meta.dev ? "dev" : `DEPLOYMENT_URL is not HTTPS: ${deploymentUrl}`,
     );
-    return;
+    longPolling = true;
+  } else {
+    if (!env.TELEGRAM_WEBHOOK_SECRET) {
+      throw new Error(
+        "TELEGRAM_WEBHOOK_SECRET is required in production when TELEGRAM_BOT_TOKEN is set",
+      );
+    }
+
+    const url = `${deploymentUrl}/api/telegram/webhook`;
+    await bot.api.setWebhook(url, {
+      secret_token: env.TELEGRAM_WEBHOOK_SECRET,
+      drop_pending_updates: true,
+    });
+    console.log(`[telegram] webhook set to ${url}`);
   }
 
-  if (!env.TELEGRAM_WEBHOOK_SECRET) {
-    throw new Error(
-      "TELEGRAM_WEBHOOK_SECRET is required in production when TELEGRAM_BOT_TOKEN is set",
-    );
-  }
-
-  const url = `${deploymentUrl}/api/telegram/webhook`;
-  await bot.api.setWebhook(url, {
-    secret_token: env.TELEGRAM_WEBHOOK_SECRET,
-    drop_pending_updates: true,
+  nitroApp.hooks.hook("close", () => {
+    if (!longPolling) return;
+    console.log("[telegram] stopping long-polling");
+    bot.stop();
   });
-  console.log(`[telegram] webhook set to ${url}`);
 });

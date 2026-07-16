@@ -14,7 +14,11 @@ RUN bun install
 COPY . .
 RUN bun run build
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD curl -f http://localhost:3000/api/health || exit 1
 
-ENTRYPOINT [ "bun", "run", ".output/server/index.mjs" ]
+# Exec form so bun is PID 1 and receives Coolify/Docker SIGTERM directly.
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["bun", ".output/server/index.mjs"]

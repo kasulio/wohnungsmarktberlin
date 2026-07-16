@@ -8,7 +8,7 @@
     "dev": "bun --bun nuxt dev",
     "generate": "bun --bun nuxt generate",
     "preview": "bun --bun nuxt preview",
-    "start": "bun run .output/server/index.mjs",
+    "start": "bun .output/server/index.mjs",
     "db:generate": "bun --bun drizzle-kit generate",
     "db:migrate": "bun --bun server/db/migrate.ts",
     "db:push": "bun --bun drizzle-kit push",
