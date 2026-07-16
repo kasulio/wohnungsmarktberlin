@@ -18,6 +18,7 @@ logs
 .DS_Store
 .fleet
 .idea
+.vscode
 docker-compose.yml
 server/db/sqlite.db
 
@@ -32,6 +33,4 @@ public/map-preview.png
 data/html
 data/canary-failures
 docs
-
-# Local filter UI design shots (not shipped)
-archive/filter-ui-shots/
+archive/
