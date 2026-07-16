@@ -7,6 +7,7 @@ import {
   getImage,
   shouldIgnoreListing,
 } from "~/lib/flat-utils";
+import { runAddressImprovement } from "~/server/lib/address-improvement";
 import { db } from "~/server/db/client";
 import {
   flat as flatTable,
@@ -172,6 +173,20 @@ export async function processFlatUrlJobs(
   }
 
   stats.flatsPending = await pendingCount();
+
+  // Kick geocode → notify immediately so new flats don't wait on cron ticks.
+  // Failures here must not fail extract — cron is the safety net.
+  if (stats.flatsExtracted > 0) {
+    try {
+      await runAddressImprovement();
+    } catch (e) {
+      console.error(
+        "[process-flat-url-jobs] post-extract address-improvement failed:",
+        e,
+      );
+    }
+  }
+
   return { stats };
 }
 
