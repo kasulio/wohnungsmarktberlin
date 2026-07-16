@@ -14,4 +14,7 @@ RUN bun install
 COPY . .
 RUN bun run build
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
 ENTRYPOINT [ "bun", "run", ".output/server/index.mjs" ]
