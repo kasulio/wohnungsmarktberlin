@@ -21,7 +21,6 @@
   },
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.4.2",
-    "@lordicon/element": "^1.11.0",
     "@nuxt/image": "^2.0.0-alpha.1",
     "@t3-oss/env-nuxt": "^0.13.11",
     "@trpc/client": "^10.45.0",

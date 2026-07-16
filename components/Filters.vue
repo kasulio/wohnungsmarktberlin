@@ -663,30 +663,22 @@ const toggleSortOrder = () => {
                   currentSortOrder === 'asc' ? 'Aufsteigend' : 'Absteigend'
                 "
                 @click="toggleSortOrder"
-                @mouseenter="
-                  (e) => {
-                    const icon = (e.currentTarget as HTMLElement).querySelector(
-                      'lord-icon',
-                    ) as any;
-                    if (
-                      icon?.playerInstance &&
-                      !icon.playerInstance.isPlaying
-                    ) {
-                      icon.playerInstance.playFromBeginning();
-                    }
-                  }
-                "
               >
-                <lord-icon
-                  icon="arrow"
+                <LottieIcon
                   src="/icons/arrow.json"
                   state="hover-pinch"
+                  trigger="hover"
                   class="block -rotate-90 text-black transition-all duration-500"
                   :class="{
                     '-scale-x-100': currentSortOrder === 'desc',
                   }"
                   style="width: 22px; height: 22px"
-                />
+                >
+                  <img
+                    src="/icons/arrow.svg"
+                    alt=""
+                  />
+                </LottieIcon>
               </button>
               <label
                 class="sr-only"
@@ -730,13 +722,17 @@ const toggleSortOrder = () => {
               title="Filter zurücksetzen"
               @click="resetFilters"
             >
-              <lord-icon
-                icon="trash"
+              <LottieIcon
                 src="/icons/trash.json"
                 trigger="hover"
                 class="current-color block text-black md:hover:animate-zoombounce"
                 style="width: 24px; height: 24px"
-              />
+              >
+                <img
+                  src="/icons/trash.svg"
+                  alt=""
+                />
+              </LottieIcon>
             </button>
             <button
               v-if="telegramEnabled"
@@ -751,13 +747,17 @@ const toggleSortOrder = () => {
               title="Per Telegram benachrichtigen"
               @click="notifyOnTelegram"
             >
-              <lord-icon
-                icon="notification-bell"
+              <LottieIcon
                 src="/icons/notification-bell.json"
                 trigger="hover"
                 class="current-color block text-black md:hover:animate-zoombounce"
                 style="width: 24px; height: 24px"
-              />
+              >
+                <img
+                  src="/icons/notification-bell.svg"
+                  alt=""
+                />
+              </LottieIcon>
             </button>
           </div>
         </div>

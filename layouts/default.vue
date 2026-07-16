@@ -1,6 +1,5 @@
 <template>
   <LoadingIndicator />
-  <LordIconLoader />
   <div
     class="mx-auto flex w-full max-w-[1180px] grow flex-col gap-8 px-4 pt-4 font-poppins md:gap-10 md:px-14 xl:pt-8"
   >

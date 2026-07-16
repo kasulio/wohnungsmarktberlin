@@ -132,12 +132,16 @@ function activate() {
           "
           @click="activate"
         >
-          <lord-icon
-            icon="cross"
+          <LottieIcon
             src="/icons/cross.json"
             class="current-color block text-black"
             style="width: 24px; height: 24px"
-          />
+          >
+            <img
+              src="/icons/cross.svg"
+              alt=""
+            />
+          </LottieIcon>
         </button>
       </div>
     </div>

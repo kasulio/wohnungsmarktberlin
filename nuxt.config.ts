@@ -8,6 +8,12 @@ export const deploymentUrl = env.DEPLOYMENT_URL;
 export default defineNuxtConfig({
   compatibilityDate: "2026-07-15",
   routeRules: {
+    // Icon JSONs change rarely; rename the file when editing one.
+    "/icons/**": {
+      headers: {
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    },
     "/_ipx/**": {
       isr: 60 * 60 * 24 * 7, // 7 days
       headers: {
@@ -34,9 +40,6 @@ export default defineNuxtConfig({
   devtools: {
     enabled: true,
     timeline: { enabled: true },
-  },
-  vue: {
-    compilerOptions: { isCustomElement: (tag) => ["lord-icon"].includes(tag) },
   },
   image: {
     domains: [deploymentUrl!, "localhost:3000"],
@@ -110,12 +113,11 @@ export default defineNuxtConfig({
   vite: {
     optimizeDeps: {
       include: [
-        "@lordicon/element",
         "@vue/devtools-core",
         "@vue/devtools-kit",
         "better-auth/vue",
         "drizzle-orm",
-        "lottie-web", // CJS
+        "lottie-web/build/player/lottie_light", // CJS
       ],
     },
   },

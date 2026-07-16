@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { LottieIconPlayer } from "~/utils/lottieIcons";
+
 const siteMenuVisibility = ref({ visible: false, closing: true });
 
 const iconsContainer = ref<HTMLElement | null>(null);
@@ -19,15 +21,20 @@ const route = useRoute();
 const nuxtApp = useNuxtApp();
 const _cleanup: Array<() => void> = [];
 
+function getPlayer(el: Element | null | undefined): LottieIconPlayer | undefined {
+  return (el as (HTMLElement & { playerInstance?: LottieIconPlayer }) | null)
+    ?.playerInstance;
+}
+
 onMounted(() => {
   (["vue:error", "page:loading:end"] as const).forEach((hook) => {
     _cleanup.push(
       nuxtApp.hook(hook, () => {
         showSiteMenu(false);
         Array.from(
-          iconsContainer.value?.querySelectorAll("lord-icon") ?? [],
+          iconsContainer.value?.querySelectorAll("[data-lottie-icon]") ?? [],
         ).forEach((icon) => {
-          const playerInstance = (icon as any)?.playerInstance;
+          const playerInstance = getPlayer(icon);
           if (!playerInstance) return;
           playerInstance.loop = false;
         });
@@ -41,10 +48,10 @@ onUnmounted(() => _cleanup.forEach((hook) => hook()));
 // start animation on linkclick
 const handleLinkClick = (e: PointerEvent) => {
   if (!(e.target instanceof HTMLElement)) return;
-  const tagName = e.target.tagName.toLowerCase();
   const icon =
-    tagName === "lord-icon" ? e.target : e.target.querySelector("lord-icon");
-  const playerInstance = (icon as any)?.playerInstance;
+    e.target.closest("[data-lottie-icon]") ??
+    e.target.querySelector("[data-lottie-icon]");
+  const playerInstance = getPlayer(icon);
   if (!playerInstance) return;
   playerInstance.loop = true;
   playerInstance.play();
@@ -79,36 +86,48 @@ const handleLinkClick = (e: PointerEvent) => {
         title="Startseite"
         class="hidden md:block"
       >
-        <lord-icon
-          icon="home"
+        <LottieIcon
           src="/icons/home.json"
           trigger="hover"
           style="width: 32px; height: 32px"
-        />
+        >
+          <img
+            src="/icons/home.svg"
+            alt=""
+          />
+        </LottieIcon>
       </NuxtLink>
       <NuxtLink
         to="/overview"
         title="Listenansicht"
         class="hidden md:block"
       >
-        <lord-icon
-          icon="overview"
+        <LottieIcon
           src="/icons/overview.json"
           trigger="hover"
           style="width: 32px; height: 32px"
-        />
+        >
+          <img
+            src="/icons/overview.svg"
+            alt=""
+          />
+        </LottieIcon>
       </NuxtLink>
       <NuxtLink
         to="/map"
         title="Kartenansicht"
         class="hidden md:block"
       >
-        <lord-icon
-          icon="map"
+        <LottieIcon
           src="/icons/map.json"
           trigger="hover"
           style="width: 32px; height: 32px"
-        />
+        >
+          <img
+            src="/icons/map.svg"
+            alt=""
+          />
+        </LottieIcon>
       </NuxtLink>
       <FavoritesList />
     </div>
@@ -155,13 +174,16 @@ const handleLinkClick = (e: PointerEvent) => {
           @click="handleLinkClick"
         >
           {{ link.name }}
-          <lord-icon
-            :icon="link.icon"
+          <LottieIcon
             :src="`/icons/${link.icon}.json`"
             style="width: 42px; height: 42px"
-            stroke="bold"
             class="current-color"
-          />
+          >
+            <img
+              :src="`/icons/${link.icon}.svg`"
+              alt=""
+            />
+          </LottieIcon>
         </NuxtLink>
       </div>
     </div>

@@ -6,7 +6,6 @@
       "name": "nuxt-app",
       "dependencies": {
         "@googlemaps/google-maps-services-js": "^3.4.2",
-        "@lordicon/element": "^1.11.0",
         "@nuxt/image": "^2.0.0-alpha.1",
         "@t3-oss/env-nuxt": "^0.13.11",
         "@trpc/client": "^10.45.0",
@@ -351,10 +350,6 @@
     "@kwsites/file-exists": ["@kwsites/file-exists@1.1.1", "", { "dependencies": { "debug": "^4.1.1" } }, "sha512-m9/5YGR18lIwxSFDwfE3oA7bWuq9kdau6ugN4H2rJeyhFQZcG9AgSHkQtSD15a8WvTgfz9aikZMrKPHvbpqFiw=="],
 
     "@kwsites/promise-deferred": ["@kwsites/promise-deferred@1.1.1", "", {}, "sha512-GaHYm+c0O9MjZRu0ongGBRbinu8gVAMd2UZjji6jVmqKtZluZnptXGWhz1E8j8D2HJ3f/yMxKAUC0b+57wncIw=="],
-
-    "@lordicon/element": ["@lordicon/element@1.11.0", "", { "dependencies": { "@lordicon/helpers": "^1.11.0" } }, "sha512-9EftG9Y6o4Qdd83p2ftoGxgw4WQJK+V75Q5WsNzDpPhacPuDbBFqiBAaNeBQegtl7Neqsr+cmQ5b2MHTixUxBA=="],
-
-    "@lordicon/helpers": ["@lordicon/helpers@1.11.0", "", {}, "sha512-ambh76d15jAdGaKYXBCjR9AlTJUB6aGx4H8vlradyfT37GbLlwiG+HfC8MTq9RTM08pBHRKFPWnWOxa34NUIAw=="],
 
     "@mapbox/node-pre-gyp": ["@mapbox/node-pre-gyp@2.0.3", "", { "dependencies": { "consola": "^3.2.3", "detect-libc": "^2.0.0", "https-proxy-agent": "^7.0.5", "node-fetch": "^2.6.7", "nopt": "^8.0.0", "semver": "^7.5.3", "tar": "^7.4.0" }, "bin": { "node-pre-gyp": "bin/node-pre-gyp" } }, "sha512-uwPAhccfFJlsfCxMYTwOdVfOz3xqyj8xYL3zJj8f0pb30tLohnnFPhLuqp4/qoEz8sNxe4SESZedcBojRefIzg=="],
 
