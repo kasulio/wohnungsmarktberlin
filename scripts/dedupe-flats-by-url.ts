@@ -1,10 +1,7 @@
 import { dedupeFlatsByUrl } from "../server/lib/dedupe-flats-by-url";
 import { eq, sql } from "drizzle-orm";
 import { db } from "../server/db/client";
-import {
-  flat as flatTable,
-  flatToTag as flatToTagTable,
-} from "../server/db/schema";
+import { flat as flatTable } from "../server/db/schema";
 
 const dryRun = process.argv.includes("--dry-run");
 
@@ -37,12 +34,8 @@ async function logDryRun() {
       `  keep: ${keeper.id} (lastSeen=${keeper.lastSeen?.toISOString()}, ignored=${keeper.ignored})`,
     );
     for (const loser of losers) {
-      const tags = await db
-        .select()
-        .from(flatToTagTable)
-        .where(eq(flatToTagTable.flatId, loser.id));
       console.log(
-        `  delete: ${loser.id} (lastSeen=${loser.lastSeen?.toISOString()}, ignored=${loser.ignored}, tags=${tags.length})`,
+        `  delete: ${loser.id} (lastSeen=${loser.lastSeen?.toISOString()}, ignored=${loser.ignored})`,
       );
       removed++;
     }

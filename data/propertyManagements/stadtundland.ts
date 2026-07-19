@@ -2,7 +2,6 @@ import { parseNumberString } from "~/lib/parser";
 import { parse } from "node-html-parser";
 import { z } from "zod";
 
-import { getApartmentTags } from "../tags";
 import {
   scrapedFlatSchema,
   type PropertyManagement,
@@ -135,10 +134,9 @@ function extractDataFromHtml(html: string, href: string) {
     warmRentPrice: warmRent,
     url: href,
     addressText: address,
-    usableArea: area ?? 0,
-    roomCount: rooms ?? 0,
+    usableArea: area,
+    roomCount: rooms,
     floor,
-    tags: getApartmentTags(title),
     imageUrl,
   } satisfies ScrapedFlat;
 }

@@ -1,3 +1,6 @@
+import { z } from "zod";
+import { typedObjectKeys } from "~/utils/typeHelper";
+
 export const propertyManagementConfigs = {
   berlinovo: {
     slug: "berlinovo",
@@ -35,3 +38,9 @@ export const propertyManagementConfigs = {
     website: "https://www.howoge.de",
   },
 } as const;
+
+export type PropertyManagementId = keyof typeof propertyManagementConfigs;
+
+const propertyManagementIds = typedObjectKeys(propertyManagementConfigs);
+
+export const propertyManagementIdSchema = z.enum(propertyManagementIds);

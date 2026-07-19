@@ -1,3 +1,4 @@
+import { type PropertyManagementId } from "~/data/propertyManagements/configs";
 import { and, asc, count, eq, inArray, lt, sql } from "drizzle-orm";
 import { fetchHtml } from "~/lib/http";
 import { scrapedFlatSchema } from "~/data/schemas";
@@ -6,6 +7,7 @@ import {
   getImage,
   shouldIgnoreListing,
 } from "~/lib/flat-utils";
+import { runAddressImprovement } from "~/server/lib/address-improvement";
 import { db } from "~/server/db/client";
 import {
   flat as flatTable,
@@ -20,7 +22,7 @@ export type ProcessFlatUrlJobsStats = {
 
 type ProcessOptions = {
   limit: number;
-  propertyManagementIds?: string[];
+  propertyManagementIds?: PropertyManagementId[];
   sleepBetweenJobs: boolean;
   pruneJobsOlderThanDays?: number;
 };
@@ -77,7 +79,10 @@ export async function processFlatUrlJobs(
     );
 
     try {
-      const html = await fetchHtml(flatUrlJob.url);
+      const html = await fetchHtml(
+        flatUrlJob.url,
+        propertyManagement.getFetchOptions?.(),
+      );
       const scrapedFlat = propertyManagement.extractDataFromHtml(
         html,
         flatUrlJob.url,
@@ -168,6 +173,20 @@ export async function processFlatUrlJobs(
   }
 
   stats.flatsPending = await pendingCount();
+
+  // Kick geocode → notify immediately so new flats don't wait on cron ticks.
+  // Failures here must not fail extract — cron is the safety net.
+  if (stats.flatsExtracted > 0) {
+    try {
+      await runAddressImprovement();
+    } catch (e) {
+      console.error(
+        "[process-flat-url-jobs] post-extract address-improvement failed:",
+        e,
+      );
+    }
+  }
+
   return { stats };
 }
 

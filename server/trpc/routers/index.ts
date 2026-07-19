@@ -3,12 +3,14 @@ import { flatRouter } from "./flat";
 import { propertyManagementRouter } from "./propertyManagement";
 import { mailingListRouter } from "./mailingList";
 import { statsRouter } from "./stats";
+import { notificationRouter } from "./notification";
 
 export const appRouter = router({
   flat: flatRouter,
   propertyManagement: propertyManagementRouter,
   mailingList: mailingListRouter,
   stats: statsRouter,
+  notification: notificationRouter,
 });
 
 export const createCaller = createCallerFactory(appRouter);

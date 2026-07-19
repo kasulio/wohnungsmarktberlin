@@ -89,7 +89,7 @@ useHead({
         :id="flat.id"
         :key="flat.id"
         :title="flat.title"
-        :address="flat.address"
+        :address="flat.address!"
         :cold-rent-price="flat.coldRentPrice"
         :warm-rent-price="flat.warmRentPrice"
         :tags="flat.tags"
@@ -120,7 +120,7 @@ useHead({
       title="Zur Karte"
     >
       <NuxtImg
-        :src="`${config.public.deploymentUrl}/api/image/map-preview?v=${mapPreviewHash}`"
+        :src="`${config.public.deploymentUrl}/api/image/map-preview/${mapPreviewHash}`"
         alt="Vorschau der Karte"
         class="h-full w-full object-cover"
         :width="512"

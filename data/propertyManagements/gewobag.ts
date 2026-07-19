@@ -1,12 +1,36 @@
 import { HTMLElement, parse } from "node-html-parser";
-import { getApartmentTags } from "../tags";
 import { type PropertyManagement, type ScrapedFlat } from "../schemas";
 import { fetchHtml } from "~/lib/http";
 import { parseNumberString } from "~/lib/parser";
 import { propertyManagementConfigs } from "./configs";
 
+const GEWOBAG_BORLABS_COOKIE = JSON.stringify({
+  consents: {
+    essential: [
+      "borlabs-cookie",
+      "accessibility_contrast",
+      "accessibility_test_size",
+      "location_agreement",
+    ],
+  },
+  domainPath: "www.gewobag.de/",
+  expires: "Sun, 26 Jul 2026 12:26:03 GMT",
+  uid: "anonymous",
+  v3: true,
+  version: 2,
+});
+
+function getFetchOptions() {
+  return {
+    headers: {
+      Cookie: `borlabs-cookie=${encodeURIComponent(GEWOBAG_BORLABS_COOKIE)}`,
+    },
+  };
+}
+
 export const gewobag = {
   ...propertyManagementConfigs.gewobag,
+  getFetchOptions,
   extractUrls,
   extractDataFromHtml,
 } as const satisfies PropertyManagement;
@@ -14,6 +38,7 @@ export const gewobag = {
 async function extractUrls() {
   const html = await fetchHtml(
     "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/?objekttyp%5B%5D=wohnung&gesamtmiete_von=&gesamtmiete_bis=&gesamtflaeche_von=&gesamtflaeche_bis=&zimmer_von=&zimmer_bis=&sort-by=",
+    getFetchOptions(),
   );
   const root = parse(html);
   const items = root.querySelectorAll(".angebot-big-box");
@@ -57,10 +82,9 @@ function extractDataFromHtml(html: string, href: string) {
     warmRentPrice: pricingData.warmRent,
     url: href,
     addressText: generalData.address ?? "",
-    usableArea: generalData.area ?? 0,
-    roomCount: generalData.rooms ?? 0,
+    usableArea: generalData.area,
+    roomCount: generalData.rooms,
     floor: generalData.floor,
-    tags: getApartmentTags(title),
     imageUrl: images[0] ?? undefined,
   } satisfies ScrapedFlat;
 }

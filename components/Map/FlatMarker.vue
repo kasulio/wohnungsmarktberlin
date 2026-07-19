@@ -1,10 +1,14 @@
 <script lang="ts" setup>
 import { CustomMarker } from "vue3-google-map";
-import type { ListingFlatWithCoordinates } from "~/types/listing-flat";
 import { formatPrimaryRent } from "~/utils/util";
 
-const props = defineProps<{
-  flat: ListingFlatWithCoordinates;
+defineProps<{
+  flat: {
+    id: string;
+    coldRentPrice: number | null;
+    warmRentPrice: number | null;
+    address: { latitude: number; longitude: number };
+  };
   highlighted: boolean;
 }>();
 

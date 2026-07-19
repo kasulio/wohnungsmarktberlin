@@ -106,8 +106,9 @@ const highlightPrev = (event: { preventDefault: () => void }) => {
 };
 
 const selectHighlighted = () => {
-  if (highlightedIndex.value !== -1) {
-    selectSuggestion(filteredSuggestions.value[highlightedIndex.value].id);
+  const suggestion = filteredSuggestions.value[highlightedIndex.value];
+  if (suggestion) {
+    selectSuggestion(suggestion.id);
   }
 };
 

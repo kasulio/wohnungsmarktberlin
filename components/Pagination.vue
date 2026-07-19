@@ -12,12 +12,13 @@ const maxPage = computed(() => {
   return Math.ceil(props.filteredElementsCount / props.pageSize);
 });
 
-const pageSizeOptions = [25, 50, 100];
+const pageSizeOptions = [25, 50, 100] as const;
+const defaultPageSize = pageSizeOptions[0];
 
 const updatePagination = (page: number, pageSize: number, replace = true) => {
   const pageSizeToGoTo = pageSizeOptions.includes(pageSize)
     ? pageSize
-    : pageSizeOptions[0];
+    : defaultPageSize;
 
   // automatically fix page, when it is out of bounds
   const pageToGoTo = Math.min(
@@ -44,65 +45,97 @@ onMounted(() => {
     updatePagination(props.currentPage, props.pageSize, true);
   }
 });
+
+const navBtn =
+  "size-8 items-center justify-center rounded-md text-main/55 transition-colors hover:bg-white hover:text-main disabled:pointer-events-none disabled:opacity-35";
 </script>
 
 <template>
-  <div class="flex items-center justify-between gap-2">
-    <div class="flex gap-2 md:gap-4">
-      <label class="">Einträge pro Seite</label>
-      <select
-        class="rounded-md bg-white text-center shadow-inner [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-        :value="pageSize"
-        @change="
-          ($event: Event) => {
-            const target = $event.target as HTMLSelectElement;
-            updatePagination(currentPage, Number(target.value));
-          }
-        "
-      >
-        <option
-          v-for="ps in pageSizeOptions"
-          :key="ps"
-          :value="ps"
-          :selected="ps === props.pageSize"
+  <div class="rounded-xl border border-black bg-background px-2.5 py-2.5">
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-1.5">
+        <label
+          class="shrink-0 text-xs font-medium text-main/50"
+          for="page-size"
+          >Pro Seite</label
         >
-          {{ ps }}
-        </option>
-      </select>
-    </div>
-    <div class="flex flex-grow justify-end">
-      <div class="flex items-center gap-2">
+        <select
+          id="page-size"
+          class="h-8 appearance-none rounded-md bg-white px-2.5 text-s font-medium text-main focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+          :value="pageSize"
+          @change="
+            ($event: Event) => {
+              const target = $event.target as HTMLSelectElement;
+              updatePagination(currentPage, Number(target.value));
+            }
+          "
+        >
+          <option
+            v-for="ps in pageSizeOptions"
+            :key="ps"
+            :value="ps"
+            :selected="ps === props.pageSize"
+          >
+            {{ ps }}
+          </option>
+        </select>
+      </div>
+
+      <div class="flex items-center gap-0.5">
         <button
+          type="button"
           :disabled="currentPage === 1"
-          class="hidden rounded-full bg-background p-2 leading-4 text-accent transition-colors duration-200 hover:bg-accent hover:text-white disabled:opacity-50 md:block"
+          :class="[navBtn, 'hidden md:inline-flex']"
+          aria-label="Erste Seite"
           @click="updatePagination(1, pageSize)"
         >
-          &lt;&lt;
+          <Icon
+            name="lucide:chevrons-left"
+            class="size-3.5"
+          />
         </button>
         <button
+          type="button"
           :disabled="currentPage === 1"
-          class="rounded-full bg-background p-2 leading-4 text-accent transition-colors duration-200 hover:bg-accent hover:text-white disabled:opacity-50"
+          :class="[navBtn, 'inline-flex']"
+          aria-label="Vorherige Seite"
           @click="updatePagination(currentPage - 1, pageSize)"
         >
-          &lt;
+          <Icon
+            name="lucide:chevron-left"
+            class="size-3.5"
+          />
         </button>
-        <span>
-          <span class="hidden md:inline-block">Seite&nbsp;</span
-          >{{ currentPage }}&nbsp;von&nbsp;{{ maxPage }}
+        <span
+          class="min-w-[4.5rem] px-1.5 text-center text-s tabular-nums text-main/55"
+        >
+          <span class="sr-only">Seite </span>{{ currentPage }}
+          <span aria-hidden="true"> / </span>
+          <span class="sr-only"> von </span>{{ maxPage }}
         </span>
         <button
+          type="button"
           :disabled="currentPage === maxPage"
-          class="rounded-full bg-background p-2 leading-4 text-accent transition-colors duration-200 hover:bg-accent hover:text-white disabled:opacity-50"
+          :class="[navBtn, 'inline-flex']"
+          aria-label="Nächste Seite"
           @click="updatePagination(currentPage + 1, pageSize)"
         >
-          &gt;
+          <Icon
+            name="lucide:chevron-right"
+            class="size-3.5"
+          />
         </button>
         <button
+          type="button"
           :disabled="currentPage === maxPage"
-          class="hidden rounded-full bg-background p-2 leading-4 text-accent transition-colors duration-200 hover:bg-accent hover:text-white disabled:opacity-50 md:block"
+          :class="[navBtn, 'hidden md:inline-flex']"
+          aria-label="Letzte Seite"
           @click="updatePagination(maxPage, pageSize)"
         >
-          &gt;&gt;
+          <Icon
+            name="lucide:chevrons-right"
+            class="size-3.5"
+          />
         </button>
       </div>
     </div>

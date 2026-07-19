@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { getLottieIconHost } from "~/utils/lottieIcons";
+
 const siteMenuVisibility = ref({ visible: false, closing: true });
 
 const iconsContainer = ref<HTMLElement | null>(null);
@@ -25,9 +27,9 @@ onMounted(() => {
       nuxtApp.hook(hook, () => {
         showSiteMenu(false);
         Array.from(
-          iconsContainer.value?.querySelectorAll("lord-icon") ?? [],
+          iconsContainer.value?.querySelectorAll("[data-lottie-icon]") ?? [],
         ).forEach((icon) => {
-          const playerInstance = (icon as any)?.playerInstance;
+          const playerInstance = getLottieIconHost(icon)?.playerInstance;
           if (!playerInstance) return;
           playerInstance.loop = false;
         });
@@ -38,28 +40,34 @@ onMounted(() => {
 
 onUnmounted(() => _cleanup.forEach((hook) => hook()));
 
-// start animation on linkclick
+// start animation on linkclick (non-blocking — nav must stay snappy)
 const handleLinkClick = (e: PointerEvent) => {
   if (!(e.target instanceof HTMLElement)) return;
-  const tagName = e.target.tagName.toLowerCase();
   const icon =
-    tagName === "lord-icon" ? e.target : e.target.querySelector("lord-icon");
-  const playerInstance = (icon as any)?.playerInstance;
-  if (!playerInstance) return;
-  playerInstance.loop = true;
-  playerInstance.play();
+    e.target.closest("[data-lottie-icon]") ??
+    e.target.querySelector("[data-lottie-icon]");
+  const host = getLottieIconHost(icon);
+  if (!host) return;
+
+  void (
+    host.ensureLoaded?.() ?? Promise.resolve(host.playerInstance ?? null)
+  ).then((playerInstance) => {
+    if (!playerInstance) return;
+    playerInstance.loop = true;
+    playerInstance.play();
+  });
 };
 </script>
 
 <template>
-  <nav class="flex items-center gap-4 min-h-12 md:justify-between">
+  <nav class="flex min-h-12 items-center gap-4 md:justify-between">
     <NuxtLink
       to="/"
       title="Startseite"
       class="logo text-[24px] font-medium text-main md:flex-1"
     >
       <span
-        class="inline-flex flex-wrap -mb-6 leading-none tracking-tighter max-w-40 xs:flex-nowrap md:flex-col lg:flex-row"
+        class="-mb-6 inline-flex max-w-40 flex-wrap leading-none tracking-tighter xs:flex-nowrap md:flex-col lg:flex-row"
       >
         <span class="text-accent">Wohnungs</span>
         <span class="text-primary">Markt</span>
@@ -67,54 +75,66 @@ const handleLinkClick = (e: PointerEvent) => {
       </span>
     </NuxtLink>
     <h2
-      class="hidden font-light text-center opacity-50 tagline whitespace-nowrap text-l md:block md:flex-1"
+      class="tagline hidden whitespace-nowrap text-center text-l font-light opacity-50 md:block md:flex-1"
     >
       What's a housing crisis?
     </h2>
     <div
-      class="items-baseline gap-4 ml-auto text-right nav_links md:ml-0 md:flex md:flex-1 md:justify-end"
+      class="nav_links ml-auto items-baseline gap-4 text-right md:ml-0 md:flex md:flex-1 md:justify-end"
     >
       <NuxtLink
         to="/"
         title="Startseite"
         class="hidden md:block"
       >
-        <lord-icon
-          icon="home"
+        <LottieIcon
           src="/icons/home.json"
           trigger="hover"
           style="width: 32px; height: 32px"
-        />
+        >
+          <img
+            src="/icons/home.svg"
+            alt=""
+          />
+        </LottieIcon>
       </NuxtLink>
       <NuxtLink
         to="/overview"
         title="Listenansicht"
         class="hidden md:block"
       >
-        <lord-icon
-          icon="overview"
+        <LottieIcon
           src="/icons/overview.json"
           trigger="hover"
           style="width: 32px; height: 32px"
-        />
+        >
+          <img
+            src="/icons/overview.svg"
+            alt=""
+          />
+        </LottieIcon>
       </NuxtLink>
       <NuxtLink
         to="/map"
         title="Kartenansicht"
         class="hidden md:block"
       >
-        <lord-icon
-          icon="map"
+        <LottieIcon
           src="/icons/map.json"
           trigger="hover"
           style="width: 32px; height: 32px"
-        />
+        >
+          <img
+            src="/icons/map.svg"
+            alt=""
+          />
+        </LottieIcon>
       </NuxtLink>
       <FavoritesList />
     </div>
     <HamburgerMenu @click="() => showSiteMenu(true)" />
     <div
-      class="fixed top-0 left-0 z-40 flex flex-col items-center w-full h-screen px-4 pt-4 pb-16 transition-opacity duration-300 bg-background"
+      class="fixed left-0 top-0 z-40 flex h-screen w-full flex-col items-center bg-background px-4 pb-16 pt-4 transition-opacity duration-300"
       :class="{
         'opacity-0': siteMenuVisibility.closing,
         'opacity-100':
@@ -122,9 +142,9 @@ const handleLinkClick = (e: PointerEvent) => {
         invisible: !siteMenuVisibility.visible,
       }"
     >
-      <div class="flex items-center ml-auto">
+      <div class="ml-auto flex items-center">
         <div
-          class="relative w-8 h-12 cursor-pointer"
+          class="relative h-12 w-8 cursor-pointer"
           @click="() => showSiteMenu(false)"
         >
           <span
@@ -137,7 +157,7 @@ const handleLinkClick = (e: PointerEvent) => {
       </div>
       <div
         ref="iconsContainer"
-        class="flex flex-col gap-4 my-auto text-right"
+        class="my-auto flex flex-col gap-4 text-right"
       >
         <NuxtLink
           v-for="link in [
@@ -155,13 +175,16 @@ const handleLinkClick = (e: PointerEvent) => {
           @click="handleLinkClick"
         >
           {{ link.name }}
-          <lord-icon
-            :icon="link.icon"
+          <LottieIcon
             :src="`/icons/${link.icon}.json`"
             style="width: 42px; height: 42px"
-            stroke="bold"
             class="current-color"
-          />
+          >
+            <img
+              :src="`/icons/${link.icon}.svg`"
+              alt=""
+            />
+          </LottieIcon>
         </NuxtLink>
       </div>
     </div>

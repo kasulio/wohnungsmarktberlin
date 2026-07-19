@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import { zipCodeToDistrict } from "~/data/districts";
+import {
+  UNKNOWN_DISTRICT_ID,
+  unknownDistrict,
+  zipCodeToDistrict,
+} from "~/data/districts";
 
 defineOptions({
   inheritAttrs: false,
@@ -19,7 +23,14 @@ const district = computed(() => zipCodeToDistrict[props.zipCode]);
     :title="`Bezirk für ${zipCode}`"
     v-bind="$attrs"
   >
-    {{ zipCodeToDistrict[zipCode].name }}
+    {{ district.name }}
   </NuxtLink>
-  <span v-else>{{ zipCode }}</span>
+  <NuxtLink
+    v-else
+    :to="`/overview?districts=${UNKNOWN_DISTRICT_ID}`"
+    :title="`Bezirk für ${zipCode}`"
+    v-bind="$attrs"
+  >
+    {{ unknownDistrict.name }}
+  </NuxtLink>
 </template>

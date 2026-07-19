@@ -43,12 +43,32 @@ const {
 } = useMapFlats();
 
 await flatsQuery;
+
+const countText = computed(() => {
+  const total = flatsQuery.data.value?.totalElementsCount ?? 0;
+  const filtered = flatsQuery.data.value?.filteredElementsCount ?? 0;
+  if (filtered === 0) {
+    return "Keine Wohnungen";
+  }
+  if (filtered === total) {
+    return `${total} Wohnungen`;
+  }
+  return `${filtered} von ${total} Wohnungen`;
+});
 </script>
 
 <template>
   <div class="flex h-full w-full flex-col">
-    <h1 class="sr-only">Berliner Mietwohnungen auf der Karte</h1>
-    <Filters />
+    <div class="mb-4 md:mb-6">
+      <h1 class="text-xl leading-tight text-main">
+        {{ countText }}
+      </h1>
+    </div>
+    <Filters
+      :result-count="flatsQuery.data.value?.filteredElementsCount ?? null"
+      :total-count="flatsQuery.data.value?.totalElementsCount ?? null"
+      :show-bar-count="false"
+    />
     <div
       ref="mapContainer"
       class="relative h-full min-h-[70vh] grow overflow-hidden rounded-xl bg-background"

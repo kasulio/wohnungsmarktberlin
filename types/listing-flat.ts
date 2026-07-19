@@ -15,7 +15,7 @@ export type ListingFlatImage = Pick<ListingFlat, "id" | "hasImage">;
 
 export type ListingAddress = Pick<
   ListingFlat["address"],
-  "street" | "streetNumber" | "postalCode"
+  "street" | "streetNumber" | "postalCode" | "latitude" | "longitude"
 >;
 
 /**
@@ -41,8 +41,6 @@ export type ListingCardDetailProps = ListingCardProps & {
   floor?: number | null;
 };
 
-export type ListingDetailsProps = ListingCardDetailProps & {
-  as?: "row" | "card";
-};
+export type ListingDetailsProps = ListingCardDetailProps;
 
 type ListingCardPropKeys = keyof ListingCardProps & keyof ListingFlat;

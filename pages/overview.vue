@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { ListingCardDetailProps } from "~/types/listing-flat";
+
 const config = useRuntimeConfig();
 const pageDescription =
   "Alle aktuellen Mietwohnungen in Berlin auf einen Blick – filter nach Preis, Zimmeranzahl, Fläche und Bezirk. Angebote von öffentlichen Berliner Hausverwaltungen.";
@@ -12,7 +14,7 @@ useSeoMeta({
   twitterDescription: pageDescription,
 });
 const { $client } = useNuxtApp();
-const { urlState, updateQueryState } = useFlatFilterUrlState();
+const { urlState } = useFlatFilterUrlState();
 const { registerLoadingRef, unregisterLoadingRef } =
   useCustomLoadingIndicator();
 
@@ -57,9 +59,6 @@ watch(flats, () => {
 
 onUnmounted(() => unregisterLoadingRef(flatsQuery.status));
 
-const sortOptions = flatFilterUrlSchema.shape.orderBy.unwrap().unwrap()
-  .element.options;
-
 const countText = computed(() => {
   const total = flatsQuery.data?.value?.totalElementsCount ?? 0;
   const filtered = flatsQuery.data?.value?.filteredElementsCount ?? 0;
@@ -67,69 +66,43 @@ const countText = computed(() => {
     return "Keine Wohnungen";
   }
   if (filtered === total) {
-    return `Alle Wohnungen (${total})`;
+    return `${total} Wohnungen`;
   }
-  return `Wohnungen (${filtered} von ${total})`;
+  return `${filtered} von ${total} Wohnungen`;
 });
 
-const tableHeaders = computed(
-  () =>
-    ({
-      main: {
-        title: countText.value,
-        class: "w-[30%] rounded-l-xl px-4 text-left",
-      },
-      price: {
-        title: "Preis (kalt)",
-      },
-      roomCount: {
-        title: "Zimmer",
-        class: "w-[10%]",
-      },
-      usableArea: {
-        title: "Fläche",
-      },
-      rentPricePerSquareMeter: {
-        title: "€/m²",
-      },
-      district: {
-        title: "Bezirk",
-        class: "w-[20%]",
-      },
-      favorite: {
-        title: "",
-        class: "w-[5%]",
-      },
-    }) as Record<string, { title: string; class?: string }>,
+const listingFlats = computed<ListingCardDetailProps[]>(() =>
+  (flatsQuery.data?.value?.data ?? []).map((flat) => ({
+    id: flat.id,
+    title: flat.title,
+    address: flat.address!,
+    coldRentPrice: flat.coldRentPrice,
+    warmRentPrice: flat.warmRentPrice,
+    hasImage: flat.hasImage,
+    tags: flat.tags,
+    usableArea: flat.usableArea,
+    url: flat.url,
+    firstSeen: new Date(flat.firstSeen),
+    roomCount: flat.roomCount,
+    propertyManagementId: flat.propertyManagementId,
+    floor: flat.floor,
+  })),
 );
-
-const sortOrders = computed(() => {
-  return Object.entries(tableHeaders.value).reduce(
-    (acc, [key]) => {
-      if (!urlState.value.orderBy?.[0] && key === "main") {
-        return {
-          ...acc,
-          [key]: urlState.value.order?.[0] ?? "desc",
-        };
-      }
-
-      return {
-        ...acc,
-        [key]:
-          urlState.value.orderBy?.[0] === key
-            ? urlState.value.order?.[0]
-            : undefined,
-      };
-    },
-    {} as Record<string, "asc" | "desc" | undefined>,
-  );
-});
 </script>
 <template>
   <div>
-    <h1 class="sr-only">Alle Mietwohnungen in Berlin</h1>
-    <Filters />
-    <div v-if="!flats?.data?.length">
+    <div class="mb-4 md:mb-6">
+      <h1 class="text-xl leading-tight text-main">
+        {{ countText }}
+      </h1>
+    </div>
+    <Filters
+      :result-count="flatsQuery.data?.value?.filteredElementsCount ?? null"
+      :total-count="flatsQuery.data?.value?.totalElementsCount ?? null"
+      :show-bar-count="false"
+      show-sort
+    />
+    <div v-if="!listingFlats.length">
       <h2 class="mt-4 text-xl">
         Es wurden keine Wohnungen gefunden
         <span class="whitespace-nowrap">:(</span>
@@ -138,110 +111,39 @@ const sortOrders = computed(() => {
         Versuche es mit anderen Filtern oder schau später nochmal vorbei!
       </p>
     </div>
-    <div v-else>
-      <table
-        class="hidden w-full table-fixed border-separate border-spacing-y-4 text-center lg:table"
+    <div
+      v-else
+      class="mt-4"
+    >
+      <!-- mobile: accordion cards -->
+      <div
+        class="flex flex-col divide-y divide-black overflow-visible rounded-xl border border-black bg-white lg:hidden [&_article:first-child]:rounded-t-[0.75rem] [&_article:last-child]:rounded-b-[0.75rem]"
       >
-        <thead class="bg-background">
-          <tr>
-            <th
-              v-for="[headerKey, header] in Object.entries(tableHeaders)"
-              :key="headerKey"
-              class="text-nowrap px-2 py-4 font-medium first:rounded-l-xl last:rounded-r-xl"
-              :class="header.class"
-            >
-              <button
-                v-if="sortOptions.includes(headerKey) || headerKey === 'main'"
-                class="group m-auto flex items-center gap-1"
-                @click="
-                  () => {
-                    updateQueryState({
-                      orderBy: [headerKey as (typeof sortOptions)[number]],
-                      order: [sortOrders[headerKey] === 'asc' ? 'desc' : 'asc'],
-                    });
-                  }
-                "
-                @mouseenter="
-                  (e) => {
-                    // @ts-ignore
-                    const icon = e.target?.querySelector('lord-icon');
-                    if (icon.playerInstance) {
-                      !icon.playerInstance.isPlaying &&
-                        icon.playerInstance.playFromBeginning();
-                    }
-                  }
-                "
-              >
-                {{ header.title }}
-                <lord-icon
-                  icon="arrow"
-                  src="/icons/arrow.json"
-                  state="hover-ternd-flat-3"
-                  class="-mr-[20px] -rotate-90 transition-all duration-500"
-                  :class="{
-                    'opacity-0': sortOrders[headerKey] === undefined,
-                    'group-hover:opacity-50':
-                      sortOrders[headerKey] === undefined,
-                    '-scale-x-100': sortOrders[headerKey] === 'desc',
-                  }"
-                  style="width: 20px; height: 20px"
-                />
-              </button>
-              <div v-else>
-                {{ header.title }}
-              </div>
-            </th>
-          </tr>
-        </thead>
-        <tbody class="text-center">
-          <ApartmentDetails
-            v-for="flat in flats?.data"
-            :id="flat.id"
-            :key="flat.id"
-            :room-count="flat.roomCount"
-            as="row"
-            :title="flat.title"
-            :address="flat.address!"
-            :cold-rent-price="flat.coldRentPrice"
-            :warm-rent-price="flat.warmRentPrice"
-            :tags="flat.tags"
-            :favorite="false"
-            :usable-area="flat.usableArea"
-            :has-image="flat.hasImage"
-            :url="flat.url"
-            :first-seen="new Date(flat.firstSeen)"
-            :property-management-id="flat.propertyManagementId"
-            :floor="flat.floor"
-          />
-        </tbody>
-      </table>
-
-      <div class="lg:hidden">
-        <h2 class="mb-4 text-xl">
-          {{ countText }}
-        </h2>
-        <div class="flex flex-col gap-3">
-          <ApartmentDetails
-            v-for="flat in flats?.data"
-            :id="flat.id"
-            :key="flat.id"
-            :room-count="flat.roomCount"
-            :title="flat.title"
-            :address="flat.address!"
-            :cold-rent-price="flat.coldRentPrice"
-            :warm-rent-price="flat.warmRentPrice"
-            :tags="flat.tags"
-            :favorite="false"
-            :usable-area="flat.usableArea"
-            :has-image="flat.hasImage"
-            :url="flat.url"
-            :first-seen="new Date(flat.firstSeen)"
-            :property-management-id="flat.propertyManagementId"
-            :floor="flat.floor"
-          />
-        </div>
+        <ApartmentDetails
+          v-for="flat in listingFlats"
+          :id="flat.id"
+          :key="flat.id"
+          :room-count="flat.roomCount"
+          :title="flat.title"
+          :address="flat.address"
+          :cold-rent-price="flat.coldRentPrice"
+          :warm-rent-price="flat.warmRentPrice"
+          :tags="flat.tags"
+          :usable-area="flat.usableArea"
+          :has-image="flat.hasImage"
+          :url="flat.url"
+          :first-seen="flat.firstSeen"
+          :property-management-id="flat.propertyManagementId"
+          :floor="flat.floor"
+        />
       </div>
-      <div class="mt-8 w-full rounded-xl bg-background p-4">
+
+      <!-- desktop: master-detail list -->
+      <div class="hidden lg:block">
+        <ApartmentListingMasterDetail :flats="listingFlats" />
+      </div>
+
+      <div class="mt-8 w-full">
         <Pagination
           :total-elements-count="flats?.totalElementsCount ?? 0"
           :filtered-elements-count="flats?.filteredElementsCount ?? 0"

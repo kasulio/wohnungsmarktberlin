@@ -1,65 +1,77 @@
 <script setup lang="ts">
+import type { LottieIconExpose, LottieIconPlayer } from "~/utils/lottieIcons";
+
 const props = defineProps<{
   id: string;
 }>();
 
-const { isFavorite, toggle } = useFavorite(props.id);
-const icon = ref<null | Element>(null);
+const { isFavorite, toggle } = useFavorite(() => props.id);
+const player = shallowRef<LottieIconPlayer | null>(null);
+const heartIcon = ref<LottieIconExpose | null>(null);
 
 watch(isFavorite, (newValue) => {
-  const playerInstance = (icon.value as any)?.playerInstance;
+  const playerInstance = player.value;
   if (!playerInstance) return;
   playerInstance.direction = newValue ? 1 : -1;
   playerInstance.play();
 });
 
-onMounted(async () => {
-  await nextTick();
-  if (icon.value instanceof Element)
-    icon.value.addEventListener("ready", () => {
-      const playerInstance = (icon.value as any)?.playerInstance;
-      if (playerInstance && isFavorite.value) {
-        playerInstance.goToLastFrame();
-      }
-    });
-});
+function onIconReady(playerInstance: LottieIconPlayer) {
+  player.value = playerInstance;
+  if (isFavorite.value) {
+    playerInstance.goToLastFrame();
+  }
+}
+
+async function onFavoriteClick() {
+  const instance = await heartIcon.value?.ensureLoaded();
+  if (instance) player.value = instance;
+  toggle();
+}
 </script>
 
 <template>
-  <ClientOnly>
-    <button
-      class="inline-block"
-      :title="`${
-        isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'
-      }`"
-      @click="() => toggle()"
+  <button
+    class="inline-block"
+    :title="`${
+      isFavorite ? 'Aus Favoriten entfernen' : 'Zu Favoriten hinzufügen'
+    }`"
+    @click="onFavoriteClick"
+  >
+    <span
+      class="flex transition-colors delay-200 duration-300"
+      :class="{
+        'text-accent': isFavorite,
+        'text-black': !isFavorite,
+      }"
     >
-      <span
-        class="flex transition-colors delay-200 duration-300"
-        :class="{
-          'text-accent': isFavorite,
-          'text-black': !isFavorite,
-        }"
-      >
-        <lord-icon
-          ref="icon"
-          icon="heart"
+      <ClientOnly>
+        <LottieIcon
+          ref="heartIcon"
           src="/icons/heart.json"
           state="morph-heart"
           class="current-color -m-1 md:hover:animate-zoombounce"
           style="width: 28px; height: 28px"
-        />
-      </span>
-    </button>
-    <template #fallback>
-      <span class="current-color -m-1 flex">
-        <lord-icon
-          icon="heart"
-          state="morph-heart"
-          src="/icons/heart.json"
-          style="width: 28px; height: 28px"
-        />
-      </span>
-    </template>
-  </ClientOnly>
+          @ready="onIconReady"
+        >
+          <img
+            src="/icons/heart.svg"
+            alt=""
+          />
+        </LottieIcon>
+        <template #fallback>
+          <span
+            class="current-color -m-1 flex"
+            style="width: 28px; height: 28px"
+          >
+            <img
+              src="/icons/heart.svg"
+              alt=""
+              class="size-full"
+            />
+          </span>
+        </template>
+      </ClientOnly>
+    </span>
+  </button>
 </template>

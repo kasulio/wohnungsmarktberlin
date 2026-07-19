@@ -1,26 +1,48 @@
 <script setup lang="ts">
+import type { LottieIconExpose, LottieIconPlayer } from "~/utils/lottieIcons";
+
 const modalOpen = ref(false);
-const icon = ref<HTMLElement | null>(null);
+const player = shallowRef<LottieIconPlayer | null>(null);
+const heartIcon = ref<LottieIconExpose | null>(null);
 const { favorites } = useFavorites();
 
 watch(modalOpen, (newValue) => {
-  const playerInstance = (icon.value as any)?.playerInstance;
+  const playerInstance = player.value;
   if (!playerInstance) return;
   playerInstance.direction = newValue ? 1 : -1;
   playerInstance.play();
 });
+
+function onIconReady(playerInstance: LottieIconPlayer) {
+  player.value = playerInstance;
+  if (modalOpen.value) {
+    playerInstance.direction = 1;
+    playerInstance.goToLastFrame();
+  }
+}
+
+async function openFavorites() {
+  const instance = await heartIcon.value?.ensureLoaded();
+  if (instance) player.value = instance;
+  modalOpen.value = true;
+}
 </script>
 <template>
   <div class="favorites relative cursor-pointer">
-    <lord-icon
-      ref="icon"
-      icon="heart"
+    <LottieIcon
+      ref="heartIcon"
       src="/icons/heart.json"
       state="morph-heart"
       class="hover:animate-zoombounce"
       style="width: 32px; height: 32px"
-      @click="() => (modalOpen = true)"
-    />
+      @ready="onIconReady"
+      @click="openFavorites"
+    >
+      <img
+        src="/icons/heart.svg"
+        alt=""
+      />
+    </LottieIcon>
     <ClientOnly>
       <div
         class="top absolute right-0 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full bg-accent text-[0.5rem] font-bold leading-none text-white"
