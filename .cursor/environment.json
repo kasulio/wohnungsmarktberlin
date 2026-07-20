@@ -1,0 +1,21 @@
+{
+  "name": "wohnungsmarktberlin",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "install": "bash .cursor/install.sh",
+  "terminals": [
+    {
+      "name": "dev",
+      "command": "bun dev --host 0.0.0.0 --port 3000",
+      "description": "Nuxt 4 + Bun dev server (http://localhost:3000)"
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 3000
+    }
+  ]
+}
