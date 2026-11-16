@@ -1,6 +1,7 @@
 import { parseNumberString } from "~/lib/parser";
 import { parse } from "node-html-parser";
 import { z } from "zod";
+import { fetchJson } from "~/lib/http";
 
 import { type PropertyManagement, type ScrapedFlat } from "../schemas";
 import { propertyManagementConfigs } from "./configs";
@@ -18,12 +19,12 @@ async function extractUrls() {
   while (offset <= 100) {
     const url = "https://d2396ha8oiavw0.cloudfront.net/sul-main/immoSearch";
     const options = {
-      method: "POST",
+      method: "POST" as const,
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ offset: offset, cat: "wohnung" }),
     };
 
-    const json = await fetch(url, options).then((res) => res.json());
+    const json = await fetchJson(url, options);
 
     const parsed = z
       .object({

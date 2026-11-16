@@ -1,4 +1,4 @@
-import type { Options as KyOptions } from "ky";
+import type { FetchOptions } from "~/lib/http";
 import { z } from "zod";
 
 import { insertAddressSchema } from "./address";
@@ -51,6 +51,6 @@ export type PropertyManagement = {
   website?: string;
   extractUrls: () => Promise<string[]>;
   extractDataFromHtml: (html: string, href: string) => ScrapedFlat;
-  getFetchOptions?: () => KyOptions;
+  getFetchOptions?: () => FetchOptions;
   shouldIgnoreListing?: (flat: FlatForProviderIgnoreCheck) => boolean;
 };

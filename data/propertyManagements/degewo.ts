@@ -1,5 +1,6 @@
 import { type HTMLElement, parse } from "node-html-parser";
 import { parseNumberString } from "~/lib/parser";
+import { fetchHtml } from "~/lib/http";
 import type { PropertyManagement, ScrapedFlat } from "../schemas";
 import { propertyManagementConfigs } from "./configs";
 
@@ -27,20 +28,20 @@ async function extractUrls(): Promise<string[]> {
   formData.append("tx_openimmo_immobilie[search]", "paginate");
   formData.append("tx_openimmo_immobilie[page]", page.toString());
 
-  const html = await fetch(`${BASE_URL}/immosuche`, {
+  const html = await fetchHtml(`${BASE_URL}/immosuche`, {
     method: "POST",
     body: formData,
-  }).then((res) => res.text());
+  });
 
   const root = parse(html);
   const flatUrls = extractFlatUrlsFromPage(root);
   while (page < 10) {
     try {
       formData.set("tx_openimmo_immobilie[page]", (++page).toString());
-      const newHtml = await fetch(`${BASE_URL}/immosuche`, {
+      const newHtml = await fetchHtml(`${BASE_URL}/immosuche`, {
         method: "POST",
         body: formData,
-      }).then((res) => res.text());
+      });
 
       const newRoot = parse(newHtml);
       const newFlatUrls = extractFlatUrlsFromPage(newRoot);
