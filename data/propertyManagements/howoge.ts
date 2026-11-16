@@ -37,6 +37,21 @@ async function extractUrls() {
   );
 }
 
+/**
+ * "Adresse:\n  Street 5,\n  13587 Berlin, District" → "Street 5, 13587 Berlin".
+ * Photon resolves the address worse with the district appended.
+ */
+export function cleanHowogeAddress(raw: string): string {
+  const lines = raw
+    .replace(/^\s*Adresse:/, "")
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim().replace(/,$/, ""))
+    .filter(Boolean);
+  const [street, place] = lines;
+  if (!street) return "";
+  return place ? `${street}, ${place.split(",")[0]!.trim()}` : street;
+}
+
 function extractDataFromHtml(html: string, href: string) {
   const root = parse(html);
 
@@ -57,9 +72,9 @@ function extractDataFromHtml(html: string, href: string) {
     return undefined;
   };
 
-  const address = root
-    .querySelector(".address-wrap .address")
-    ?.textContent.trim();
+  const address = cleanHowogeAddress(
+    root.querySelector(".address-wrap .address")?.textContent ?? "",
+  );
   if (!address) {
     throw new Error(`Address not found for flat ${href}`);
   }

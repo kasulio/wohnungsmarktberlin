@@ -145,8 +145,7 @@ export const expectedValues: Record<string, ExpectedFlat> = {
     warmRentPrice: 803,
     roomCount: 3,
     usableArea: 73,
-    addressText:
-      "Adresse:\n\n                        Streitstraße 5,\n\n                        13587 Berlin, Hakenfelde",
+    addressText: "Streitstraße 5, 13587 Berlin",
     floor: 3,
     imageUrl:
       "https://www.howoge.de/fileadmin/_processed_/6/d/xcsm_3de75f489497a4d71e748f9225a4b828_3798beaef2.webp.pagespeed.ic.StVjtmNdIC.webp",
