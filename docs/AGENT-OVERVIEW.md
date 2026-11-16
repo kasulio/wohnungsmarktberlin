@@ -19,22 +19,24 @@ Map of where things live and how a listing moves through the system. Everything 
 ## Data Flow
 
 ```
-Scheduled tasks / admin trigger
+Scheduled tasks / admin trigger             server/tasks/*.ts, adminScrape() in server/lib/scraper/admin-scrape.ts
+  (Promise edge: runScraper()                server/lib/scraper/live.ts)
          │
          ▼
-syncListingsForPropertyManagement(slug)     server/lib/scraper/sync-listings.ts
+syncListings(slug)                          server/lib/scraper/sync-listings.ts
   ├── PM.extractUrls()                      data/propertyManagements/*.ts
   ├── Soft-delete flats no longer listed
   ├── Update lastSeen on existing flats
   └── Enqueue new URLs → flatUrlJob (pending)
          │
          ▼
-processFlatUrlJobs()                        server/lib/scraper/process-flat-url-jobs.ts
-  ├── fetchHtml(url)                        lib/http.ts
+extractFlats({ limit, pace })               server/lib/scraper/extract-flats.ts
+  ├── Http.text(url)                        lib/http.ts (one request per host at a time, 1s gap)
   ├── PM.extractDataFromHtml()              node-html-parser / JSON
-  ├── getImage() → sharp 200×200            lib/flat-utils.ts
+  ├── Http.bytes(image) → makeThumbnail()   lib/flat-utils.ts
   ├── shouldIgnoreListing()                 lib/flat-utils.ts
-  └── UPSERT flat ON CONFLICT(url)
+  ├── UPSERT flat ON CONFLICT(url)
+  └── on failure: flatUrlJob.lastError = typed error's message
          │
          ▼
 address-improvement task                    server/tasks/address-improvement.ts
@@ -94,12 +96,17 @@ type PropertyManagement = {
 
 ### Server scraper lib (`server/lib/scraper/`)
 
-| File                       | Role                                                 |
-| -------------------------- | ---------------------------------------------------- |
-| `sync-listings.ts`         | Fetch URLs, soft-delete removed, enqueue new jobs    |
-| `process-flat-url-jobs.ts` | Fetch HTML, parse, upsert flat, mark job done/failed |
-| `prune-stale-flats.ts`     | Soft-delete flats not seen for 7 days                |
-| `log-scraper-run.ts`       | Insert scraperRun audit row                          |
+Effect code. Services: `Db` (`server/db/service.ts`), `Http` (`lib/http.ts`), `Scrapers`, `AddressImprovement`, `ExtractPacing` (`services.ts`). Tests provide a migrated in-memory DB (`server/db/testing.ts`) and fake layers.
+
+| File                   | Role                                                          |
+| ---------------------- | ------------------------------------------------------------- |
+| `sync-listings.ts`     | Fetch URLs, soft-delete removed, enqueue new jobs             |
+| `extract-flats.ts`     | Fetch HTML, parse, upsert flat, mark job done/failed          |
+| `admin-scrape.ts`      | Admin run: prune, sync, one interactive extract batch, logged |
+| `prune-stale-flats.ts` | Soft-delete flats not seen for 7 days                         |
+| `run-log.ts`           | `loggedRun`: time a run, insert scraperRun audit row          |
+| `services.ts`          | Service tags and typed lookup of a company's scraper          |
+| `live.ts`              | Live layer and the `runScraper` Promise edge                  |
 
 ### Ignore rules (`lib/flat-utils.ts` → `shouldIgnoreListing`)
 
