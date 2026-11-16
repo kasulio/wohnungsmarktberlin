@@ -13,9 +13,10 @@ import {
 } from "~/server/db/schema";
 import { logScraperRun } from "~/server/lib/scraper/log-scraper-run";
 import {
-  type ProcessFlatUrlJobsStats,
-  processFlatUrlJobs,
-} from "~/server/lib/scraper/process-flat-url-jobs";
+  type ExtractStats,
+  extractFlats,
+} from "~/server/lib/scraper/extract-flats";
+import { runScraper } from "~/server/lib/scraper/live";
 import { pruneFlatsNotSeenForDays } from "~/server/lib/scraper/prune-stale-flats";
 import {
   type SyncListingsStats,
@@ -332,14 +333,15 @@ export const propertyManagementRouter = router({
         }
       }
 
-      let extractionStats: ProcessFlatUrlJobsStats;
+      let extractionStats: ExtractStats;
       if (mode === "full" || mode === "extract_only") {
-        const { stats } = await processFlatUrlJobs({
-          limit: env.ADMIN_SCRAPER_EXTRACT_BATCH,
-          propertyManagementIds: scoped ? targetSlugs : undefined,
-          sleepBetweenJobs: false,
-        });
-        extractionStats = stats;
+        extractionStats = await runScraper(
+          extractFlats({
+            limit: env.ADMIN_SCRAPER_EXTRACT_BATCH,
+            propertyManagementIds: scoped ? targetSlugs : undefined,
+            pace: "interactive",
+          }),
+        );
       } else {
         extractionStats = {
           flatsExtracted: 0,

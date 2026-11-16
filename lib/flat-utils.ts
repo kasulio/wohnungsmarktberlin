@@ -140,27 +140,9 @@ export function getPropertyManagement(
   return propertyManagement;
 }
 
-/**
- * Fetches and processes an image from a remote URL.
- * Resizes the image to 200x200 pixels.
- * Returns null if the image cannot be processed.
- */
-export async function getImage(remoteImageUrl: string): Promise<Buffer | null> {
-  try {
-    const response = await fetch(remoteImageUrl);
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    const processedBuffer = await sharp(buffer)
-      .resize(200, 200, {
-        fit: "inside",
-        withoutEnlargement: true,
-      })
-      .toBuffer();
-
-    return processedBuffer;
-  } catch (e) {
-    console.error(e);
-    return null;
-  }
+/** Shrinks a listing image to fit 200×200 for storage in `flat.image`. */
+export function makeThumbnail(image: Uint8Array): Promise<Buffer> {
+  return sharp(image)
+    .resize(200, 200, { fit: "inside", withoutEnlargement: true })
+    .toBuffer();
 }

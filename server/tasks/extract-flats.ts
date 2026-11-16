@@ -1,5 +1,6 @@
 import { logScraperRun } from "~/server/lib/scraper/log-scraper-run";
-import { processFlatUrlJobs } from "~/server/lib/scraper/process-flat-url-jobs";
+import { extractFlats } from "~/server/lib/scraper/extract-flats";
+import { runScraper } from "~/server/lib/scraper/live";
 
 export default defineTask({
   meta: {
@@ -9,10 +10,9 @@ export default defineTask({
   },
   run: async () => {
     const started = Date.now();
-    const { stats } = await processFlatUrlJobs({
-      limit: 10,
-      sleepBetweenJobs: true,
-    });
+    const stats = await runScraper(
+      extractFlats({ limit: 10, pace: "background" }),
+    );
 
     const success = stats.flatsFailed === 0;
 
