@@ -1,25 +1,24 @@
+/**
+ * Reads German and English number formats. The last of `,` and `.` is the
+ * decimal separator, except that dots grouping exactly three digits with no
+ * comma ("1.250", "1.250.000") are German thousands separators.
+ */
 export function parseNumberString(
   input: string | undefined,
 ): number | undefined {
   if (!input) return undefined;
 
-  // Remove whitespace
-  input = input.trim();
+  const compact = input.replace(/\s/g, "");
+  const lastComma = compact.lastIndexOf(",");
+  const lastPeriod = compact.lastIndexOf(".");
 
-  // Detect whether comma or period is the decimal separator
-  // If there's both, the last one is the decimal separator
-  const lastComma = input.lastIndexOf(",");
-  const lastPeriod = input.lastIndexOf(".");
-
-  let normalized = input;
+  let normalized: string;
   if (lastComma > lastPeriod) {
-    // Comma is the decimal separator (German format)
-    // Remove all periods and replace comma with period
-    normalized = input.replace(/\./g, "").replace(",", ".");
-  } else if (lastPeriod > lastComma) {
-    // Period is the decimal separator (English format or already normalized)
-    // Just remove commas (if any thousands separators)
-    normalized = input.replace(/,/g, "");
+    normalized = compact.replace(/\./g, "").replace(",", ".");
+  } else if (lastComma === -1 && /^\d{1,3}(\.\d{3})+$/.test(compact)) {
+    normalized = compact.replace(/\./g, "");
+  } else {
+    normalized = compact.replace(/,/g, "");
   }
 
   const res = parseFloat(normalized);
