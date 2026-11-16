@@ -29,6 +29,8 @@ export const env = createEnv({
         "TELEGRAM_WEBHOOK_SECRET: only A-Z, a-z, 0-9, _ and - allowed (Telegram API)",
       )
       .optional(),
+    /** `off` skips the cron tasks (live scraping, geocoding, notify), e.g. in worktrees. */
+    SCHEDULED_TASKS: z.enum(["on", "off"]).optional().default("on"),
     /** Max flatUrl jobs processed per admin full / extract_only run (tasks unchanged). */
     ADMIN_SCRAPER_EXTRACT_BATCH: z
       .string()

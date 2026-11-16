@@ -48,15 +48,18 @@ export default defineNuxtConfig({
   nitro: {
     esbuild: { options: { target: "esnext" } },
     experimental: { tasks: true },
-    scheduledTasks: {
-      "* * * * *": [
-        "address-improvement",
-        "extract-flats",
-        "update-flats",
-        "notify",
-      ],
-      "*/15 * * * *": ["update-map-preview"],
-    },
+    scheduledTasks:
+      env.SCHEDULED_TASKS === "off"
+        ? {}
+        : {
+            "* * * * *": [
+              "address-improvement",
+              "extract-flats",
+              "update-flats",
+              "notify",
+            ],
+            "*/15 * * * *": ["update-map-preview"],
+          },
     preset: "bun",
   },
   alias: { cookie: resolve(__dirname, "node_modules/cookie") },

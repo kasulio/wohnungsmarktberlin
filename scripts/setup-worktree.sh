@@ -25,6 +25,7 @@ if [ ! -f .env ]; then
   fi
   # Never copies the main checkout's .env: it may hold real API keys and the
   # Telegram bot token. Without TELEGRAM_BOT_TOKEN the telegram channel is off.
+  # SCHEDULED_TASKS=off keeps every extra dev server from scraping live sites.
   cat > .env <<EOF
 GOOGLE_MAPS_API_KEY=dev-placeholder
 NUXT_PUBLIC_GOOGLE_MAPS_API_KEY=dev-placeholder
@@ -33,6 +34,7 @@ LOCAL_SQLITE_PATH=./$db_path
 BETTER_AUTH_SECRET=dev-only-secret-change-me-0123456789abcdef
 PORT=$port
 DEPLOYMENT_URL=http://localhost:$port
+SCHEDULED_TASKS=off
 EOF
   echo "wrote .env (PORT=$port)"
 fi
