@@ -7,33 +7,47 @@ description: Run this app and drive it to prove a change works end to end. Use a
 
 ## 1. Launch
 
-Work in a worktree or clone that has been through `scripts/setup-worktree.sh`, which leaves a `.env` with its own `PORT` and `SCHEDULED_TASKS=off`, plus a SQLite copy. In the main checkout `.env` holds real credentials and cron scraping is on: use it only when the user says so.
+No `node_modules` or `.env` yet means setup has not run: `scripts/setup-worktree.sh`. Its default is right for agents: it only _reads_ the main checkout's DB and gives this checkout a scrubbed copy (real listings, no accounts, no subscribers). `--empty-db` is for when no main DB exists.
 
 ```bash
-PORT=$(grep '^PORT=' .env | cut -d= -f2)
-bun dev > /tmp/dev-$PORT.log 2>&1 &   # background; first start takes ~20s
+PORT=$(bun -e 'console.log(process.env.PORT)')   # Bun loads .env; no need to read it
 ```
+
+Start `bun dev` with your harness's background-process mode (a plain `cmd &` dies with the shell call) and send its output to a log file. Startup takes 2-25s.
 
 ## 2. Doctor
 
-Done when `curl -sf localhost:$PORT/api/health` returns `{"status":"ok"}`. Poll for up to 60s. If it fails, read the dev log: an env error names the missing variable (see `env.ts`); `EADDRINUSE` means another server holds the port, so pick a free one and update `PORT` and `DEPLOYMENT_URL` in `.env`.
+Done when `curl -s localhost:$PORT/api/health` reports `"status": "ok"` **and** `"root"` equals this checkout's `pwd`. A different `root` means another worktree's server answered on this port: stop yours, set a free `PORT` and `DEPLOYMENT_URL` in `.env`, restart. Use `localhost`, not `127.0.0.1`: the server may listen on IPv6 only. Startup errors (env validation, ports) are in the dev log.
 
 ## 3. Drive
 
 Exercise the exact path the change touches, then one neighbouring path that it could break.
 
-- **Pages**: `curl -s localhost:$PORT/<route>` returns server-rendered HTML; grep it for the text or data the change adds. Routes: `/`, `/overview`, `/map`, `/about`, `/login`, `/admin/dashboard`. With a browser tool available, open the page and check the console as well: client-only behaviour (filters, map, favorites) never shows in SSR HTML.
-- **tRPC**: `curl -s 'localhost:$PORT/api/trpc/<router>.<procedure>'`, with input as `?input=<url-encoded JSON>`. No transformer, so the response is plain JSON under `result.data`.
-- **Tasks**: cron is off, so run a task by hand: `curl -s localhost:$PORT/_nitro/tasks/<name>` (names in `server/tasks/`). `update-flats` and `extract-flats` hit live housing-company sites: run them once, never in a loop. `notify` only logs: worktrees have no `TELEGRAM_BOT_TOKEN`.
-- **Admin**: `/admin/*` needs a session. Seed a throwaway admin into this DB, then log in at `/login`:
-  `SEED_ADMIN_EMAIL=agent@example.com SEED_ADMIN_PASSWORD=agent-password-123 bun seed:admin`
-- **DB state**: `sqlite3 server/db/sqlite.db '<query>'`. Visible listings: `deleted IS NULL AND ignored = 0 AND addressId IS NOT NULL`.
-- **Scrapers**: fixture tests in `bun test`; live drift with `bun scrape:canary` (see `data/propertyManagements/TESTING.md`).
+- **Pages**: `curl -s localhost:$PORT/<route>` returns server-rendered HTML; grep it for what the change adds. Routes: `/`, `/overview`, `/map`, `/about`, `/login`, `/admin/dashboard`. Client-only behaviour (filters, map, favorites, hydration errors) never shows in SSR HTML: for those, open the page in a browser tool and check the console, or report it as unchecked.
+- **tRPC**: no transformer, plain JSON. Query: `curl -s 'localhost:$PORT/api/trpc/<router>.<proc>?input=<url-encoded JSON>'` → `result.data`. Mutation: `POST` with the JSON input as body.
+- **Login** (protected procedures, `/admin`): "protected" means any signed-in user.
+  ```bash
+  SEED_ADMIN_EMAIL=agent@example.com SEED_ADMIN_PASSWORD=agent-password-123 bun seed:admin
+  curl -s -c /tmp/jar-$PORT -H "origin: http://localhost:$PORT" -H 'content-type: application/json' \
+    -d '{"email":"agent@example.com","password":"agent-password-123"}' localhost:$PORT/api/auth/sign-in/email
+  ```
+  Then pass `-b /tmp/jar-$PORT`. Prove auth on tRPC (401 without the jar, 200 with it); curl on `/admin/*` redirects to `/login` even with the jar, so check admin pages in a browser.
+- **Tasks**: cron is off; run one by hand with `curl -s localhost:$PORT/_nitro/tasks/<name>` (names in `server/tasks/`). `update-flats` syncs whichever company is next in round-robin, `extract-flats` fetches pending jobs of any company: both hit live sites, so run them once.
+- **One company, live**: signed in, `POST /api/trpc/propertyManagement.update` with `{"slugs":["<slug>"],"mode":"full"}` (or `sync_only` / `extract_only`). Extraction fires up to `ADMIN_SCRAPER_EXTRACT_BATCH` (default 40) requests back to back: set it to 5 in `.env` before starting the server.
+- **Notifications**: the copy has no subscribers and no `TELEGRAM_BOT_TOKEN`, so nothing reaches anyone. To see a delivery without touching live sites, add a log subscriber, mark one visible flat as not yet stamped, and run the sweep:
+  ```sql
+  INSERT INTO notificationSubscriber (id, channel, target, filterJson, active, createdAt)
+  VALUES ('log:agent', 'log', 'agent', '{}', 1, strftime('%s','now') - 5);
+  UPDATE flat SET firstPublishableAt = NULL WHERE id = '<a visible flat id>';
+  ```
+  then `curl -s localhost:$PORT/_nitro/tasks/notify`. Deliveries print `[notify] (log:agent) …` in the dev log and land in `notificationSent`; code-defined `log:*` subscribers print too. The sweep also runs after address improvement and extract runs, so those deliver as well.
+- **DB state**: `sqlite3 server/db/sqlite.db '<query>'`. Visible = `publishableFlatFilter()` in `lib/flat-publishability.ts` = `deleted IS NULL AND ignored = 0 AND addressId IS NOT NULL`.
+- **Scrapers**: fixture tests in `bun test`; live drift with `bun scrape:canary --only <slug>` (see `data/propertyManagements/TESTING.md`).
 
 ## 4. Evidence
 
-Report each check as the command or action, then the observed result (status code, grepped line, JSON excerpt, screenshot path). A check you could not run is reported as skipped, with the reason.
+Report each check as the command or action, then the observed result (status code, grepped line, JSON excerpt, screenshot path). A check you could not run is reported as unchecked, with the reason.
 
 ## 5. Cleanup
 
-Stop the server you started: `lsof -ti tcp:$PORT | xargs kill`. Leave the worktree DB as is; it is a disposable copy.
+Stop the server you started (match the PID whose cwd is this checkout before killing). Leave the DB as is; it is a disposable copy.

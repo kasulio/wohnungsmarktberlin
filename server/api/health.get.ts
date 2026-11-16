@@ -4,7 +4,9 @@ import { db } from "~/server/db/client";
 export default defineEventHandler(async (event) => {
   try {
     await db.run(sql`SELECT 1`);
-    return { status: "ok" };
+    return import.meta.dev
+      ? { status: "ok", root: process.cwd() }
+      : { status: "ok" };
   } catch (error) {
     setResponseStatus(event, 503);
     return {

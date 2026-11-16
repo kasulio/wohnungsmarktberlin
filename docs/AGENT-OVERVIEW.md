@@ -9,12 +9,12 @@ Map of where things live and how a listing moves through the system. Everything 
 | Add/fix a scraper                | `data/propertyManagements/` → copy existing PM file                                  |
 | Change listing display/filters   | `pages/overview.vue`, `components/Filters.vue`, `server/trpc/routers/flat.ts`        |
 | Change map behavior              | `pages/map.vue`, `composables/useMapFlats.ts`, `components/Map/`                     |
-| DB schema change                 | `server/db/schema.ts` → `bun db:generate` → `bun db:migrate`                         |
+| DB schema change                 | `server/db/schema.ts` → `bun db:generate`; migrations apply on server start          |
 | Admin scraper controls           | `pages/admin/dashboard.vue`, `server/trpc/routers/propertyManagement.ts`             |
 | Scheduled background work        | `server/tasks/`, cron config in `nuxt.config.ts`                                     |
 | Scraper tests / live drift check | `data/propertyManagements/scrapers.test.ts`, `bun scrape:canary`                     |
 | Telegram / notification pipeline | `server/lib/notifiers/`, `server/tasks/notify.ts`, `docs/listing-pipeline-design.md` |
-| Auth / admin access              | `lib/auth.ts`, `middleware/admin.global.ts`, `scripts/seed-admin-auth.ts`            |
+| Auth / admin access              | `lib/auth.ts`, `middleware/admin.ts`, `scripts/seed-admin-auth.ts`                   |
 
 ## Data Flow
 
@@ -112,13 +112,13 @@ Matching listings → `flat.ignored = true`.
 
 Configured in `nuxt.config.ts` → `nitro.scheduledTasks`; they run in `bun dev` too unless `SCHEDULED_TASKS=off`. Trigger one by hand in dev: `/_nitro/tasks/<name>`.
 
-| Cron           | Task                  | Behavior                                         |
-| -------------- | --------------------- | ------------------------------------------------ |
-| `* * * * *`    | `update-flats`        | Prune 7d stale; sync **one** PM (round-robin)    |
-| `* * * * *`    | `extract-flats`       | Process **10** pending jobs (1–6s sleep between) |
-| `* * * * *`    | `address-improvement` | Geocode **10** flats via Photon                  |
-| `* * * * *`    | `notify`              | Send newly publishable flats to subscribers      |
-| `*/15 * * * *` | `update-map-preview`  | Regenerate map PNG if flat set changed           |
+| Cron           | Task                  | Behavior                                                                                                                                                                       |
+| -------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `* * * * *`    | `update-flats`        | Prune 7d stale; sync **one** PM (round-robin)                                                                                                                                  |
+| `* * * * *`    | `extract-flats`       | Process **10** pending jobs (1–6s sleep between)                                                                                                                               |
+| `* * * * *`    | `address-improvement` | Geocode **10** flats via Photon                                                                                                                                                |
+| `* * * * *`    | `notify`              | Sweep newly publishable flats to subscribers; the same sweep also runs right after address improvement (`server/lib/address-improvement.ts`), so admin extract runs notify too |
+| `*/15 * * * *` | `update-map-preview`  | Regenerate map PNG if flat set changed                                                                                                                                         |
 
 Task files: `server/tasks/*.ts`
 

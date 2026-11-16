@@ -27,9 +27,20 @@ type CheckResult =
 
 const FLATS_PER_SCRAPER = 2;
 const MAX_ATTEMPTS_PER_SCRAPER = 5;
-const scraperEntries = Object.entries(propertyManagements) as Array<
-  [PropertyManagementId, PropertyManagement]
->;
+const onlyIndex = process.argv.indexOf("--only");
+const onlySlugs =
+  onlyIndex === -1 ? undefined : process.argv[onlyIndex + 1]?.split(",");
+const scraperEntries = (
+  Object.entries(propertyManagements) as Array<
+    [PropertyManagementId, PropertyManagement]
+  >
+).filter(([slug]) => !onlySlugs || onlySlugs.includes(slug));
+if (onlySlugs && scraperEntries.length !== onlySlugs.length) {
+  console.error(
+    `--only: unknown slug in "${onlySlugs.join(",")}"; known: ${Object.keys(propertyManagements).join(", ")}`,
+  );
+  process.exit(1);
+}
 
 function shortUrl(url: string): string {
   try {

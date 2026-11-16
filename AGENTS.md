@@ -6,7 +6,7 @@ Domain words (Flat, PM, publishable, ignored, canary, …): [docs/GLOSSARY.md](d
 
 ## Setup
 
-A fresh clone or worktree needs `scripts/setup-worktree.sh` (T3 runs it on worktree create; `.cursor/install.sh` wraps it). It writes a placeholder `.env` with a free `PORT`, installs deps, and copies the main checkout's DB with timestamps shifted so listings are visible. `--empty-db` migrates an empty DB instead.
+A checkout without `node_modules` or `.env` needs `scripts/setup-worktree.sh` first (T3's `runOnWorktreeCreate` and `.cursor/install.sh` run it where they can). It writes a placeholder `.env` with a port derived from the checkout path and `SCHEDULED_TASKS=off`, installs deps, and builds a local DB: a copy of the main checkout's listings with accounts, subscribers and pending jobs removed, timestamps shifted so listings are visible. The main DB is only read. `--empty-db` migrates an empty DB instead.
 
 ## Verifying
 
@@ -18,11 +18,11 @@ A fresh clone or worktree needs `scripts/setup-worktree.sh` (T3 runs it on workt
 ## Ways to hurt yourself
 
 - **Dev servers scrape live sites.** Nitro runs the cron tasks in dev too: every minute, scraping one housing company, extracting pages and geocoding via Photon. Worktree `.env` files set `SCHEDULED_TASKS=off`; keep it that way and trigger single tasks by hand (`/_nitro/tasks/<name>`).
-- **The main checkout is production-shaped.** Its `.env` may hold the real Telegram bot token and its `server/db/sqlite.db` holds real subscribers and admin accounts. Work in a worktree; never commit `.env` or `*.db` (the repo is public).
+- **The main checkout is production-shaped.** Its `.env` may hold the real Telegram bot token and its `server/db/sqlite.db` holds real subscribers and admin accounts. Work in a worktree; never commit `.env` or `*.db` (the repo is public). A worktree that gets a real `TELEGRAM_BOT_TOKEN` messages whoever is in its `notificationSubscriber` table.
 - **`bun db:migrate` crashes on an empty DB**, because it dedupes flats before migrating. The setup script applies migrations directly.
-- **vue-tsc is pinned to 3.3.13**: 3.3.14 reports false errors on nested refs in templates. `bun check` (Bun's own) is shadowed by the package script, since Bun's checker skips `.vue` files.
+- **vue-tsc is pinned to 3.3.13**: 3.3.14 reports false errors on nested refs in templates. `bun check` runs the package script; Bun's built-in checker of the same name skips `.vue` files.
 - **Schema changes**: edit `server/db/schema.ts`, then `bun db:generate`, and commit the generated `drizzle/` migration. Migrations auto-apply on server start.
-- **Scrapers**: change a parser against a fixture first (`data/propertyManagements/TESTING.md`); `bun scrape:canary` hits live sites, so run it once per change.
+- **Scrapers**: change a parser against a fixture first (`data/propertyManagements/TESTING.md`); `bun scrape:canary --only <slug>` hits that company's live site, so run it once per change.
 
 ## Conventions
 

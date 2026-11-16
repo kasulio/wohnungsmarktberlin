@@ -12,9 +12,9 @@ Each scraper has checked-in HTML fixtures in `data/fixtures/` with expected fiel
 2. Add an entry in `data/fixtures/expected.ts` with the expected field values
 3. Run `bun test data/propertyManagements/scrapers.test.ts`
 
-## Canary (`bun run scripts/scraper-canary.ts`)
+## Canary (`bun scrape:canary [--only <slug>[,<slug>]]`)
 
-Hits live websites, extracts a few listings per scraper, validates shape. Does not produce fixtures.
+Hits live websites, extracts two listings per scraper, validates shape. Pass `--only` while working on one scraper so the other sites are left alone. Does not produce fixtures.
 
 On failure, the HTML is saved to `data/canary-failures/` (gitignored) so you can inspect what broke.
 
