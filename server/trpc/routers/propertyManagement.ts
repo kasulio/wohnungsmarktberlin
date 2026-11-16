@@ -19,8 +19,8 @@ import {
 import { runScraper } from "~/server/lib/scraper/live";
 import { pruneFlatsNotSeenForDays } from "~/server/lib/scraper/prune-stale-flats";
 import {
-  type SyncListingsStats,
-  syncListingsForPropertyManagement,
+  type SyncReport,
+  syncListingsReport,
 } from "~/server/lib/scraper/sync-listings";
 import { publicProcedure, protectedProcedure, router } from "../trpc";
 
@@ -314,21 +314,13 @@ export const propertyManagementRouter = router({
         await pruneFlatsNotSeenForDays(7);
       }
 
-      const syncResults: Array<{
-        slug: string;
-        success: boolean;
-        stats: SyncListingsStats;
-        error?: string;
-      }> = [];
+      const syncResults: Array<SyncReport & { slug: string }> = [];
 
       if (mode === "full" || mode === "sync_only") {
         for (const slug of targetSlugs) {
-          const r = await syncListingsForPropertyManagement(slug);
           syncResults.push({
             slug,
-            success: r.success,
-            stats: r.stats,
-            error: r.error,
+            ...(await runScraper(syncListingsReport(slug))),
           });
         }
       }

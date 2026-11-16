@@ -1,7 +1,11 @@
 import { propertyManagements } from "~/data/propertyManagements";
 import { logScraperRun } from "~/server/lib/scraper/log-scraper-run";
 import { pruneFlatsNotSeenForDays } from "~/server/lib/scraper/prune-stale-flats";
-import { syncListingsForPropertyManagement } from "~/server/lib/scraper/sync-listings";
+import { runScraper } from "~/server/lib/scraper/live";
+import {
+  emptySyncStats,
+  syncListingsReport,
+} from "~/server/lib/scraper/sync-listings";
 import { typedObjectKeys } from "~/utils/typeHelper";
 
 let lastIndex = 0;
@@ -23,23 +27,16 @@ export default defineTask({
       return {
         result: {
           success: true,
-          stats: {
-            existingActiveFlats: 0,
-            extractedUrls: 0,
-            flatsDeleted: 0,
-            newJobsCreated: 0,
-            flatsUpdated: 0,
-            duplicateJobsFiltered: 0,
-            jobsReset: 0,
-          },
+          stats: emptySyncStats(),
         },
       };
     }
 
     console.log(`[task:update-flats] Processing ${propertyManagementId}`);
 
-    const { success, stats, error } =
-      await syncListingsForPropertyManagement(propertyManagementId);
+    const { success, stats, error } = await runScraper(
+      syncListingsReport(propertyManagementId),
+    );
 
     console.log(
       `[task:update-flats] ${stats.flatsDeleted} deleted, ${stats.newJobsCreated} new jobs, ${stats.duplicateJobsFiltered} duplicates filtered, ${stats.flatsUpdated} updated, ${stats.jobsReset} jobs reset to pending`,
