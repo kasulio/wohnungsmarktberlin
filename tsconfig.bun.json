@@ -21,9 +21,5 @@
       "~/*": ["./*"]
     }
   },
-  "include": [
-    "scripts/**/*.ts",
-    "**/*.test.ts",
-    "reset.d.ts"
-  ]
+  "include": ["scripts/**/*.ts", "**/*.test.ts", "reset.d.ts"]
 }

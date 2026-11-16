@@ -26,8 +26,8 @@ const showIcon = computed(() => !props.hideIcon && isExternal.value);
   >
     <slot></slot>
     <Icon
-      name="lucide:external-link"
       v-if="showIcon"
+      name="lucide:external-link"
       class="size-4 shrink-0"
       :class="props.iconClass"
     />

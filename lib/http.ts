@@ -36,7 +36,7 @@ export async function fetchHtml(
 /**
  * Fetches JSON content from a URL with retry logic
  */
-export async function fetchJson<T = any>(
+export async function fetchJson<T = unknown>(
   url: string,
   options?: KyOptions,
 ): Promise<T> {

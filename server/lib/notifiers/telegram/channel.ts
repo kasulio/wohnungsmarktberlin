@@ -1,5 +1,8 @@
 import { GrammyError, InputFile } from "grammy";
-import { type Channel, type NotifiableFlat } from "~/server/lib/notifiers/types";
+import {
+  type Channel,
+  type NotifiableFlat,
+} from "~/server/lib/notifiers/types";
 import { getBot, isTelegramConfigured } from "./bot";
 import { loadFlatImage, renderNotification } from "./render";
 
@@ -24,7 +27,9 @@ function isBlockedError(err: GrammyError): boolean {
 export const telegramChannel: Channel = {
   async send(target, flat: NotifiableFlat) {
     if (!isTelegramConfigured) {
-      console.warn("[notify] telegram channel used but TELEGRAM_BOT_TOKEN is unset");
+      console.warn(
+        "[notify] telegram channel used but TELEGRAM_BOT_TOKEN is unset",
+      );
       return { ok: false, blocked: false };
     }
 
@@ -34,11 +39,15 @@ export const telegramChannel: Channel = {
     try {
       const image = await loadFlatImage(flat.id);
       if (image) {
-        await api.sendPhoto(target, new InputFile(new Uint8Array(image), `${flat.id}.jpg`), {
-          caption,
-          parse_mode: "HTML",
-          reply_markup: keyboard,
-        });
+        await api.sendPhoto(
+          target,
+          new InputFile(new Uint8Array(image), `${flat.id}.jpg`),
+          {
+            caption,
+            parse_mode: "HTML",
+            reply_markup: keyboard,
+          },
+        );
       } else {
         await api.sendMessage(target, caption, {
           parse_mode: "HTML",
@@ -56,7 +65,10 @@ export const telegramChannel: Channel = {
         );
         return { ok: false, blocked };
       }
-      console.error(`[notify] telegram send error (${target}, flat ${flat.id}):`, err);
+      console.error(
+        `[notify] telegram send error (${target}, flat ${flat.id}):`,
+        err,
+      );
       return { ok: false, blocked: false };
     }
   },

@@ -1,6 +1,5 @@
 import { type Bot, InlineKeyboard } from "grammy";
 import { and, eq } from "drizzle-orm";
-import { env } from "~/env";
 import { db } from "~/server/db/client";
 import { notificationSubscriber } from "~/server/db/schema";
 import { describeFlatFilter } from "~/lib/describe-flat-filter";

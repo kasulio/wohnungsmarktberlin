@@ -2,7 +2,7 @@
 import type { ListingFlat } from "~/types/listing-flat";
 import { formatArea, formatPrimaryRent, formatRoomCount } from "~/utils/util";
 
-const props = defineProps<{
+defineProps<{
   flat: Pick<
     ListingFlat,
     | "title"

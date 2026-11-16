@@ -12,7 +12,5 @@ export async function pruneFlatsNotSeenForDays(days: number): Promise<void> {
   await db
     .update(flat)
     .set({ deleted: new Date() })
-    .where(
-      and(isNotNull(flat.lastSeen), lte(flat.lastSeen, cutoff)),
-    );
+    .where(and(isNotNull(flat.lastSeen), lte(flat.lastSeen, cutoff)));
 }

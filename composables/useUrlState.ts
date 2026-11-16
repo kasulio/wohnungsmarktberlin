@@ -10,6 +10,7 @@ import { tags } from "~/data/tags";
 import { omit, typedObjectKeys } from "~/utils/typeHelper";
 
 export const useUrlState = <
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- zod's own generic bound; a narrower type breaks the inferred query values
   TSchema extends ZodObject<Record<string, ZodNullable<ZodOptional<any>>>>,
 >(
   schema: TSchema,

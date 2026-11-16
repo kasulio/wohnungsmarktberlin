@@ -45,13 +45,10 @@ export type FlatForIgnoreCheck = {
   roomCount?: number | null;
 };
 
-const propertyManagementSchema = z.object({
-  slug: z.string(),
-  name: z.string(),
-  website: z.string().optional(),
-});
-
-export type PropertyManagement = z.infer<typeof propertyManagementSchema> & {
+export type PropertyManagement = {
+  slug: string;
+  name: string;
+  website?: string;
   extractUrls: () => Promise<string[]>;
   extractDataFromHtml: (html: string, href: string) => ScrapedFlat;
   getFetchOptions?: () => KyOptions;

@@ -1,0 +1,8 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: format
+      run: bun fmt --staged
+    - name: lint
+      glob: "*.{ts,mjs,vue}"
+      run: bunx eslint --no-warn-ignored {staged_files}

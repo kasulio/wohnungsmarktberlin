@@ -2,7 +2,7 @@
   "name": "nuxt-app",
   "private": true,
   "type": "module",
-  "packageManager": "^bun@1.2.0",
+  "packageManager": "bun@1.4.4",
   "scripts": {
     "build": "bun --bun nuxt build",
     "dev": "bun --bun nuxt dev",
@@ -15,9 +15,11 @@
     "db:studio": "bun --bun drizzle-kit studio",
     "seed:admin": "bun --bun scripts/seed-admin-auth.ts",
     "scrape:canary": "bun --bun scripts/scraper-canary.ts",
-    "typecheck": "bun vue-tsc -b --noEmit",
+    "typecheck": "vue-tsc -b --noEmit",
     "test": "bun test",
-    "postinstall": "bun --bun nuxt prepare"
+    "postinstall": "bun --bun nuxt prepare && (lefthook install >/dev/null 2>&1 || true)",
+    "check": "bun fmt --check && bun lint && bun typecheck && bun test",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@googlemaps/google-maps-services-js": "^3.4.2",
@@ -41,28 +43,26 @@
   },
   "devDependencies": {
     "@nuxt/devtools": "^4.0.0-alpha.7",
+    "@nuxt/eslint-config": "^1.17.0",
     "@nuxt/icon": "2.3.1",
-    "@nuxtjs/eslint-config-typescript": "^12.1.0",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@nuxtjs/sitemap": "^8.2.2",
     "@nuxtjs/tailwindcss": "^6.14.0",
     "@total-typescript/ts-reset": "^0.6.1",
     "@types/bun": "^1.3.14",
-    "@typescript-eslint/eslint-plugin": "^8.63.0",
-    "@typescript-eslint/parser": "^8.63.0",
     "@unhead/vue": "^2.1.2",
     "dotenv": "^17.4.2",
     "drizzle-kit": "^0.31.10",
     "eslint": "^9.39.4",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.9.2",
+    "lefthook": "^2.2.2",
     "nuxt": "^4.4.8",
     "nuxt-ipx-cache": "1.0.8",
-    "prettier": "^3.9.4",
-    "prettier-plugin-tailwindcss": "^0.7.4",
     "typescript": "^6.0.3",
     "vue": "^3.5.39",
     "vue-router": "^5.1.0",
-    "vue-tsc": "^3.3.7"
+    "vue-tsc": "3.3.13"
   },
   "overrides": {
     "caniuse-lite": "1.0.30001803",
@@ -72,7 +72,11 @@
   "trustedDependencies": [
     "@parcel/watcher",
     "esbuild",
+    "lefthook",
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "engines": {
+    "bun": ">=1.4.4"
+  }
 }

@@ -6,11 +6,9 @@ export function omit<T extends object, K extends keyof T>(
   obj: T,
   keys: K[],
 ): Omit<T, K> {
-  const result = { ...obj };
-  for (const key of keys) {
-    delete result[key];
-  }
-  return result;
+  return Object.fromEntries(
+    Object.entries(obj).filter(([key]) => !keys.includes(key as K)),
+  ) as Omit<T, K>;
 }
 
 export const isFulfilled = <T>(

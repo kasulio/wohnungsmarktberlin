@@ -338,9 +338,7 @@ type PipelineLimits = {
 type PipelineResult = {
   transitions: ListingTransition[];
   errors: Array<{ stage: ListingStage; ref: string; message: string }>;
-  stats: {
-    /* per-stage counts */
-  };
+  stats: {/* per-stage counts */};
 };
 
 async function runPipeline(ctx: {

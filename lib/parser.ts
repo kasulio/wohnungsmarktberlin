@@ -1,4 +1,6 @@
-export function parseNumberString(input: string | undefined): number | undefined {
+export function parseNumberString(
+  input: string | undefined,
+): number | undefined {
   if (!input) return undefined;
 
   // Remove whitespace
@@ -24,7 +26,9 @@ export function parseNumberString(input: string | undefined): number | undefined
   return isNaN(res) ? undefined : res;
 }
 
-export function parseNumberStringToInt(input: string | undefined): number | undefined {
+export function parseNumberStringToInt(
+  input: string | undefined,
+): number | undefined {
   if (!input) return undefined;
   const res = parseInt(input.replace(/\./g, "").replace(",", "."));
   return isNaN(res) ? undefined : res;
@@ -37,7 +41,11 @@ export function parseNumberStringToInt(input: string | undefined): number | unde
  * cleanAddress("  Musterstr. 123  ", "10115", "Berlin")
  * // "Musterstr. 123, 10115 Berlin"
  */
-export function cleanAddress(street: string, postalCode?: string, city?: string): string {
+export function cleanAddress(
+  street: string,
+  postalCode?: string,
+  city?: string,
+): string {
   const parts = [street.trim()];
 
   if (postalCode && city) {

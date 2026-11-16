@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+env:
+  GOOGLE_MAPS_API_KEY: ci-placeholder
+  NUXT_PUBLIC_GOOGLE_MAPS_API_KEY: ci-placeholder
+  NUXT_PUBLIC_GOOGLE_MAPS_MAP_ID: ci-placeholder
+  LOCAL_SQLITE_PATH: ./server/db/sqlite.db
+  BETTER_AUTH_SECRET: ci-placeholder-not-a-secret-0123456789abcdef
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+      - run: bun install --frozen-lockfile
+      - run: bun check

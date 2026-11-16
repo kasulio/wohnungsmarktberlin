@@ -1,4 +1,4 @@
-import { HTMLElement, parse } from "node-html-parser";
+import { type HTMLElement, parse } from "node-html-parser";
 import { type PropertyManagement, type ScrapedFlat } from "../schemas";
 import { fetchHtml } from "~/lib/http";
 import { parseNumberString } from "~/lib/parser";

@@ -1,4 +1,4 @@
-import { eq, notInArray } from "drizzle-orm";
+import { notInArray } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
 import { db } from "~/server/db/client";
 import { propertyManagement } from "~/server/db/schema";

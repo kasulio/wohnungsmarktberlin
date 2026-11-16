@@ -1,5 +1,4 @@
 import { propertyManagements } from "~/data/propertyManagements";
-import { PropertyManagementId } from "~/data/propertyManagements/configs";
 import { logScraperRun } from "~/server/lib/scraper/log-scraper-run";
 import { pruneFlatsNotSeenForDays } from "~/server/lib/scraper/prune-stale-flats";
 import { syncListingsForPropertyManagement } from "~/server/lib/scraper/sync-listings";

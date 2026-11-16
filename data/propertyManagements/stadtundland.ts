@@ -2,11 +2,7 @@ import { parseNumberString } from "~/lib/parser";
 import { parse } from "node-html-parser";
 import { z } from "zod";
 
-import {
-  scrapedFlatSchema,
-  type PropertyManagement,
-  type ScrapedFlat,
-} from "../schemas";
+import { type PropertyManagement, type ScrapedFlat } from "../schemas";
 import { propertyManagementConfigs } from "./configs";
 
 export const stadtundland = {
@@ -18,7 +14,7 @@ export const stadtundland = {
 async function extractUrls() {
   let offset = 0;
   const urls = [];
-  let totalCount = 0;
+  let totalCount: number;
   while (offset <= 100) {
     const url = "https://d2396ha8oiavw0.cloudfront.net/sul-main/immoSearch";
     const options = {

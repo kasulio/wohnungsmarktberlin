@@ -83,8 +83,8 @@ function selectFlatFromMap(id: string) {
       >
         <template v-if="selectedFlat">
           <ApartmentListingExpanded
-            :key="selectedFlat.id"
             :id="selectedFlat.id"
+            :key="selectedFlat.id"
             :title="selectedFlat.title"
             :address="selectedFlat.address"
             :cold-rent-price="selectedFlat.coldRentPrice"

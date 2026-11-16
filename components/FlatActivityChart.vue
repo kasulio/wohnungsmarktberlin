@@ -8,12 +8,10 @@ import {
   PointElement,
   Tooltip,
   Filler,
-  type ChartData,
-  type ChartOptions,
 } from "chart.js";
 import { Bar, Line } from "vue-chartjs";
 
-import type { FontSpec } from "chart.js";
+import type { FontSpec, ChartData, ChartOptions } from "chart.js";
 
 ChartJS.register(
   CategoryScale,

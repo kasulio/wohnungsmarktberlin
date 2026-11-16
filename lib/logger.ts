@@ -14,16 +14,12 @@ enum LogLevel {
 export class Logger {
   constructor(private context: string) {}
 
-  private log(level: LogLevel, message: string, data?: Record<string, any>) {
+  private log(
+    level: LogLevel,
+    message: string,
+    data?: Record<string, unknown>,
+  ) {
     const timestamp = new Date().toISOString();
-    const logEntry = {
-      timestamp,
-      level,
-      context: this.context,
-      message,
-      ...data,
-    };
-
     const formatted = `[${timestamp}] [${level.toUpperCase()}] [${
       this.context
     }] ${message}`;
@@ -44,19 +40,19 @@ export class Logger {
     }
   }
 
-  debug(message: string, data?: Record<string, any>) {
+  debug(message: string, data?: Record<string, unknown>) {
     this.log(LogLevel.DEBUG, message, data);
   }
 
-  info(message: string, data?: Record<string, any>) {
+  info(message: string, data?: Record<string, unknown>) {
     this.log(LogLevel.INFO, message, data);
   }
 
-  warn(message: string, data?: Record<string, any>) {
+  warn(message: string, data?: Record<string, unknown>) {
     this.log(LogLevel.WARN, message, data);
   }
 
-  error(message: string, data?: Record<string, any>) {
+  error(message: string, data?: Record<string, unknown>) {
     this.log(LogLevel.ERROR, message, data);
   }
 }

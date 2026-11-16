@@ -1,11 +1,11 @@
 import type { ZodSchema } from "zod";
 
-const localStorageContent = ref<string | any>({});
+const localStorageContent = ref<Record<string, unknown>>({});
 
 const jsonSafeParse = (value: string) => {
   try {
     return JSON.parse(value) as unknown;
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -81,6 +81,6 @@ export function useLocalStorage<T>(
   return {
     get,
     set,
-    state: computed(() => localStorageContent.value[key] ?? initial),
+    state: computed(() => (localStorageContent.value[key] ?? initial) as T),
   };
 }

@@ -1,0 +1,7 @@
+data/fixtures/*.html
+drizzle/meta
+public
+bun.lock
+.output
+.nuxt
+archive

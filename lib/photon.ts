@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { type z } from "zod";
 import { fetchJson } from "./http";
 import { hashString } from "~/server/util";
 import { db } from "~/server/db/client";
@@ -22,14 +22,17 @@ export async function getAddressFromPhoton(
       return existingAddress[0];
     }
 
-    const results = await fetchJson(`https://photon.komoot.io/api`, {
-      searchParams: {
-        q: address,
-        limit: 1,
-        lat: "52.3879",
-        lon: "13.0582",
+    const results = await fetchJson<PhotonResponse>(
+      `https://photon.komoot.io/api`,
+      {
+        searchParams: {
+          q: address,
+          limit: 1,
+          lat: "52.3879",
+          lon: "13.0582",
+        },
       },
-    });
+    );
 
     const feature = results.features[0];
     if (!feature) return undefined;
@@ -55,3 +58,15 @@ export async function getAddressFromPhoton(
     return undefined;
   }
 }
+
+type PhotonResponse = {
+  features: {
+    geometry: { coordinates: [number, number] };
+    properties: {
+      street?: string;
+      city?: string;
+      housenumber?: string;
+      postcode?: string;
+    };
+  }[];
+};

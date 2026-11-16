@@ -8,7 +8,14 @@
     stroke-linecap="round"
     stroke-linejoin="round"
   >
-    <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+    <rect
+      x="4"
+      y="2"
+      width="16"
+      height="20"
+      rx="2"
+      ry="2"
+    />
     <path d="M9 22v-4h6v4" />
     <path d="M8 6h.01" />
     <path d="M16 6h.01" />

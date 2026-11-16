@@ -24,8 +24,7 @@ export const expectedMissingRoomsArea: Record<string, ExpectedFlat> = {
     usableArea: null,
     addressText: "Musterstraße 1, 12345 Berlin",
     floor: 0,
-    imageUrl:
-      "https://www.berlinovo.de/sites/default/files/example.jpg",
+    imageUrl: "https://www.berlinovo.de/sites/default/files/example.jpg",
   },
   "degewo--missing-rooms-area.html": {
     slug: "degewo",
@@ -35,8 +34,7 @@ export const expectedMissingRoomsArea: Record<string, ExpectedFlat> = {
     roomCount: null,
     usableArea: null,
     addressText: "Teststraße 10, 10115 Berlin",
-    imageUrl:
-      "https://www.degewo.de/fileadmin/example.jpg",
+    imageUrl: "https://www.degewo.de/fileadmin/example.jpg",
   },
   "deuwo--missing-rooms-area.html": {
     slug: "deuwo",
@@ -47,8 +45,7 @@ export const expectedMissingRoomsArea: Record<string, ExpectedFlat> = {
     usableArea: null,
     addressText: "Testweg 5",
     floor: 0,
-    imageUrl:
-      "https://cdn.expose.vonovia.de/test.jpg?width=538&crop=3:2",
+    imageUrl: "https://cdn.expose.vonovia.de/test.jpg?width=538&crop=3:2",
   },
   "gewobag--missing-rooms-area.html": {
     slug: "gewobag",
@@ -59,8 +56,7 @@ export const expectedMissingRoomsArea: Record<string, ExpectedFlat> = {
     usableArea: null,
     addressText: "Testplatz 3, 13599 Berlin",
     floor: 0,
-    imageUrl:
-      "https://www.gewobag.de/wp-content/uploads/test.jpg",
+    imageUrl: "https://www.gewobag.de/wp-content/uploads/test.jpg",
   },
   "howoge--missing-rooms-area.html": {
     slug: "howoge",
@@ -88,8 +84,7 @@ export const expectedMissingRoomsArea: Record<string, ExpectedFlat> = {
     roomCount: null,
     usableArea: null,
     addressText: "Rixdorfer Str. 68",
-    imageUrl:
-      "https://cdn.expose.vonovia.de/test.jpg?width=538&crop=3:2",
+    imageUrl: "https://cdn.expose.vonovia.de/test.jpg?width=538&crop=3:2",
   },
 };
 

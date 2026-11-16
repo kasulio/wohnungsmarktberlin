@@ -23,9 +23,7 @@ type ScraperReport = {
 };
 
 type CheckResult =
-  | { status: "pass" }
-  | { status: "skip" }
-  | { status: "fail"; message: string };
+  { status: "pass" } | { status: "skip" } | { status: "fail"; message: string };
 
 const FLATS_PER_SCRAPER = 2;
 const MAX_ATTEMPTS_PER_SCRAPER = 5;

@@ -1,11 +1,7 @@
 import { parse } from "node-html-parser";
 import { z } from "zod";
 
-import {
-  scrapedFlatSchema,
-  type PropertyManagement,
-  type ScrapedFlat,
-} from "../schemas";
+import { type PropertyManagement, type ScrapedFlat } from "../schemas";
 import { fetchJson } from "~/lib/http";
 import { parseNumberString, parseNumberStringToInt } from "~/lib/parser";
 import { propertyManagementConfigs } from "./configs";

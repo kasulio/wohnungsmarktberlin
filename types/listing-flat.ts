@@ -42,5 +42,3 @@ export type ListingCardDetailProps = ListingCardProps & {
 };
 
 export type ListingDetailsProps = ListingCardDetailProps;
-
-type ListingCardPropKeys = keyof ListingCardProps & keyof ListingFlat;
