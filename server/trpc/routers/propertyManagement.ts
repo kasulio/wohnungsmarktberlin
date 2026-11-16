@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, desc, eq, inArray, min, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, min, sql } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
 import { type PropertyManagementId } from "~/data/propertyManagements/configs";
 import { env } from "~/env";
@@ -11,17 +11,8 @@ import {
   propertyManagement,
   scraperRun,
 } from "~/server/db/schema";
-import { logScraperRun } from "~/server/lib/scraper/log-scraper-run";
-import {
-  type ExtractStats,
-  extractFlats,
-} from "~/server/lib/scraper/extract-flats";
+import { adminScrape } from "~/server/lib/scraper/admin-scrape";
 import { runScraper } from "~/server/lib/scraper/live";
-import { pruneFlatsNotSeenForDays } from "~/server/lib/scraper/prune-stale-flats";
-import {
-  type SyncReport,
-  syncListingsReport,
-} from "~/server/lib/scraper/sync-listings";
 import { publicProcedure, protectedProcedure, router } from "../trpc";
 
 /** In-memory only; multi-instance deploy needs shared lock (see follow-up plan). */
@@ -31,24 +22,6 @@ const adminScrapeLastAt = new Map<string, number>();
 
 const isConfiguredPm = (slug: string): slug is PropertyManagementId =>
   Object.hasOwn(propertyManagements, slug);
-
-async function countPendingJobs(
-  propertyManagementIds?: PropertyManagementId[],
-): Promise<number> {
-  const where =
-    propertyManagementIds && propertyManagementIds.length > 0
-      ? and(
-          eq(flatUrlJob.status, "pending"),
-          inArray(flatUrlJob.propertyManagementId, propertyManagementIds),
-        )
-      : eq(flatUrlJob.status, "pending");
-  const row = await db
-    .select({ c: count() })
-    .from(flatUrlJob)
-    .where(where)
-    .then((r) => r[0]);
-  return row?.c ?? 0;
-}
 
 async function lastSuccessfulRunCreatedAt(kind: string): Promise<Date | null> {
   const row = await db
@@ -253,8 +226,6 @@ export const propertyManagementRouter = router({
       }),
     )
     .mutation(async ({ input }) => {
-      const started = Date.now();
-      const mode = input.mode;
       const activeRows = await db
         .select({ slug: propertyManagement.slug })
         .from(propertyManagement)
@@ -310,77 +281,14 @@ export const propertyManagementRouter = router({
         adminScrapeLastAt.set(adminScrapeCooldownGlobal, now);
       }
 
-      if (mode === "full") {
-        await pruneFlatsNotSeenForDays(7);
-      }
-
-      const syncResults: Array<SyncReport & { slug: string }> = [];
-
-      if (mode === "full" || mode === "sync_only") {
-        for (const slug of targetSlugs) {
-          syncResults.push({
-            slug,
-            ...(await runScraper(syncListingsReport(slug))),
-          });
-        }
-      }
-
-      let extractionStats: ExtractStats;
-      if (mode === "full" || mode === "extract_only") {
-        extractionStats = await runScraper(
-          extractFlats({
-            limit: env.ADMIN_SCRAPER_EXTRACT_BATCH,
-            propertyManagementIds: scoped ? targetSlugs : undefined,
-            pace: "interactive",
-          }),
-        );
-      } else {
-        extractionStats = {
-          flatsExtracted: 0,
-          flatsFailed: 0,
-          flatsPending: await countPendingJobs(
-            scoped ? targetSlugs : undefined,
-          ),
-        };
-      }
-
-      const pendingRemaining = extractionStats.flatsPending;
-
-      const payload = {
-        mode,
-        syncResults,
-        extractionStats,
-        pendingRemaining,
-      };
-
-      const syncOk =
-        mode === "extract_only" || syncResults.every((s) => s.success);
-      const extractOk =
-        mode === "sync_only" || extractionStats.flatsFailed === 0;
-      const runOk = syncOk && extractOk;
-
-      await logScraperRun({
-        kind: "admin-scrape",
-        propertyManagementId: null,
-        success: runOk,
-        stats: payload,
-        errorMessage: runOk
-          ? null
-          : [
-              ...(mode !== "extract_only"
-                ? syncResults
-                    .filter((s) => !s.success)
-                    .map((s) => `${s.slug}: ${s.error ?? "unknown"}`)
-                : []),
-              ...(mode !== "sync_only" && !extractOk
-                ? [`extract: ${extractionStats.flatsFailed} fehlgeschlagen`]
-                : []),
-            ].join("; ") || null,
-        durationMs: Date.now() - started,
-        trigger: "admin",
-      });
-
-      return payload;
+      return runScraper(
+        adminScrape({
+          mode: input.mode,
+          targets: targetSlugs,
+          scoped,
+          extractBatch: env.ADMIN_SCRAPER_EXTRACT_BATCH,
+        }),
+      );
     }),
 
   /**

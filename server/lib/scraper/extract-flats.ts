@@ -65,6 +65,11 @@ const byCompany = (ids: PropertyManagementId[] | undefined) =>
       )
     : eq(flatUrlJob.status, "pending");
 
+export const countPendingJobs = (ids?: PropertyManagementId[]) =>
+  query("count pending jobs", (db) =>
+    db.select({ n: count() }).from(flatUrlJob).where(byCompany(ids)),
+  ).pipe(Effect.map(([row]) => row?.n ?? 0));
+
 /** A missing image never fails the job. */
 const loadThumbnail = (url: string) =>
   Effect.gen(function* () {
@@ -211,15 +216,9 @@ export const extractFlats = (options: ExtractOptions) =>
         ),
       );
     }
-    const [pending] = yield* query("count pending jobs", (db) =>
-      db
-        .select({ n: count() })
-        .from(flatUrlJob)
-        .where(byCompany(options.propertyManagementIds)),
-    );
     return {
       flatsExtracted,
       flatsFailed,
-      flatsPending: pending?.n ?? 0,
+      flatsPending: yield* countPendingJobs(options.propertyManagementIds),
     } satisfies ExtractStats;
   });
