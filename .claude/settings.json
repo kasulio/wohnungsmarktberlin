@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun check)",
+      "Bash(bun test:*)",
+      "Bash(bun fmt:*)",
+      "Bash(bun lint:*)",
+      "Bash(bun typecheck)",
+      "Bash(bun dev)",
+      "Bash(bun install)",
+      "Bash(scripts/setup-worktree.sh:*)",
+      "Bash(curl -s localhost:*)",
+      "Bash(curl -sf localhost:*)"
+    ],
+    "deny": ["Read(./.env)", "Read(./.env.*)"]
+  }
+}

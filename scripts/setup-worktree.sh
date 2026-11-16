@@ -46,7 +46,17 @@ if [ ! -f "$db_path" ] && [ "$empty_db" = false ] \
   # A copy, not a symlink: worktrees must not write to the main DB.
   sqlite3 "$main_checkout/$db_path" ".backup '$db_path'" 2>/dev/null \
     || cp "$main_checkout/$db_path" "$db_path"
-  echo "copied DB from $main_checkout"
+  # The main DB is often weeks old, so its flats are pruned as stale and every
+  # page is empty. Shift timestamps so the last scrape is "now" and restore
+  # the flats that were live at that scrape.
+  sqlite3 "$db_path" "
+    UPDATE flat SET
+      firstSeen = firstSeen + (strftime('%s','now') - (SELECT max(lastSeen) FROM flat)),
+      lastSeen  = lastSeen  + (strftime('%s','now') - (SELECT max(lastSeen) FROM flat));
+    UPDATE flat SET deleted = NULL
+      WHERE lastSeen >= (SELECT max(lastSeen) FROM flat) - 86400;"
+  echo "copied DB from $main_checkout ($(sqlite3 "$db_path" \
+    "SELECT count(*) FROM flat WHERE deleted IS NULL AND ignored = 0 AND addressId IS NOT NULL") visible flats)"
 fi
 
 # `bun db:migrate` dedupes flats before migrating, which throws on an empty DB
