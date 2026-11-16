@@ -1,6 +1,6 @@
 import { parse } from "node-html-parser";
 import { z } from "zod";
-import { fetchJson } from "~/lib/http";
+import { fetchJson as defaultFetchJson } from "~/lib/http";
 import { parseNumberString } from "~/lib/parser";
 import type { FlatForProviderIgnoreCheck, ScrapedFlat } from "../../schemas";
 
@@ -13,38 +13,72 @@ export function shouldIgnoreDeuvonoListing(
   return rent !== null && rent <= 100;
 }
 
-export const extractDeuvonoUrls = async (provider: "vonovia" | "deuwo") => {
-  const apiUrl =
+export type DeuvonoFetchJson = (
+  url: string,
+  options?: { headers?: Record<string, string> },
+) => Promise<unknown>;
+
+const PAGE_SIZE = 50; // the list API answers 406 above this
+const MAX_PAGES = 40;
+
+const listPageSchema = z.object({
+  paging: z.object({ info: z.object({ count: z.number() }) }),
+  results: z.array(z.object({ slug: z.string() })),
+});
+
+const searchToken = async (origin: string, fetchJson: DeuvonoFetchJson) => {
+  const answer = await fetchJson(
+    `${origin}/api/real-estate/search-token`,
+  ).catch(() => null);
+  const parsed = z.object({ token: z.string() }).safeParse(answer);
+  return parsed.success ? parsed.data.token : null;
+};
+
+export const extractDeuvonoUrls = async (
+  provider: "vonovia" | "deuwo",
+  fetchJson: DeuvonoFetchJson = defaultFetchJson,
+) => {
+  const origin =
     provider === "vonovia"
-      ? "https://www.vonovia.de/api/real-estate/list"
-      : "https://www.deutsche-wohnen.com/api/deuwo-real-estate/list";
-  const url = new URL(apiUrl);
-  url.searchParams.set("limit", "1000");
-  url.searchParams.set("rentType", "miete");
-  url.searchParams.set("city", "Berlin");
-  url.searchParams.set("locationDisplay", "Berlin");
-  url.searchParams.set("immoType", "wohnung");
-  url.searchParams.set("dataSet", provider);
+      ? "https://www.vonovia.de"
+      : "https://www.deutsche-wohnen.com";
+  const listPath =
+    provider === "vonovia"
+      ? "/api/real-estate/list"
+      : "/api/deuwo-real-estate/list";
+  const token = await searchToken(origin, fetchJson);
+  const headers = token ? { "X-VON-Search-Token": token } : undefined;
 
-  const data = await fetchJson(url.toString());
+  const slugs: string[] = [];
+  for (let page = 0; page < MAX_PAGES; page++) {
+    const url = new URL(listPath, origin);
+    url.searchParams.set("limit", String(PAGE_SIZE));
+    url.searchParams.set("offset", String(page * PAGE_SIZE));
+    url.searchParams.set("rentType", "miete");
+    url.searchParams.set("city", "Berlin");
+    url.searchParams.set("locationDisplay", "Berlin");
+    url.searchParams.set("immoType", "wohnung");
+    url.searchParams.set("dataSet", provider);
 
-  const parsed = z
-    .object({
-      results: z.array(
-        z.object({
-          slug: z.string(),
-        }),
-      ),
-    })
-    .safeParse(data);
-
-  if (!parsed.success) {
-    throw new Error(`Failed to parse data: ${parsed.error}`);
+    const parsed = listPageSchema.safeParse(
+      await fetchJson(url.toString(), { headers }),
+    );
+    if (!parsed.success) {
+      throw new Error(`Failed to parse data: ${parsed.error}`);
+    }
+    slugs.push(...parsed.data.results.map((item) => item.slug));
+    if (
+      parsed.data.results.length < PAGE_SIZE ||
+      slugs.length >= parsed.data.paging.info.count
+    ) {
+      break;
+    }
   }
-  return parsed.data.results.map((item) =>
+
+  return slugs.map((slug) =>
     provider === "vonovia"
-      ? `https://www.vonovia.de/zuhause-finden/immobilien/${item.slug}`
-      : `https://www.deutsche-wohnen.com/mieten/mietangebote/${item.slug}`,
+      ? `https://www.vonovia.de/zuhause-finden/immobilien/${slug}`
+      : `https://www.deutsche-wohnen.com/mieten/mietangebote/${slug}`,
   );
 };
 
@@ -58,8 +92,7 @@ const deuvonoDataSchema = z.object({
     .transform((val) => {
       if (val === null || val === undefined) return undefined;
       if (typeof val === "number") return val;
-      const parsed = parseFloat(val);
-      return isNaN(parsed) ? undefined : parsed;
+      return parseNumberString(val);
     }),
   space: z.string().nullable().optional(),
   rent: z.number().optional(),
