@@ -33,7 +33,7 @@ Exercise the exact path the change touches, then one neighbouring path that it c
   ```
   Then pass `-b /tmp/jar-$PORT`. Prove auth on tRPC (401 without the jar, 200 with it); `/admin/*` server-renders with the jar (200) and redirects to `/login` without it (302).
 - **Tasks**: cron is off; run one by hand with `curl -s localhost:$PORT/_nitro/tasks/<name>` (names in `server/tasks/`). `update-flats` syncs whichever company is next in round-robin, `extract-flats` fetches pending jobs of any company: both hit live sites, so run them once.
-- **One company, live**: signed in, `POST /api/trpc/propertyManagement.update` with `{"slugs":["<slug>"],"mode":"full"}` (or `sync_only` / `extract_only`). Extraction fires up to `ADMIN_SCRAPER_EXTRACT_BATCH` (default 40) requests back to back: set it to 5 in `.env` before starting the server.
+- **One company, live**: signed in, `POST /api/trpc/propertyManagement.update` with `{"slugs":["<slug>"],"mode":"full"}` (or `sync_only` / `extract_only`). Extraction fetches up to `ADMIN_SCRAPER_EXTRACT_BATCH` (default 40) listings, one per second per site: set it to 5 in `.env` before starting the server to keep the run short.
 - **Notifications**: the copy has no subscribers and no `TELEGRAM_BOT_TOKEN`, so nothing reaches anyone. To see a delivery without touching live sites, add a log subscriber, mark one visible flat as not yet stamped, and run the sweep:
   ```sql
   INSERT INTO notificationSubscriber (id, channel, target, filterJson, active, createdAt)

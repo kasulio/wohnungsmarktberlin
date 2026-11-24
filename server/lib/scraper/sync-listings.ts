@@ -1,8 +1,9 @@
-import { and, eq, type InferInsertModel, inArray, isNull } from "drizzle-orm";
-import { propertyManagements } from "~/data/propertyManagements";
+import { and, eq, inArray, isNull } from "drizzle-orm";
+import { Clock, Data, Effect } from "effect";
 import { type PropertyManagementId } from "~/data/propertyManagements/configs";
-import { db } from "~/server/db/client";
 import { flat, flatUrlJob } from "~/server/db/schema";
+import { query } from "~/server/db/service";
+import { scraperFor } from "./services";
 
 export type SyncListingsStats = {
   existingActiveFlats: number;
@@ -14,7 +15,7 @@ export type SyncListingsStats = {
   jobsReset: number;
 };
 
-const emptyStats = (): SyncListingsStats => ({
+export const emptySyncStats = (): SyncListingsStats => ({
   existingActiveFlats: 0,
   extractedUrls: 0,
   flatsDeleted: 0,
@@ -24,158 +25,158 @@ const emptyStats = (): SyncListingsStats => ({
   jobsReset: 0,
 });
 
-export async function syncListingsForPropertyManagement(
-  propertyManagementId: PropertyManagementId,
-): Promise<{ success: boolean; stats: SyncListingsStats; error?: string }> {
-  const stats = emptyStats();
-  const propertyManagement = propertyManagements[propertyManagementId];
+export class ListingsError extends Data.TaggedError("ListingsError")<{
+  propertyManagementId: string;
+  cause: unknown;
+  message: string;
+}> {}
 
-  if (!propertyManagement) {
-    return {
-      success: false,
-      stats,
-      error: `Unknown property management: ${propertyManagementId}`,
-    };
-  }
+const listUrls = (propertyManagementId: PropertyManagementId) =>
+  Effect.gen(function* () {
+    const scraper = yield* scraperFor(propertyManagementId);
+    const urls = yield* Effect.tryPromise({
+      try: () => scraper.extractUrls(),
+      catch: (cause) =>
+        new ListingsError({
+          propertyManagementId,
+          cause,
+          message: `Could not list ${propertyManagementId}: ${cause instanceof Error ? cause.message : String(cause)}`,
+        }),
+    });
+    return [...new Set(urls)];
+  });
 
-  try {
-    const existingActiveFlats = await db
-      .select({
-        url: flat.url,
-        flatId: flat.id,
-      })
-      .from(flat)
-      .where(
-        and(
-          eq(flat.propertyManagementId, propertyManagementId),
-          isNull(flat.deleted),
-        ),
-      );
+/**
+ * Brings the DB in line with a company's current listing page: queues jobs for
+ * new urls, soft-deletes flats no longer listed, refreshes `lastSeen` of the
+ * rest. Nothing is written when listing fails.
+ */
+export const syncListings = (propertyManagementId: PropertyManagementId) =>
+  Effect.gen(function* () {
+    const urls = yield* listUrls(propertyManagementId);
+    const now = new Date(yield* Clock.currentTimeMillis);
 
-    stats.existingActiveFlats = existingActiveFlats.length;
-
-    const extractedUrlsRaw = await propertyManagement.extractUrls();
-    const extractedUrls = [...new Set(extractedUrlsRaw)];
-    stats.extractedUrls = extractedUrls.length;
-
-    if (extractedUrls.length > 0) {
-      const existingJobsForExtractedUrls = await db
-        .select({
-          url: flatUrlJob.url,
-          status: flatUrlJob.status,
-        })
-        .from(flatUrlJob)
-        .where(
-          and(
-            eq(flatUrlJob.propertyManagementId, propertyManagementId),
-            inArray(flatUrlJob.url, extractedUrls),
-          ),
-        );
-
-      const jobsToReset = existingJobsForExtractedUrls.filter(
-        (job) =>
-          !existingActiveFlats.some((f) => f.url === job.url) &&
-          job.status !== "pending",
-      );
-
-      if (jobsToReset.length > 0) {
-        await db
-          .update(flatUrlJob)
-          .set({ status: "pending", createdAt: new Date() })
+    return yield* query("sync listings", async (db) =>
+      db.transaction((tx) => {
+        const listed = new Set(urls);
+        const activeFlats = tx
+          .select({ id: flat.id, url: flat.url })
+          .from(flat)
           .where(
             and(
-              eq(flatUrlJob.propertyManagementId, propertyManagementId),
-              inArray(
-                flatUrlJob.url,
-                jobsToReset.map((job) => job.url),
+              eq(flat.propertyManagementId, propertyManagementId),
+              isNull(flat.deleted),
+            ),
+          )
+          .all();
+        const activeUrls = new Set(activeFlats.map((f) => f.url));
+        const stillListed = activeFlats.filter((f) => listed.has(f.url));
+        const gone = activeFlats.filter((f) => !listed.has(f.url));
+        const newUrls = urls.filter((url) => !activeUrls.has(url));
+
+        const knownJobs =
+          newUrls.length > 0
+            ? tx
+                .select({ url: flatUrlJob.url, status: flatUrlJob.status })
+                .from(flatUrlJob)
+                .where(
+                  and(
+                    eq(flatUrlJob.propertyManagementId, propertyManagementId),
+                    inArray(flatUrlJob.url, newUrls),
+                  ),
+                )
+                .all()
+            : [];
+        const knownJobUrls = new Set(knownJobs.map((j) => j.url));
+        const jobsToReset = knownJobs
+          .filter((j) => j.status !== "pending")
+          .map((j) => j.url);
+        const urlsToQueue = newUrls.filter((url) => !knownJobUrls.has(url));
+
+        if (jobsToReset.length > 0) {
+          tx.update(flatUrlJob)
+            .set({ status: "pending", createdAt: now })
+            .where(
+              and(
+                eq(flatUrlJob.propertyManagementId, propertyManagementId),
+                inArray(flatUrlJob.url, jobsToReset),
               ),
-            ),
-          );
+            )
+            .run();
+        }
+        if (gone.length > 0) {
+          tx.update(flat)
+            .set({ deleted: now })
+            .where(
+              inArray(
+                flat.id,
+                gone.map((f) => f.id),
+              ),
+            )
+            .run();
+        }
+        if (urlsToQueue.length > 0) {
+          tx.insert(flatUrlJob)
+            .values(
+              urlsToQueue.map((url) => ({
+                url,
+                propertyManagementId,
+                createdAt: now,
+                status: "pending" as const,
+              })),
+            )
+            .run();
+        }
+        if (stillListed.length > 0) {
+          tx.update(flat)
+            .set({ lastSeen: now })
+            .where(
+              inArray(
+                flat.id,
+                stillListed.map((f) => f.id),
+              ),
+            )
+            .run();
+        }
 
-        stats.jobsReset = jobsToReset.length;
-      }
-    }
-
-    const flatIdsToDelete = existingActiveFlats
-      .filter((f) => !extractedUrls.includes(f.url))
-      .map((f) => f.flatId);
-
-    if (flatIdsToDelete.length > 0) {
-      await db
-        .update(flat)
-        .set({ deleted: new Date() })
-        .where(inArray(flat.id, flatIdsToDelete));
-
-      stats.flatsDeleted = flatIdsToDelete.length;
-    }
-
-    const newUrls = extractedUrls.filter(
-      (url) => !existingActiveFlats.some((f) => f.url === url),
+        return {
+          existingActiveFlats: activeFlats.length,
+          extractedUrls: urls.length,
+          flatsDeleted: gone.length,
+          newJobsCreated: urlsToQueue.length,
+          flatsUpdated: stillListed.length,
+          duplicateJobsFiltered: newUrls.length - urlsToQueue.length,
+          jobsReset: jobsToReset.length,
+        } satisfies SyncListingsStats;
+      }),
     );
+  });
 
-    if (newUrls.length > 0) {
-      const existingJobs = await db
-        .select({
-          url: flatUrlJob.url,
-        })
-        .from(flatUrlJob)
-        .where(
-          and(
-            eq(flatUrlJob.propertyManagementId, propertyManagementId),
-            inArray(flatUrlJob.url, newUrls),
-          ),
-        );
+export type SyncReport = {
+  success: boolean;
+  stats: SyncListingsStats;
+  error?: string;
+};
 
-      const existingJobUrls = new Set(existingJobs.map((job) => job.url));
-      const urlsToInsert = newUrls.filter((url) => !existingJobUrls.has(url));
-
-      stats.duplicateJobsFiltered = newUrls.length - urlsToInsert.length;
-
-      if (urlsToInsert.length > 0) {
-        const flatUrlJobsToInsert = urlsToInsert.map(
-          (url) =>
-            ({
-              url,
-              propertyManagementId,
-              createdAt: new Date(),
-              status: "pending",
-            }) satisfies InferInsertModel<typeof flatUrlJob>,
-        );
-
-        await db.insert(flatUrlJob).values(flatUrlJobsToInsert);
-        stats.newJobsCreated = flatUrlJobsToInsert.length;
-      }
-    }
-
-    const activeFlatsStillListed = existingActiveFlats.filter((f) =>
-      extractedUrls.includes(f.url),
-    );
-
-    if (activeFlatsStillListed.length > 0) {
-      await db
-        .update(flat)
-        .set({ lastSeen: new Date() })
-        .where(
-          and(
-            eq(flat.propertyManagementId, propertyManagementId),
-            isNull(flat.deleted),
-            inArray(
-              flat.id,
-              activeFlatsStillListed.map((f) => f.flatId),
-            ),
-          ),
-        );
-
-      stats.flatsUpdated = activeFlatsStillListed.length;
-    }
-
-    return { success: true, stats };
-  } catch (e) {
-    console.error(`[sync-listings] ${propertyManagementId}`, e);
-    return {
-      success: false,
-      stats,
-      error: e instanceof Error ? e.message : String(e),
-    };
-  }
-}
+/** `syncListings` as a report that never fails, for run logs and the admin payload. */
+export const syncListingsReport = (
+  propertyManagementId: PropertyManagementId,
+): Effect.Effect<
+  SyncReport,
+  never,
+  Effect.Services<ReturnType<typeof syncListings>>
+> =>
+  syncListings(propertyManagementId).pipe(
+    Effect.map((stats) => ({ success: true, stats })),
+    Effect.catch((error) =>
+      Effect.logError(
+        `sync ${propertyManagementId} failed: ${error.message}`,
+      ).pipe(
+        Effect.as({
+          success: false,
+          stats: emptySyncStats(),
+          error: error.message,
+        }),
+      ),
+    ),
+  );

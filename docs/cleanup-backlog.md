@@ -32,3 +32,10 @@ Existing rows in those tables are stale; safe to drop once migration ships.
 ## Removed env vars
 
 - `OPENAI_API_KEY` — AI tag retriever removed. Delete from local `.env` if still set.
+
+## Scraper pipeline after the Effect rewrite
+
+- **Per-company scrapers are still Promise functions** calling `fetchHtml`/`fetchJson`, which use the shared `liveHttp` directly. They are paced, but tests of `syncListings` fake `extractUrls` instead of the HTTP layer. Passing an `HttpClient` into `extractUrls` would make the whole sync testable offline.
+- **Address improvement, geocoding and notify are outside Effect.** `AddressImprovement` wraps `runAddressImprovement()`; `lib/photon.ts` reads the global `db`.
+- **Cooldown is in-memory** in the `propertyManagement.update` router, as before.
+- **A run that fails with a `DbError` is not logged** in `scraperRun` (the error reaches the Nitro task or tRPC caller instead), as before.

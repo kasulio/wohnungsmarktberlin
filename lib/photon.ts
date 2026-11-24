@@ -22,16 +22,14 @@ export async function getAddressFromPhoton(
       return existingAddress[0];
     }
 
+    const query = new URLSearchParams({
+      q: address,
+      limit: "1",
+      lat: "52.3879",
+      lon: "13.0582",
+    });
     const results = await fetchJson<PhotonResponse>(
-      `https://photon.komoot.io/api`,
-      {
-        searchParams: {
-          q: address,
-          limit: 1,
-          lat: "52.3879",
-          lon: "13.0582",
-        },
-      },
+      `https://photon.komoot.io/api?${query}`,
     );
 
     const feature = results.features[0];
