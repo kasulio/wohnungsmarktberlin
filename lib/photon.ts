@@ -7,9 +7,67 @@ import { address as addressTable } from "~/server/db/schema";
 import { createInsertSchema } from "drizzle-zod";
 const insertAddressSchema = createInsertSchema(addressTable);
 
+type GeocodedAddress = z.infer<typeof insertAddressSchema>;
+
+export type PhotonFeature = {
+  geometry: { coordinates: [number, number] };
+  properties: {
+    name?: string;
+    street?: string;
+    city?: string;
+    housenumber?: string;
+    postcode?: string;
+  };
+};
+
+type PhotonSearch = (query: string) => Promise<PhotonFeature | undefined>;
+
+const searchPhoton: PhotonSearch = async (query) => {
+  const params = new URLSearchParams({
+    q: query,
+    limit: "1",
+    lat: "52.52",
+    lon: "13.405",
+  });
+  const results = await fetchJson<{ features: PhotonFeature[] }>(
+    `https://photon.komoot.io/api?${params}`,
+  );
+  return results.features[0];
+};
+
+/** "5B" in "Hildegardstr. 5B, 10715 Berlin"; OSM often only maps the "5". */
+const LETTERED_HOUSE_NUMBER = /\b(\d+)\s?([a-z])(?=\s*(,|$))/i;
+
+export async function geocode(
+  id: string,
+  address: string,
+  search: PhotonSearch = searchPhoton,
+): Promise<GeocodedAddress | undefined> {
+  let feature = await search(address);
+  let streetNumber = feature?.properties.housenumber;
+
+  const lettered = address.match(LETTERED_HOUSE_NUMBER);
+  if (feature && !streetNumber && lettered) {
+    feature = await search(address.replace(LETTERED_HOUSE_NUMBER, "$1"));
+    streetNumber = feature?.properties.housenumber && lettered[0];
+  }
+  if (!feature) return undefined;
+
+  const parsed = insertAddressSchema.safeParse({
+    id,
+    street: feature.properties.street,
+    city: feature.properties.city,
+    streetNumber,
+    postalCode: feature.properties.postcode,
+    longitude: feature.geometry.coordinates[0],
+    latitude: feature.geometry.coordinates[1],
+  });
+  return parsed.success ? parsed.data : undefined;
+}
+
 export async function getAddressFromPhoton(
   address: string,
-): Promise<z.infer<typeof insertAddressSchema> | undefined> {
+): Promise<GeocodedAddress | undefined> {
   try {
     const addressId = hashString(address);
 
@@ -22,49 +80,9 @@ export async function getAddressFromPhoton(
       return existingAddress[0];
     }
 
-    const query = new URLSearchParams({
-      q: address,
-      limit: "1",
-      lat: "52.3879",
-      lon: "13.0582",
-    });
-    const results = await fetchJson<PhotonResponse>(
-      `https://photon.komoot.io/api?${query}`,
-    );
-
-    const feature = results.features[0];
-    if (!feature) return undefined;
-
-    const parsed = insertAddressSchema.safeParse({
-      id: addressId,
-      street: feature.properties.street,
-      city: feature.properties.city,
-      streetNumber: feature.properties.housenumber,
-      postalCode: feature.properties.postcode,
-      longitude: feature.geometry.coordinates[0],
-      latitude: feature.geometry.coordinates[1],
-    });
-
-    if (!parsed.success) {
-      console.error(parsed.error);
-      return undefined;
-    }
-
-    return parsed.data;
+    return await geocode(addressId, address);
   } catch (error) {
     console.error(error);
     return undefined;
   }
 }
-
-type PhotonResponse = {
-  features: {
-    geometry: { coordinates: [number, number] };
-    properties: {
-      street?: string;
-      city?: string;
-      housenumber?: string;
-      postcode?: string;
-    };
-  }[];
-};

@@ -37,6 +37,17 @@ const extractNumber = (
   return parseNumberString(text);
 };
 
+function extractAddress(root: HTMLElement): string {
+  const structured = root.querySelector(".address");
+  if (!structured) return extractLabelValue(root, "adresse");
+  const part = (selector: string) =>
+    structured.querySelector(selector)?.text.trim() ?? "";
+  const city = [part(".postal-code"), part(".locality")]
+    .filter(Boolean)
+    .join(" ");
+  return [part(".address-line1"), city].filter(Boolean).join(", ");
+}
+
 function extractDataFromHtml(html: string, href: string): ScrapedFlat {
   const root = parse(html);
 
@@ -51,7 +62,7 @@ function extractDataFromHtml(html: string, href: string): ScrapedFlat {
   const area = extractNumber(root, "wohnfläche");
   const rooms = extractNumber(root, "zimmer");
   const floor = extractNumber(root, "etage");
-  const address = extractLabelValue(root, "adresse");
+  const address = extractAddress(root);
 
   // Extract images
   const images = Array.from(root.querySelectorAll(".slick-wrapper img"))
@@ -72,7 +83,7 @@ function extractDataFromHtml(html: string, href: string): ScrapedFlat {
     coldRentPrice: coldRent,
     warmRentPrice: warmRent,
     url: href,
-    addressText: address ?? "",
+    addressText: address,
     usableArea: area,
     roomCount: rooms,
     floor,

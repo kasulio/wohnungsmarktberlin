@@ -98,6 +98,7 @@ const deuvonoDataSchema = z.object({
   rent: z.number().optional(),
   warmRent: z.number().optional(),
   streetAndHouseNumber: z.string().optional(),
+  postCodeAndCity: z.string().nullable().optional(),
   sections: z
     .array(
       z
@@ -147,8 +148,13 @@ export function extractDeuvonoDataFromHtml(
 
   const data = parseResult.data;
 
-  // Parse address components
-  const addressLine = data.streetAndHouseNumber || "";
+  // "10715 Berlin OT Charlottenburg-Wilmersdorf": the Ortsteil only confuses geocoding.
+  const postCodeAndCity = data.postCodeAndCity
+    ?.replace(/\s+OT\s.*$/, "")
+    .trim();
+  const addressLine = [data.streetAndHouseNumber?.trim(), postCodeAndCity]
+    .filter(Boolean)
+    .join(", ");
 
   // Parse area from space (e.g., "33,20 m²" -> 33.20)
   const area = parseNumberString(data.space?.replace(/\s*m².*/, ""));

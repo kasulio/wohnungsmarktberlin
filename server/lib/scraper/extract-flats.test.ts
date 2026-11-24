@@ -1,5 +1,4 @@
 import { beforeEach, expect, test } from "bun:test";
-import sharp from "sharp";
 import { eq } from "drizzle-orm";
 import { Effect, Layer } from "effect";
 import { type PropertyManagementId } from "~/data/propertyManagements/configs";
@@ -122,6 +121,9 @@ const queueJob = (
     .insert(flatUrlJob)
     .values({ url, propertyManagementId, createdAt, status: "pending" })
     .run();
+
+const ONE_PIXEL_PNG =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGMwmTkTAAKgAaDhP4jzAAAAAElFTkSuQmCC";
 
 const minutesAgo = (n: number) => new Date(Date.now() - n * 60_000);
 
@@ -297,12 +299,10 @@ test("still reports the run when the follow-up address improvement fails", async
 test("stores a thumbnail of the listing image, fetched like any other request", async () => {
   const url = "https://degewo.example/flat/1";
   const imageUrl = "https://degewo.example/img/1.png";
-  const png = await sharp({
-    create: { width: 400, height: 300, channels: 3, background: "#336699" },
-  })
-    .png()
-    .toBuffer();
-  images.set(imageUrl, new Uint8Array(png));
+  const png = await new Bun.Image(Buffer.from(ONE_PIXEL_PNG, "base64"))
+    .resize(400, 300)
+    .bytes();
+  images.set(imageUrl, png);
   queueJob(url);
   pages.set(url, JSON.stringify(listing(url, { imageUrl })));
 
@@ -310,7 +310,7 @@ test("stores a thumbnail of the listing image, fetched like any other request", 
 
   expect(requests.map((r) => r.url)).toEqual([url, imageUrl]);
   const stored = db.select().from(flat).get()!.image!;
-  expect(await sharp(stored).metadata()).toMatchObject({
+  expect(await new Bun.Image(stored).metadata()).toMatchObject({
     width: 200,
     height: 150,
   });

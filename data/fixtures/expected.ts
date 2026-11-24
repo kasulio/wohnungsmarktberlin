@@ -108,7 +108,7 @@ export const expectedValues: Record<string, ExpectedFlat> = {
     warmRentPrice: 741.79,
     roomCount: 2,
     usableArea: 37.87,
-    addressText: "Dröpkeweg 11\n\n12349 Berlin\n\nDeutschland",
+    addressText: "Dröpkeweg 11, 12349 Berlin",
     floor: 2,
     imageUrl:
       "https://www.berlinovo.de/sites/default/files/styles/object_details_main/public/images/wohnungen/berlinovo_bb04be35-b0ab-426e-82c1-72d1adfd3a9d.jpg?itok=0Fi4R6s6",
@@ -132,7 +132,7 @@ export const expectedValues: Record<string, ExpectedFlat> = {
     warmRentPrice: 1779.35,
     roomCount: 3,
     usableArea: 74.92,
-    addressText: "Hildegardstr. 5A",
+    addressText: "Hildegardstr. 5A, 10715 Berlin",
     floor: 1,
     imageUrl:
       "https://cdn.expose.vonovia.de/VNA-b6260a24-51cf-48d8-9ccd-8c6912a01306.jpg?width=538&crop=3:2",
@@ -194,7 +194,7 @@ export const expectedValues: Record<string, ExpectedFlat> = {
     warmRentPrice: 1347.41,
     roomCount: 2,
     usableArea: 56.56,
-    addressText: "Rixdorfer Str. 68",
+    addressText: "Rixdorfer Str. 68, 12109 Berlin",
     imageUrl:
       "https://cdn.expose.vonovia.de/VNA-7939dea1-d555-414f-86d0-caaa084fa7e8.jpg?width=538&crop=3:2",
   },

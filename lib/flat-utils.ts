@@ -1,4 +1,3 @@
-import sharp from "sharp";
 import { propertyManagements } from "~/data/propertyManagements";
 import { type PropertyManagementId } from "~/data/propertyManagements/configs";
 import {
@@ -142,7 +141,7 @@ export function getPropertyManagement(
 
 /** Shrinks a listing image to fit 200×200 for storage in `flat.image`. */
 export function makeThumbnail(image: Uint8Array): Promise<Buffer> {
-  return sharp(image)
+  return new Bun.Image(image)
     .resize(200, 200, { fit: "inside", withoutEnlargement: true })
-    .toBuffer();
+    .buffer();
 }
