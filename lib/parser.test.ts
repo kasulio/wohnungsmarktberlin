@@ -16,6 +16,8 @@ describe("parseNumberString", () => {
     ["1,250.50", 1250.5],
     ["800", 800],
     ["  42,1 ", 42.1],
+    ["55,0 55,0 Quadratmeter", 55],
+    ["48,0 48,0", 48],
   ])("reads %p as %p", (input, expected) => {
     expect(parseNumberString(input)).toBe(expected);
   });
