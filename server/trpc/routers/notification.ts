@@ -1,5 +1,5 @@
 import { TRPCError } from "@trpc/server";
-import { count, eq } from "drizzle-orm";
+import { count, countDistinct, eq, max } from "drizzle-orm";
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../trpc";
 import { env } from "~/env";
@@ -11,6 +11,10 @@ import { staticSubscribers } from "~/server/lib/notifiers/subscribers";
 import { loadSampleNotifiableFlat } from "~/server/lib/notifiers/flat-query";
 import { mintLinkToken } from "~/server/lib/notifiers/telegram/link-token";
 import { takeToken } from "~/server/lib/rate-limit";
+import {
+  type SubscriptionRow,
+  groupByRecipient,
+} from "~/server/lib/notifiers/recipients";
 
 /** Public mint spam guard: 5 links per IP per 15 minutes. */
 const TELEGRAM_LINK_LIMIT = 5;
@@ -50,8 +54,11 @@ export const notificationRouter = router({
       };
     }),
 
-  /** Admin: all notification subscribers (code-defined hooks + DB rows). */
-  listSubscribers: protectedProcedure.query(async () => {
+  /**
+   * Admin: notification destinations, one per channel + target, each with its
+   * subscriptions (code-defined hooks + DB rows).
+   */
+  listRecipients: protectedProcedure.query(async () => {
     const rows = await db.query.notificationSubscriber.findMany();
     const sentCounts = await db
       .select({ subscriberId: notificationSent.subscriberId, sent: count() })
@@ -61,28 +68,66 @@ export const notificationRouter = router({
       sentCounts.map((r) => [r.subscriberId, r.sent]),
     );
 
-    const staticList = staticSubscribers.map((s) => ({
-      id: s.id,
-      channel: s.channel,
-      target: s.target,
-      filter: s.filter,
-      active: true,
-      source: "static" as const,
-      createdAt: s.createdAt,
-      sentCount: countBySubscriber.get(s.id) ?? 0,
-    }));
-    const dbList = rows.map((r) => ({
-      id: r.id,
-      channel: r.channel,
-      target: r.target,
-      filter: r.filterJson,
-      active: r.active,
-      source: "db" as const,
-      createdAt: r.createdAt,
-      sentCount: countBySubscriber.get(r.id) ?? 0,
-    }));
+    // The ledger also records flats skipped because a sibling subscription of
+    // the same target already sent them, so count distinct flats per target.
+    const dbDeliveries = await db
+      .select({
+        channel: notificationSubscriber.channel,
+        target: notificationSubscriber.target,
+        delivered: countDistinct(notificationSent.flatId),
+        lastSentAt: max(notificationSent.sentAt),
+      })
+      .from(notificationSent)
+      .innerJoin(
+        notificationSubscriber,
+        eq(notificationSubscriber.id, notificationSent.subscriberId),
+      )
+      .groupBy(notificationSubscriber.channel, notificationSubscriber.target);
+    const staticDeliveries = await Promise.all(
+      staticSubscribers.map(async (s) => {
+        const [row] = await db
+          .select({
+            delivered: countDistinct(notificationSent.flatId),
+            lastSentAt: max(notificationSent.sentAt),
+          })
+          .from(notificationSent)
+          .where(eq(notificationSent.subscriberId, s.id));
+        return {
+          channel: s.channel,
+          target: s.target,
+          delivered: row?.delivered ?? 0,
+          lastSentAt: row?.lastSentAt ?? null,
+        };
+      }),
+    );
 
-    return [...staticList, ...dbList];
+    const subscriptions: SubscriptionRow[] = [
+      ...staticSubscribers.map((s) => ({
+        id: s.id,
+        channel: s.channel,
+        target: s.target,
+        filter: s.filter,
+        active: true,
+        source: "static" as const,
+        createdAt: s.createdAt,
+        sentCount: countBySubscriber.get(s.id) ?? 0,
+      })),
+      ...rows.map((r) => ({
+        id: r.id,
+        channel: r.channel,
+        target: r.target,
+        filter: r.filterJson,
+        active: r.active,
+        source: "db" as const,
+        createdAt: r.createdAt,
+        sentCount: countBySubscriber.get(r.id) ?? 0,
+      })),
+    ];
+
+    return groupByRecipient(subscriptions, [
+      ...staticDeliveries,
+      ...dbDeliveries,
+    ]);
   }),
 
   /**

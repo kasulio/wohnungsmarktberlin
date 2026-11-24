@@ -38,7 +38,14 @@ const failures = (report: AdminScrapeReport) => [
 /** An admin-triggered scrape: optional prune, sync, then one interactive extract batch. */
 export const adminScrape = (options: AdminScrapeOptions) =>
   loggedRun(
-    { kind: "admin-scrape", trigger: "admin" },
+    {
+      kind: "admin-scrape",
+      trigger: "admin",
+      propertyManagementId:
+        options.scoped && options.targets.length === 1
+          ? options.targets[0]
+          : null,
+    },
     Effect.gen(function* () {
       const { mode, targets } = options;
       const companies = options.scoped ? targets : undefined;

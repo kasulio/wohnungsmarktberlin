@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, desc, eq, min, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, max, min, sql } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
 import { type PropertyManagementId } from "~/data/propertyManagements/configs";
 import { env } from "~/env";
@@ -13,6 +13,7 @@ import {
   scraperRun,
 } from "~/server/db/schema";
 import { adminScrape } from "~/server/lib/scraper/admin-scrape";
+import { describeRunStats } from "~/server/lib/scraper/describe-run-stats";
 import { runScraper } from "~/server/lib/scraper/live";
 import { publicProcedure, protectedProcedure, router } from "../trpc";
 
@@ -160,6 +161,18 @@ export const propertyManagementRouter = router({
         lastSuccessfulRunCreatedAt("extract-flats"),
       ]);
 
+    const lastRunRows = await db
+      .select({
+        propertyManagementId: scraperRun.propertyManagementId,
+        lastRunAt: max(scraperRun.createdAt),
+      })
+      .from(scraperRun)
+      .where(eq(scraperRun.success, true))
+      .groupBy(scraperRun.propertyManagementId);
+    const lastRunByPm = new Map(
+      lastRunRows.map((r) => [r.propertyManagementId, r.lastRunAt ?? null]),
+    );
+
     const perPropertyManagement = activeSlugs.map((slug) => {
       const counts = pmMap.get(slug) ?? {
         pending: 0,
@@ -170,6 +183,7 @@ export const propertyManagementRouter = router({
         slug,
         ...counts,
         oldestPendingAt: oldestPendingByPm.get(slug) ?? null,
+        lastRunAt: lastRunByPm.get(slug) ?? null,
         failedSamples: failedSamplesByPm.get(slug) ?? [],
       };
     });
@@ -214,7 +228,7 @@ export const propertyManagementRouter = router({
         trigger: r.trigger,
         createdAt: r.createdAt,
         durationMs: r.durationMs,
-        statsSummary: summarizeStatsJson(r.statsJson),
+        statsSummary: describeRunStats(r.statsJson),
       })),
     };
   }),
@@ -316,19 +330,3 @@ export const propertyManagementRouter = router({
       return { url: updated[0]!.url };
     }),
 });
-
-function summarizeStatsJson(raw: string): string {
-  try {
-    const v = JSON.parse(raw) as unknown;
-    if (v && typeof v === "object" && !Array.isArray(v)) {
-      const o = v as Record<string, unknown>;
-      const keys = Object.keys(o).slice(0, 4);
-      const short: Record<string, unknown> = {};
-      for (const k of keys) short[k] = o[k];
-      return JSON.stringify(short);
-    }
-    return raw.slice(0, 120);
-  } catch {
-    return raw.slice(0, 120);
-  }
-}

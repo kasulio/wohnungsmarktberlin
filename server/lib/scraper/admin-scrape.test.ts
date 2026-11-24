@@ -119,7 +119,7 @@ test("a full run prunes, syncs each company, extracts their new jobs and logs th
       trigger: "admin",
       success: true,
       errorMessage: null,
-      propertyManagementId: null,
+      propertyManagementId: "degewo",
     }),
   ]);
   expect(JSON.parse(loggedRuns()[0]!.statsJson)).toEqual(

@@ -64,3 +64,16 @@ export function formatRoomCount(roomCount: number | null | undefined): string {
   }
   return String(roomCount);
 }
+
+/** "gerade eben", "vor 5 Min.", "vor 3 Std.", "vor 4 Tagen"; "—" when unknown. */
+export function formatAgo(d: Date | string | number | null | undefined) {
+  if (d == null) return "—";
+  const t = new Date(d).getTime();
+  if (Number.isNaN(t)) return "—";
+  const m = Math.floor((Date.now() - t) / 60000);
+  if (m < 1) return "gerade eben";
+  if (m < 60) return `vor ${m} Min.`;
+  const h = Math.floor(m / 60);
+  if (h < 48) return `vor ${h} Std.`;
+  return `vor ${Math.floor(h / 24)} Tagen`;
+}
