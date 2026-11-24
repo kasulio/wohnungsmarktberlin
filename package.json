@@ -35,7 +35,6 @@
     "grammy": "^1.44.0",
     "lottie-web": "^5.13.0",
     "node-html-parser": "^7.1.0",
-    "sharp": "^0.34.5",
     "trpc-nuxt": "^0.10.17",
     "vue-chartjs": "^5.3.4",
     "vue3-google-map": "^0.27.1",
@@ -67,7 +66,7 @@
   "overrides": {
     "caniuse-lite": "1.0.30001803",
     "esbuild": "^0.25.0",
-    "sharp": "0.34.5"
+    "sharp": "0.35.5"
   },
   "trustedDependencies": [
     "@parcel/watcher",
