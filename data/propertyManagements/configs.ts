@@ -37,6 +37,11 @@ export const propertyManagementConfigs = {
     name: "HOWOGE",
     website: "https://www.howoge.de",
   },
+  wbm: {
+    slug: "wbm",
+    name: "WBM",
+    website: "https://www.wbm.de",
+  },
 } as const;
 
 export type PropertyManagementId = keyof typeof propertyManagementConfigs;

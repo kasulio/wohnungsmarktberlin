@@ -11,7 +11,7 @@ const flats = propertyManagementsWithFlats;
 const config = useRuntimeConfig();
 
 const pageDescription =
-  "Finde aktuelle Mietwohnungen in Berlin – von Berlinovo, Degewo, Deutsche Wohnen, Gewobag, HOWOGE, Stadt und Land und Vonovia. Täglich aktualisiert, kostenlos, ohne Anmeldung.";
+  "Finde aktuelle Mietwohnungen in Berlin – von Berlinovo, Degewo, Deutsche Wohnen, Gewobag, HOWOGE, Stadt und Land, Vonovia und WBM. Täglich aktualisiert, kostenlos, ohne Anmeldung.";
 const pageTitle = "Berlins Wohnungsmarkt auf einen Blick";
 
 useSeoMeta({

@@ -76,6 +76,18 @@ export const expectedMissingRoomsArea: Record<string, ExpectedFlat> = {
     usableArea: null,
     addressText: "Sterndamm 80, 12487 Berlin",
   },
+  "wbm--missing-rooms-area.html": {
+    slug: "wbm",
+    title: "Stellplatz in Friedrichshain",
+    coldRentPrice: 85,
+    warmRentPrice: 100,
+    roomCount: null,
+    usableArea: null,
+    addressText: "Musterstraße 7, 10243 Berlin",
+    floor: 0,
+    imageUrl:
+      "https://www.wbm.de/fileadmin/user_upload/tx_openimmo/connection-3/images/77800-8ef8ba3e31ed9d7e4acf32bbdd670cf6.jpg",
+  },
   "vonovia--missing-rooms-area.html": {
     slug: "vonovia",
     title: "Stellplatz in Mariendorf",
@@ -162,6 +174,18 @@ export const expectedValues: Record<string, ExpectedFlat> = {
     floor: 3,
     imageUrl:
       "https://d2396ha8oiavw0.cloudfront.net/wohnungshelden/stadt_und_land_Bildimport1-2024-06-07_STADTUNDLAND_1001_WE_5127_GE_03_MO_00044_IMG_5902.JPG.jpg",
+  },
+  "wbm--standard-listing.html": {
+    slug: "wbm",
+    title: "2-Zimmer-Wohnung in Friedrichshain",
+    coldRentPrice: 1195.39,
+    warmRentPrice: 1412.39,
+    roomCount: 2,
+    usableArea: 65.56,
+    addressText: "Strausberger Strasse 37, 10243 Berlin",
+    floor: 0,
+    imageUrl:
+      "https://www.wbm.de/fileadmin/user_upload/tx_openimmo/connection-3/images/77800-8ef8ba3e31ed9d7e4acf32bbdd670cf6.jpg",
   },
   "vonovia--standard-listing.html": {
     slug: "vonovia",
