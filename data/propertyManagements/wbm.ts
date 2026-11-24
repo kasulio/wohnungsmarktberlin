@@ -110,10 +110,7 @@ function extractDataFromHtml(html: string, href: string) {
 
   // "ca. 65.56 m²" – WBM uses a period as decimal separator here
   const area = parseNumberString(
-    getObjectDetail("Größe")
-      ?.replace(/ca\.?/i, "")
-      .replace(/m².*/, "")
-      .trim(),
+    getObjectDetail("Größe")?.replace(/ca\.?/i, "").replace(/m².*/, "").trim(),
   );
 
   const floor = parseFloor(getObjectDetail("Etage"));
