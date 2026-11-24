@@ -2,7 +2,7 @@
 import type { NuxtLinkProps } from "#app";
 
 const props = defineProps<
-  NuxtLinkProps & {
+  Pick<NuxtLinkProps, "to" | "target"> & {
     hideIcon?: boolean;
     iconClass?: string;
     noUnderline?: boolean;
@@ -17,7 +17,7 @@ const showIcon = computed(() => !props.hideIcon && isExternal.value);
 
 <template>
   <NuxtLink
-    v-bind="props"
+    :to="props.to"
     :target="isExternal ? '_blank' : props.target"
     :class="{
       'inline-flex items-center gap-x-1': showIcon,
