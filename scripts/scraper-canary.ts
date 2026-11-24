@@ -96,7 +96,7 @@ async function checkUrl(
     }
 
     console.log(
-      `  ✓ ${shortUrl(url)} — ${flat.coldRentPrice}€, ${flat.roomCount} Zi, ${flat.usableArea}m²`,
+      `  ✓ ${shortUrl(url)} — ${flat.coldRentPrice}€, ${flat.roomCount} Zi, ${flat.usableArea}m² — ${flat.addressText}`,
     );
     return { status: "pass" };
   } catch (error) {
