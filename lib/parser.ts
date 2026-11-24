@@ -8,7 +8,13 @@ export function parseNumberString(
 ): number | undefined {
   if (!input) return undefined;
 
-  const compact = input.replace(/\s/g, "");
+  // Only whitespace before a three-digit group is a thousands separator; other
+  // whitespace ends the number (howoge repeats it: "55,0 m²55,0 Quadratmeter").
+  const compact =
+    input
+      .trim()
+      .replace(/(?<=\d)\s+(?=\d{3}(?!\d))/g, "")
+      .split(/\s/)[0] ?? "";
   const lastComma = compact.lastIndexOf(",");
   const lastPeriod = compact.lastIndexOf(".");
 
