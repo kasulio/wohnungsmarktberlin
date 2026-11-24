@@ -4,6 +4,7 @@ import { and, asc, count, desc, eq, inArray, min, sql } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
 import { type PropertyManagementId } from "~/data/propertyManagements/configs";
 import { env } from "~/env";
+import { publishableFlatFilter } from "~/lib/flat-publishability";
 import { db } from "~/server/db/client";
 import {
   flat,
@@ -69,7 +70,7 @@ export const propertyManagementRouter = router({
         website: propertyManagement.website,
         active: propertyManagement.active,
         flatCount: count(flat.id),
-        activeFlatCount: sql<number>`sum(case when ${flat.deleted} is null and ${flat.ignored} = 0 then 1 else 0 end)`,
+        activeFlatCount: sql<number>`sum(case when ${publishableFlatFilter()} then 1 else 0 end)`,
       })
       .from(propertyManagement)
       .leftJoin(flat, eq(flat.propertyManagementId, propertyManagement.slug))
