@@ -1,7 +1,10 @@
 import { notInArray } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
+import { createLogger } from "~/lib/logger";
 import { db } from "~/server/db/client";
 import { propertyManagement } from "~/server/db/schema";
+
+const log = createLogger("plugin:seed-pms");
 
 export default defineNitroPlugin(async () => {
   const active = Object.values(propertyManagements).map((pm) => ({
@@ -30,7 +33,5 @@ export default defineNitroPlugin(async () => {
       .where(notInArray(propertyManagement.slug, activeSlugs));
   }
 
-  console.log(
-    `[plugin:seed-property-managements] Synced ${active.length} property managements`,
-  );
+  log.info("synced property managements", { count: active.length });
 });

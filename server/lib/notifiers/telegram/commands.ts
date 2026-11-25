@@ -1,10 +1,13 @@
 import { type Bot, InlineKeyboard } from "grammy";
 import { and, eq } from "drizzle-orm";
+import { createLogger } from "~/lib/logger";
 import { db } from "~/server/db/client";
 import { notificationSubscriber } from "~/server/db/schema";
 import { describeFlatFilter } from "~/lib/describe-flat-filter";
 import { consumeLinkToken } from "./link-token";
 import { escapeHtml } from "./html";
+
+const log = createLogger("telegram:commands");
 
 /** Link back to the website's listing overview, where filters are configured. */
 function websiteKeyboard(): InlineKeyboard {
@@ -41,6 +44,9 @@ export function registerCommands(bot: Bot): void {
 
     const consumed = await consumeLinkToken(token);
     if (!consumed) {
+      log.warn("invalid or already-used link token", {
+        chatId: String(ctx.chat.id),
+      });
       await ctx.reply(
         "⚠️ <b>Dieser Link ist ungültig oder wurde bereits verwendet.</b>\n\n" +
           "Bitte erstelle auf der Website einen neuen Benachrichtigungs-Link.",
@@ -58,6 +64,7 @@ export function registerCommands(bot: Bot): void {
       ),
     });
     if (existing.some((s) => sameFilter(s.filterJson, consumed.filter))) {
+      log.info("duplicate telegram subscription attempt", { chatId });
       await ctx.reply(
         "ℹ️ <b>Dieses Abo ist bereits aktiv.</b>\n\n" +
           `Filter: <b>${escapeHtml(describeFlatFilter(consumed.filter))}</b>\n\n` +
@@ -75,6 +82,10 @@ export function registerCommands(bot: Bot): void {
       active: true,
       createdAt: new Date(),
     });
+    log.info("telegram subscription activated", {
+      chatId,
+      filter: describeFlatFilter(consumed.filter),
+    });
 
     await ctx.reply(
       "✅ <b>Abo aktiviert!</b>\n\n" +
@@ -86,17 +97,23 @@ export function registerCommands(bot: Bot): void {
   });
 
   bot.command("stop", async (ctx) => {
+    const chatId = String(ctx.chat.id);
     const updated = await db
       .update(notificationSubscriber)
       .set({ active: false })
       .where(
         and(
           eq(notificationSubscriber.channel, "telegram"),
-          eq(notificationSubscriber.target, String(ctx.chat.id)),
+          eq(notificationSubscriber.target, chatId),
           eq(notificationSubscriber.active, true),
         ),
       )
       .returning();
+
+    log.info("telegram subscriptions stopped", {
+      chatId,
+      stoppedCount: updated.length,
+    });
 
     await ctx.reply(
       updated.length

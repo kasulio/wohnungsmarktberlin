@@ -31,6 +31,17 @@ export class ListingsError extends Data.TaggedError("ListingsError")<{
   message: string;
 }> {}
 
+/** Minimum active flats before a 0-URL scrape is treated as a site/parser anomaly. */
+const EMPTY_SYNC_ABORT_THRESHOLD = 3;
+
+export class EmptyListingsAnomalyError extends Data.TaggedError(
+  "EmptyListingsAnomalyError",
+)<{
+  propertyManagementId: string;
+  existingActiveFlats: number;
+  message: string;
+}> {}
+
 const listUrls = (propertyManagementId: PropertyManagementId) =>
   Effect.gen(function* () {
     const scraper = yield* scraperFor(propertyManagementId);
@@ -49,14 +60,15 @@ const listUrls = (propertyManagementId: PropertyManagementId) =>
 /**
  * Brings the DB in line with a company's current listing page: queues jobs for
  * new urls, soft-deletes flats no longer listed, refreshes `lastSeen` of the
- * rest. Nothing is written when listing fails.
+ * rest. Nothing is written when listing fails or returns 0 URLs against an
+ * active inventory (protects against CAPTCHA/maintenance pages wiping flats).
  */
 export const syncListings = (propertyManagementId: PropertyManagementId) =>
   Effect.gen(function* () {
     const urls = yield* listUrls(propertyManagementId);
     const now = new Date(yield* Clock.currentTimeMillis);
 
-    return yield* query("sync listings", async (db) =>
+    const outcome = yield* query("sync listings", async (db) =>
       db.transaction((tx) => {
         const listed = new Set(urls);
         const activeFlats = tx
@@ -69,6 +81,17 @@ export const syncListings = (propertyManagementId: PropertyManagementId) =>
             ),
           )
           .all();
+
+        if (
+          urls.length === 0 &&
+          activeFlats.length >= EMPTY_SYNC_ABORT_THRESHOLD
+        ) {
+          return {
+            aborted: true as const,
+            existingActiveFlats: activeFlats.length,
+          };
+        }
+
         const activeUrls = new Set(activeFlats.map((f) => f.url));
         const stillListed = activeFlats.filter((f) => listed.has(f.url));
         const gone = activeFlats.filter((f) => !listed.has(f.url));
@@ -140,17 +163,35 @@ export const syncListings = (propertyManagementId: PropertyManagementId) =>
         }
 
         return {
-          existingActiveFlats: activeFlats.length,
-          extractedUrls: urls.length,
-          flatsDeleted: gone.length,
-          newJobsCreated: urlsToQueue.length,
-          flatsUpdated: stillListed.length,
-          duplicateJobsFiltered: newUrls.length - urlsToQueue.length,
-          jobsReset: jobsToReset.length,
-        } satisfies SyncListingsStats;
+          aborted: false as const,
+          stats: {
+            existingActiveFlats: activeFlats.length,
+            extractedUrls: urls.length,
+            flatsDeleted: gone.length,
+            newJobsCreated: urlsToQueue.length,
+            flatsUpdated: stillListed.length,
+            duplicateJobsFiltered: newUrls.length - urlsToQueue.length,
+            jobsReset: jobsToReset.length,
+          } satisfies SyncListingsStats,
+        };
       }),
     );
-  });
+
+    if (outcome.aborted) {
+      return yield* new EmptyListingsAnomalyError({
+        propertyManagementId,
+        existingActiveFlats: outcome.existingActiveFlats,
+        message: `Refusing to delete ${outcome.existingActiveFlats} active ${propertyManagementId} flats after 0 URLs were returned`,
+      });
+    }
+
+    return outcome.stats;
+  }).pipe(
+    Effect.withSpan("syncListings", {
+      attributes: { propertyManagementId },
+    }),
+    Effect.annotateLogs({ pm: propertyManagementId }),
+  );
 
 export type SyncReport = {
   success: boolean;

@@ -1,4 +1,4 @@
-import { and, asc, count, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, lt, ne, or, sql } from "drizzle-orm";
 import { Clock, Data, Duration, Effect, Random } from "effect";
 import { z } from "zod";
 import { type PropertyManagementId } from "~/data/propertyManagements/configs";
@@ -149,16 +149,32 @@ const markFailed = (job: FlatUrlJob, error: JobError) =>
     );
   });
 
+/** Keep failed jobs longer so operators can inspect/retry them on /admin/dashboard. */
+const FAILED_JOB_RETENTION_DAYS = 14;
+
 const pruneOldJobs = (days: number) =>
   Effect.gen(function* () {
     if (days <= 0) return;
-    const cutoff = new Date(
-      (yield* Clock.currentTimeMillis) - days * MS_PER_DAY,
+    const now = yield* Clock.currentTimeMillis;
+    const regularCutoff = new Date(now - days * MS_PER_DAY);
+    const failedCutoff = new Date(
+      now - Math.max(days, FAILED_JOB_RETENTION_DAYS) * MS_PER_DAY,
     );
     const removed = yield* query("prune old jobs", (db) =>
       db
         .delete(flatUrlJob)
-        .where(lt(flatUrlJob.createdAt, cutoff))
+        .where(
+          or(
+            and(
+              ne(flatUrlJob.status, "failed"),
+              lt(flatUrlJob.createdAt, regularCutoff),
+            ),
+            and(
+              eq(flatUrlJob.status, "failed"),
+              lt(flatUrlJob.createdAt, failedCutoff),
+            ),
+          ),
+        )
         .returning({ url: flatUrlJob.url }),
     );
     if (removed.length > 0) {
@@ -182,6 +198,10 @@ const runJob = (job: FlatUrlJob) =>
   extractJob(job).pipe(
     Effect.as(true),
     Effect.catch((error) => markFailed(job, error).pipe(Effect.as(false))),
+    Effect.withSpan("extractJob", {
+      attributes: { pm: job.propertyManagementId, url: job.url },
+    }),
+    Effect.annotateLogs({ pm: job.propertyManagementId, url: job.url }),
   );
 
 export const extractFlats = (options: ExtractOptions) =>

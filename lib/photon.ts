@@ -65,24 +65,24 @@ export async function geocode(
   return parsed.success ? parsed.data : undefined;
 }
 
+/**
+ * Look up a cached address or geocode it via Photon.
+ * Returns `undefined` only when Photon answered cleanly with no usable match.
+ * Transient HTTP/network/DB errors are thrown so callers keep the flat pending.
+ */
 export async function getAddressFromPhoton(
   address: string,
 ): Promise<GeocodedAddress | undefined> {
-  try {
-    const addressId = hashString(address);
+  const addressId = hashString(address);
 
-    const existingAddress = await db
-      .select()
-      .from(addressTable)
-      .where(eq(addressTable.id, addressId))
-      .limit(1);
-    if (existingAddress.length > 0) {
-      return existingAddress[0];
-    }
-
-    return await geocode(addressId, address);
-  } catch (error) {
-    console.error(error);
-    return undefined;
+  const existingAddress = await db
+    .select()
+    .from(addressTable)
+    .where(eq(addressTable.id, addressId))
+    .limit(1);
+  if (existingAddress.length > 0) {
+    return existingAddress[0];
   }
+
+  return await geocode(addressId, address);
 }

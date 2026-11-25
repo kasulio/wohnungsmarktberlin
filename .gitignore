@@ -21,6 +21,8 @@ logs
 .vscode
 docker-compose.yml
 server/db/sqlite.db
+server/db/sqlite.db-wal
+server/db/sqlite.db-shm
 
 # Local env files
 .env

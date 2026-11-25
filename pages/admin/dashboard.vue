@@ -23,6 +23,7 @@ const { data: scraperOverviewData, refresh: refreshScraperOverview } =
 const lastRunSummary = ref<string | null>(null);
 const lastRunIsError = ref(false);
 const retryingUrl = ref<string | null>(null);
+const retryingGeocodes = ref(false);
 
 const PENDING_WARN_THRESHOLD = 12;
 const STALE_PENDING_MS = 24 * 60 * 60 * 1000;
@@ -242,14 +243,47 @@ const totalActiveFlatCount = computed(
 const pmName = (slug: string | null) =>
   propertyManagements.data.value?.find((p) => p.slug === slug)?.name ?? slug;
 
+const retryFailedGeocodes = async () => {
+  if (retryingGeocodes.value) return;
+  retryingGeocodes.value = true;
+  lastRunSummary.value = null;
+  lastRunIsError.value = false;
+  try {
+    const { resetCount } =
+      await $client.propertyManagement.retryFailedGeocodes.mutate();
+    lastRunSummary.value =
+      resetCount > 0
+        ? `${resetCount} Wohnung(en) erneut fürs Geocoding eingereiht.`
+        : "Keine fehlgeschlagenen Geocodings vorhanden.";
+  } catch (e) {
+    lastRunIsError.value = true;
+    lastRunSummary.value =
+      e instanceof Error ? e.message : "Anfrage fehlgeschlagen.";
+  } finally {
+    retryingGeocodes.value = false;
+    await refreshScraperOverview();
+  }
+};
+
 const runKindLabel = (kind: string) => {
   const map: Record<string, string> = {
     "admin-scrape": "Admin",
     "update-flats": "Sync",
     "extract-flats": "Extraktion",
+    "address-improvement": "Geocoding",
+    notify: "Benachrichtigung",
+    "update-map-preview": "Kartenbild",
   };
   return map[kind] ?? kind;
 };
+
+const pipelineTasks = computed(
+  () => scraperOverviewData.value?.pipelineHealth.tasks ?? [],
+);
+const geocodingStats = computed(() => scraperOverviewData.value?.geocoding);
+const pipelineIssues = computed(
+  () => scraperOverviewData.value?.pipelineHealth.issues ?? [],
+);
 
 const showAllRuns = ref(false);
 const visibleRuns = computed(() => {
@@ -483,6 +517,115 @@ const formatNumber = (n: number) => n.toLocaleString("de-DE");
     <AdminRecipients />
 
     <section
+      v-if="scraperOverviewData"
+      class="space-y-3"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-l font-semibold text-main">Pipeline &amp; System</h2>
+        <span
+          v-if="!scraperOverviewData.pipelineHealth.scheduledTasksEnabled"
+          class="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900"
+        >
+          Cron deaktiviert (SCHEDULED_TASKS=off)
+        </span>
+      </div>
+
+      <div
+        v-if="pipelineIssues.length > 0"
+        class="rounded-2xl border border-amber-500/60 bg-amber-50 px-4 py-3 text-xs text-amber-950"
+      >
+        <ul class="list-disc space-y-0.5 pl-4">
+          <li
+            v-for="issue in pipelineIssues"
+            :key="issue"
+          >
+            {{ issue }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="rounded-3xl border border-black bg-white text-xs">
+        <div
+          v-for="task in pipelineTasks"
+          :key="task.name"
+          class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-black/10 px-4 py-2.5 last:border-b-0"
+        >
+          <span
+            class="h-2 w-2 shrink-0 rounded-full"
+            :class="
+              task.consecutiveFailures > 0
+                ? 'bg-red-600'
+                : task.running
+                  ? 'bg-amber-500'
+                  : task.lastSuccessAt
+                    ? 'bg-green-600'
+                    : 'bg-gray-400'
+            "
+          />
+          <span class="w-28 shrink-0 font-semibold text-main">{{
+            runKindLabel(task.name)
+          }}</span>
+          <span class="text-gray-600">
+            <template v-if="task.lastSuccessAt">
+              OK {{ formatAgo(task.lastSuccessAt) }}
+            </template>
+            <template v-else>Noch kein Lauf seit Start</template>
+            <template v-if="task.lastDurationMs != null">
+              · {{ (task.lastDurationMs / 1000).toFixed(1) }} s
+            </template>
+            <template v-if="task.skippedTicks > 0">
+              · {{ task.skippedTicks }} übersprungen
+            </template>
+          </span>
+          <span
+            v-if="task.lastError"
+            class="w-full break-words text-red-700 sm:ml-auto sm:w-auto sm:max-w-[50%]"
+            :title="task.lastError"
+          >
+            {{ truncateErr(task.lastError, 100) }}
+          </span>
+        </div>
+
+        <div
+          v-if="
+            (geocodingStats?.pending ?? 0) > 0 ||
+            (geocodingStats?.failed ?? 0) > 0
+          "
+          class="flex flex-wrap items-center justify-between gap-2 border-t border-black/10 bg-black/[0.02] px-4 py-2.5"
+        >
+          <span class="text-gray-700">
+            Geocoding:
+            <strong class="tabular-nums text-main">{{
+              geocodingStats?.pending ?? 0
+            }}</strong>
+            offen ·
+            <strong
+              class="tabular-nums"
+              :class="
+                (geocodingStats?.failed ?? 0) > 0 ? 'text-red-700' : 'text-main'
+              "
+              >{{ geocodingStats?.failed ?? 0 }}</strong
+            >
+            fehlgeschlagen (versteckt)
+          </span>
+          <button
+            v-if="(geocodingStats?.failed ?? 0) > 0"
+            type="button"
+            class="rounded-lg border border-black/30 bg-white px-2.5 py-1 text-xs font-medium text-main hover:bg-black/5 disabled:opacity-50"
+            :disabled="retryingGeocodes"
+            @click="retryFailedGeocodes"
+          >
+            {{
+              retryingGeocodes
+                ? "Wird eingereiht…"
+                : "Fehlgeschlagene erneut versuchen"
+            }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section
       v-if="scraperOverviewData?.recentRuns?.length"
       class="space-y-3"
     >
@@ -503,7 +646,7 @@ const formatNumber = (n: number) => n.toLocaleString("de-DE");
           <span class="w-24 shrink-0 text-gray-600">{{
             formatAgo(run.createdAt)
           }}</span>
-          <span class="w-20 shrink-0 font-semibold text-main">{{
+          <span class="w-28 shrink-0 font-semibold text-main">{{
             runKindLabel(run.kind)
           }}</span>
           <span class="text-gray-600">
@@ -515,6 +658,13 @@ const formatNumber = (n: number) => n.toLocaleString("de-DE");
             </template>
             {{ run.statsSummary }}
           </span>
+          <p
+            v-if="run.errorMessage"
+            class="w-full break-words pl-5 text-red-700"
+            :title="run.errorMessage"
+          >
+            {{ truncateErr(run.errorMessage, 180) }}
+          </p>
         </li>
         <li v-if="(scraperOverviewData.recentRuns.length ?? 0) > RUNS_PREVIEW">
           <button

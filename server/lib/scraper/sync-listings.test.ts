@@ -159,3 +159,32 @@ test("fails for a company without a scraper", async () => {
   const error = await syncFailure("howoge");
   expect(error).toMatchObject({ message: "No scraper configured for howoge" });
 });
+
+test("aborts without deleting when 0 urls are returned against 3+ active flats", async () => {
+  addFlat(url(1));
+  addFlat(url(2));
+  addFlat(url(3));
+  listed = [];
+
+  const error = await syncFailure();
+
+  expect(error).toMatchObject({
+    _tag: "EmptyListingsAnomalyError",
+    existingActiveFlats: 3,
+  });
+  expect(flatFor(url(1))!.deleted).toBeNull();
+  expect(flatFor(url(2))!.deleted).toBeNull();
+  expect(flatFor(url(3))!.deleted).toBeNull();
+});
+
+test("still allows legitimate delisting to 0 when fewer than 3 flats were active", async () => {
+  addFlat(url(1));
+  addFlat(url(2));
+  listed = [];
+
+  const stats = await sync();
+
+  expect(stats).toMatchObject({ existingActiveFlats: 2, flatsDeleted: 2 });
+  expect(flatFor(url(1))!.deleted).not.toBeNull();
+  expect(flatFor(url(2))!.deleted).not.toBeNull();
+});

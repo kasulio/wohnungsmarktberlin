@@ -31,6 +31,15 @@ export const env = createEnv({
       .optional(),
     /** `off` skips the cron tasks (live scraping, geocoding, notify), e.g. in worktrees. */
     SCHEDULED_TASKS: z.enum(["on", "off"]).optional().default("on"),
+    /** Minimum log level for structured server logs. */
+    LOG_LEVEL: z
+      .enum(["debug", "info", "warn", "error"])
+      .optional()
+      .default("info"),
+    /** Optional Telegram chat id for proactive admin operational alerts. */
+    ADMIN_TELEGRAM_CHAT_ID: z.string().min(1).optional(),
+    /** Optional bearer/query token protecting `/api/health/pipeline` when set. */
+    HEALTH_CHECK_TOKEN: z.string().min(1).optional(),
     /** Max flatUrl jobs processed per admin full / extract_only run (tasks unchanged). */
     ADMIN_SCRAPER_EXTRACT_BATCH: z
       .string()

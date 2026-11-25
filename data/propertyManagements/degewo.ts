@@ -36,21 +36,16 @@ async function extractUrls(): Promise<string[]> {
   const root = parse(html);
   const flatUrls = extractFlatUrlsFromPage(root);
   while (page < 10) {
-    try {
-      formData.set("tx_openimmo_immobilie[page]", (++page).toString());
-      const newHtml = await fetchHtml(`${BASE_URL}/immosuche`, {
-        method: "POST",
-        body: formData,
-      });
+    formData.set("tx_openimmo_immobilie[page]", (++page).toString());
+    const newHtml = await fetchHtml(`${BASE_URL}/immosuche`, {
+      method: "POST",
+      body: formData,
+    });
 
-      const newRoot = parse(newHtml);
-      const newFlatUrls = extractFlatUrlsFromPage(newRoot);
-      if (newFlatUrls.length === 0) break;
-      flatUrls.push(...newFlatUrls);
-    } catch (error) {
-      console.error(error);
-      break;
-    }
+    const newRoot = parse(newHtml);
+    const newFlatUrls = extractFlatUrlsFromPage(newRoot);
+    if (newFlatUrls.length === 0) break;
+    flatUrls.push(...newFlatUrls);
   }
 
   return [...new Set(flatUrls)].map((url) => `${BASE_URL}${url}`);

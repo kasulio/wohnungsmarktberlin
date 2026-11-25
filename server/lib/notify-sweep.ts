@@ -1,4 +1,5 @@
 import { and, eq, gte, inArray, isNull } from "drizzle-orm";
+import { createLogger } from "~/lib/logger";
 import { db } from "~/server/db/client";
 import {
   address as addressTable,
@@ -15,6 +16,10 @@ import type {
   NotifiableFlat,
   Subscriber,
 } from "~/server/lib/notifiers/types";
+import { sendOpsAlert } from "~/server/lib/ops-alerts";
+import { createCoalescedRunner } from "~/server/lib/single-flight";
+
+const log = createLogger("notify-sweep");
 
 /**
  * How far back the sweep looks for freshly-publishable flats. Bounds the scan
@@ -31,6 +36,7 @@ export type NotifySweepStats = {
   subscribers: number;
   candidates: number;
   sent: number;
+  failed: number;
   deactivated: number;
 };
 
@@ -51,6 +57,16 @@ function deliveryKey(channel: string, target: string, flatId: string): string {
 }
 
 /**
+ * Single-flight runner for live sweeps so overlapping 1-minute cron ticks and
+ * post-geocode kicks never double-send to Telegram before the ledger writes.
+ * If kicked mid-flight, one follow-up pass runs right after.
+ */
+const runLiveSweepCoalesced = createCoalescedRunner(
+  () => executeNotifySweep({}),
+  { rerunWhenKicked: true },
+);
+
+/**
  * Channel-agnostic sweep + append-only ledger. Idempotent and crash-safe: it
  * reads "publishable AND not yet sent", matches each subscriber's filter,
  * dispatches through that subscriber's channel, and records on success.
@@ -61,6 +77,20 @@ function deliveryKey(channel: string, target: string, flatId: string): string {
 export async function runNotifySweep(
   options: RunNotifySweepOptions = {},
 ): Promise<NotifySweepStats> {
+  const hasTestOverrides =
+    options.now !== undefined ||
+    options.sendIntervalMs !== undefined ||
+    options.subscribers !== undefined ||
+    options.channels !== undefined;
+  if (hasTestOverrides) {
+    return executeNotifySweep(options);
+  }
+  return runLiveSweepCoalesced();
+}
+
+async function executeNotifySweep(
+  options: RunNotifySweepOptions,
+): Promise<NotifySweepStats> {
   const now = options.now ?? new Date();
   const sendIntervalMs = options.sendIntervalMs ?? SEND_INTERVAL_MS;
   const channels = options.channels ?? defaultChannels;
@@ -69,6 +99,7 @@ export async function runNotifySweep(
     subscribers: 0,
     candidates: 0,
     sent: 0,
+    failed: 0,
     deactivated: 0,
   };
 
@@ -183,9 +214,10 @@ export async function runNotifySweep(
   for (const sub of subscribers) {
     const channel = channels[sub.channel];
     if (!channel) {
-      console.warn(
-        `[notify] subscriber ${sub.id} references unknown channel "${sub.channel}" — skipping`,
-      );
+      log.warn("subscriber references unknown channel, skipping", {
+        subscriberId: sub.id,
+        channel: sub.channel,
+      });
       continue;
     }
 
@@ -222,15 +254,25 @@ export async function runNotifySweep(
             .set({ active: false })
             .where(eq(notificationSubscriber.id, sub.id));
         } else {
-          console.warn(
-            `[notify] static subscriber ${sub.id} reported blocked — cannot deactivate`,
-          );
+          log.warn("static subscriber reported blocked, cannot deactivate", {
+            subscriberId: sub.id,
+          });
         }
         stats.deactivated++;
         deactivated = true;
+      } else {
+        // Non-blocked failures are left for the next tick to retry.
+        stats.failed++;
       }
-      // Non-blocked failures are left for the next tick to retry.
     }
+  }
+
+  if (stats.failed > 0 && !options.channels) {
+    void sendOpsAlert({
+      key: "notify-send-failures",
+      title: `Notification sweep had ${stats.failed} delivery failure(s)`,
+      details: `sent=${stats.sent} failed=${stats.failed} deactivated=${stats.deactivated} candidates=${stats.candidates}`,
+    });
   }
 
   logStats(stats);
@@ -238,7 +280,14 @@ export async function runNotifySweep(
 }
 
 function logStats(stats: NotifySweepStats) {
-  console.log(
-    `[task:notify] stamped ${stats.stamped}, subscribers ${stats.subscribers}, candidates ${stats.candidates}, sent ${stats.sent}, deactivated ${stats.deactivated}`,
-  );
+  if (
+    stats.stamped > 0 ||
+    stats.sent > 0 ||
+    stats.failed > 0 ||
+    stats.deactivated > 0
+  ) {
+    log.info("notify sweep completed", stats);
+  } else {
+    log.debug("notify sweep idle", stats);
+  }
 }
