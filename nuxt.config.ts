@@ -79,6 +79,41 @@ export default defineNuxtConfig({
     "@nuxtjs/sitemap",
     "nuxt-ipx-cache",
     "@nuxt/icon",
+    // Dev workarounds for upstream incompatibilities:
+    // 1. @vitejs/devtools 0.3.4 ignores Nuxt's deprecated disableAuthorization
+    //    and breaks Vite 8's vite.devtools config hook; disable client auth on
+    //    loopback via its env flag and pass the real port for --host auth URLs.
+    // 2. nuxt-ipx-cache 1.0.8 targets ipx 2/3 and calls setHeaders inside
+    //    res.end() after @nuxt/image 2's streamed res.write() already sent
+    //    headers, throwing before originalEnd() and stalling keep-alive sockets.
+    (_options, nuxt) => {
+      if (!nuxt.options.dev) return;
+      nuxt.hook("nitro:init", (nitro) => {
+        nitro.options.plugins = nitro.options.plugins.filter(
+          (p) => !p.includes("nuxt-ipx-cache"),
+        );
+      });
+      nuxt.hook("vite:extendConfig", (config) => {
+        const { host, port } = nuxt.options.devServer;
+        if (port) {
+          const viteConfig = config as { server?: { port?: number } };
+          viteConfig.server ??= {};
+          viteConfig.server.port ??= port;
+        }
+        const isLoopback =
+          !host ||
+          host === "localhost" ||
+          host === "127.0.0.1" ||
+          host === "::1" ||
+          host === "::ffff:127.0.0.1";
+        if (
+          isLoopback &&
+          process.env.VITE_DEVTOOLS_DISABLE_CLIENT_AUTH === undefined
+        ) {
+          process.env.VITE_DEVTOOLS_DISABLE_CLIENT_AUTH = "true";
+        }
+      });
+    },
   ],
   ipxCache: {
     maxAge: 60 * 60 * 24 * 7, // 7 days
@@ -119,8 +154,13 @@ export default defineNuxtConfig({
         "@vue/devtools-core",
         "@vue/devtools-kit",
         "better-auth/vue",
+        "chart.js",
         "drizzle-orm",
+        "drizzle-orm/sqlite-core",
         "lottie-web/build/player/lottie_light", // CJS
+        "tailwindcss/resolveConfig", // CJS
+        "vue-chartjs",
+        "vue3-google-map", // CJS
       ],
     },
   },
