@@ -27,7 +27,7 @@
     "@t3-oss/env-nuxt": "^0.13.11",
     "@trpc/client": "^10.45.0",
     "@trpc/server": "^10.45.0",
-    "better-auth": "~1.6.35",
+    "better-auth": "~1.7.7",
     "chart.js": "^4.6.1",
     "drizzle-orm": "^0.45.4",
     "drizzle-zod": "^0.8.3",
