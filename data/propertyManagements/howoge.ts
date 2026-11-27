@@ -2,7 +2,7 @@ import { parse } from "node-html-parser";
 import { z } from "zod";
 
 import { type PropertyManagement, type ScrapedFlat } from "../schemas";
-import { fetchJson } from "~/lib/http";
+import { fetchHtml, fetchJson } from "~/lib/http";
 import { parseNumberString, parseNumberStringToInt } from "~/lib/parser";
 import { propertyManagementConfigs } from "./configs";
 
@@ -14,17 +14,16 @@ export const howoge = {
   extractDataFromHtml,
 } as const satisfies PropertyManagement;
 
+const DETAIL_PATH = "/immobiliensuche/wohnungssuche/detail/";
+
 async function extractUrls() {
   const json = await fetchJson(
     "https://www.howoge.de/?type=999&tx_howrealestate_json_list[action]=immoList",
   );
   const parsed = z
     .object({
-      immoobjects: z.array(
-        z.object({
-          link: z.string(),
-        }),
-      ),
+      immoobjects: z.array(z.object({ link: z.string() })),
+      projectteaser: z.array(z.object({ link: z.string() })).default([]),
     })
     .safeParse(json);
 
@@ -32,9 +31,23 @@ async function extractUrls() {
     throw new Error(`Failed to parse JSON: ${parsed.error}`);
   }
 
-  return parsed.data.immoobjects.map(
-    (immoobject) => howogeUrl + immoobject.link,
+  const urls = new Set(
+    parsed.data.immoobjects.map((immoobject) => howogeUrl + immoobject.link),
   );
+
+  // New-build units are not in `immoobjects`; the list only carries one teaser
+  // per project, and each project page links to its units' detail pages.
+  for (const teaser of parsed.data.projectteaser) {
+    const projectUrl = teaser.link.startsWith("/")
+      ? howogeUrl + teaser.link
+      : teaser.link;
+    const root = parse(await fetchHtml(projectUrl));
+    for (const a of root.querySelectorAll(`a[href^="${DETAIL_PATH}"]`)) {
+      urls.add(howogeUrl + a.getAttribute("href"));
+    }
+  }
+
+  return [...urls];
 }
 
 /**
