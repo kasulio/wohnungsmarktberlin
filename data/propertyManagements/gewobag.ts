@@ -35,27 +35,33 @@ export const gewobag = {
   extractDataFromHtml,
 } as const satisfies PropertyManagement;
 
-async function extractUrls() {
-  const html = await fetchHtml(
-    "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/?objekttyp%5B%5D=wohnung&gesamtmiete_von=&gesamtmiete_bis=&gesamtflaeche_von=&gesamtflaeche_bis=&zimmer_von=&zimmer_bis=&sort-by=",
-    getFetchOptions(),
-  );
-  const root = parse(html);
-  const items = root.querySelectorAll(".angebot-big-box");
+const LISTING_URL =
+  "https://www.gewobag.de/fuer-mietinteressentinnen/mietangebote/?objekttyp%5B%5D=wohnung&gesamtmiete_von=&gesamtmiete_bis=&gesamtflaeche_von=&gesamtflaeche_bis=&zimmer_von=&zimmer_bis=&sort-by=";
+const MAX_PAGES = 20;
 
-  return items
-    .map((item) => {
+async function extractUrls() {
+  const urls = new Set<string>();
+
+  // Pages past the last one are 404s, so follow the "next" link instead of
+  // counting up.
+  let pageUrl: string | undefined = LISTING_URL;
+  for (let page = 0; pageUrl && page < MAX_PAGES; page++) {
+    const root: HTMLElement = parse(
+      await fetchHtml(pageUrl, getFetchOptions()),
+    );
+    for (const item of root.querySelectorAll(".angebot-big-box")) {
       const href = item
         .querySelector(".angebot-footer a")
         ?.getAttribute("href");
+      if (href) urls.add(href);
+    }
+    pageUrl = root
+      .querySelector(".archive-pagination a.next")
+      ?.getAttribute("href")
+      ?.replaceAll("&amp;", "&");
+  }
 
-      if (!href) {
-        return null;
-      }
-
-      return href;
-    })
-    .filter(Boolean);
+  return [...urls];
 }
 
 function extractDataFromHtml(html: string, href: string) {

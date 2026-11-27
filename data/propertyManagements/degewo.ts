@@ -12,6 +12,8 @@ export const degewo = {
   extractDataFromHtml,
 } as const satisfies PropertyManagement;
 
+const MAX_PAGES = 30;
+
 async function extractUrls(): Promise<string[]> {
   const extractFlatUrlsFromPage = (root: HTMLElement) => {
     return Array.from(root.querySelectorAll(".c-teaser--apartment"))
@@ -27,6 +29,13 @@ async function extractUrls(): Promise<string[]> {
   const formData = new FormData();
   formData.append("tx_openimmo_immobilie[search]", "paginate");
   formData.append("tx_openimmo_immobilie[page]", page.toString());
+  // The default sort (room count) has ties that degewo orders differently on
+  // every request, so pages overlap and some flats are never served. Living
+  // area is close to unique.
+  formData.append(
+    "tx_openimmo_immobilie[sortBy]",
+    "immobilie_flaechen_wohnflaeche",
+  );
 
   const html = await fetchHtml(`${BASE_URL}/immosuche`, {
     method: "POST",
@@ -35,7 +44,7 @@ async function extractUrls(): Promise<string[]> {
 
   const root = parse(html);
   const flatUrls = extractFlatUrlsFromPage(root);
-  while (page < 10) {
+  while (page < MAX_PAGES) {
     formData.set("tx_openimmo_immobilie[page]", (++page).toString());
     const newHtml = await fetchHtml(`${BASE_URL}/immosuche`, {
       method: "POST",
