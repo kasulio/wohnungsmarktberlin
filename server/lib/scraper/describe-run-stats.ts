@@ -20,6 +20,26 @@ const adminStats = z.object({
   extractionStats: extractStats,
 });
 
+const addressStats = z.object({
+  addressesImproved: z.number(),
+  addressesFailed: z.number(),
+  addressesTransientFailed: z.number().optional(),
+  addressesPending: z.number(),
+});
+
+const notifyStats = z.object({
+  stamped: z.number(),
+  subscribers: z.number(),
+  candidates: z.number(),
+  sent: z.number(),
+  failed: z.number().optional(),
+  deactivated: z.number(),
+});
+
+const mapPreviewStats = z.object({
+  regenerated: z.boolean(),
+});
+
 const describeExtract = (s: z.infer<typeof extractStats>) => [
   `${s.flatsExtracted} extrahiert`,
   ...(s.flatsFailed > 0 ? [`${s.flatsFailed} Fehler`] : []),
@@ -66,6 +86,37 @@ export function describeRunStats(raw: string): string {
 
   const extract = extractStats.safeParse(value);
   if (extract.success) return describeExtract(extract.data).join(" · ");
+
+  const address = addressStats.safeParse(value);
+  if (address.success) {
+    const a = address.data;
+    const transient = a.addressesTransientFailed ?? 0;
+    return [
+      `${a.addressesImproved} geocodiert`,
+      ...(a.addressesFailed > 0 ? [`${a.addressesFailed} nicht gefunden`] : []),
+      ...(transient > 0 ? [`${transient} vorübergehend fehlgeschlagen`] : []),
+      `${a.addressesPending} offen`,
+    ].join(" · ");
+  }
+
+  const notify = notifyStats.safeParse(value);
+  if (notify.success) {
+    const n = notify.data;
+    const failed = n.failed ?? 0;
+    return [
+      `${n.sent} gesendet`,
+      ...(n.stamped > 0 ? [`${n.stamped} neu sichtbar`] : []),
+      ...(failed > 0 ? [`${failed} Fehler`] : []),
+      ...(n.deactivated > 0 ? [`${n.deactivated} deaktiviert`] : []),
+    ].join(" · ");
+  }
+
+  const mapPreview = mapPreviewStats.safeParse(value);
+  if (mapPreview.success) {
+    return mapPreview.data.regenerated
+      ? "Kartenbild aktualisiert"
+      : "Unverändert";
+  }
 
   return raw.slice(0, 120);
 }

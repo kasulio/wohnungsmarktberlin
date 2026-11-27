@@ -1,9 +1,12 @@
 import { type Update } from "grammy/types";
 import { env } from "~/env";
+import { createLogger } from "~/lib/logger";
 import {
   getBot,
   isTelegramConfigured,
 } from "~/server/lib/notifiers/telegram/bot";
+
+const log = createLogger("telegram:webhook");
 
 /**
  * Telegram webhook receiver (production transport). Verifies the secret token
@@ -25,6 +28,7 @@ export default defineEventHandler(async (event) => {
 
   const provided = getHeader(event, "x-telegram-bot-api-secret-token");
   if (provided !== expected) {
+    log.warn("rejected webhook with invalid secret token");
     throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
   }
 

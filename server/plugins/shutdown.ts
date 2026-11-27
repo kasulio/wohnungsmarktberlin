@@ -1,4 +1,7 @@
+import { createLogger } from "~/lib/logger";
 import { closeDb } from "~/server/db/client";
+
+const log = createLogger("shutdown");
 
 /**
  * Nitro's `bun` preset does not wire SIGTERM/SIGINT to the runtime `close`
@@ -21,29 +24,29 @@ export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("close", () => {
     try {
       closeDb();
-      console.log("[shutdown] sqlite closed");
+      log.info("sqlite closed");
     } catch (error) {
-      console.error("[shutdown] sqlite close failed", error);
+      log.error("sqlite close failed", { error });
     }
   });
 
   const shutdown = async (signal: string) => {
     if (shuttingDown) return;
     shuttingDown = true;
-    console.log(`[shutdown] received ${signal}`);
+    log.info("received shutdown signal", { signal });
 
     const forceTimer = setTimeout(() => {
-      console.warn("[shutdown] timeout, force exit");
+      log.warn("shutdown timeout, forcing exit", { timeoutMs });
       process.exit(1);
     }, timeoutMs);
 
     try {
       await nitroApp.hooks.callHook("close");
     } catch (error) {
-      console.error("[shutdown] close hook error", error);
+      log.error("close hook error", { error });
     } finally {
       clearTimeout(forceTimer);
-      console.log("[shutdown] exit");
+      log.info("exiting");
       process.exit(0);
     }
   };

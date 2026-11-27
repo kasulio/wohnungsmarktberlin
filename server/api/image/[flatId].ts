@@ -1,6 +1,9 @@
 import { eq } from "drizzle-orm";
+import { createLogger } from "~/lib/logger";
 import { db } from "~/server/db/client";
 import { flat } from "~/server/db/schema";
+
+const log = createLogger("api:image");
 
 export default defineEventHandler(async (e) => {
   const flatId = getRouterParam(e, "flatId");
@@ -20,7 +23,7 @@ export default defineEventHandler(async (e) => {
     .then((flat) => flat?.image);
 
   if (!image) {
-    console.error(`[api:image] image not found for flat ${flatId}`);
+    log.warn("image not found for flat", { flatId });
     throw createError({
       statusCode: 404,
       statusMessage: "Image not found",

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { and, asc, count, desc, eq, max, min, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNull, max, min, sql } from "drizzle-orm";
 import { propertyManagements } from "~/data/propertyManagements";
 import { type PropertyManagementId } from "~/data/propertyManagements/configs";
 import { env } from "~/env";
@@ -12,6 +12,8 @@ import {
   propertyManagement,
   scraperRun,
 } from "~/server/db/schema";
+import { runAddressImprovement } from "~/server/lib/address-improvement";
+import { evaluateTaskHeartbeats } from "~/server/lib/pipeline-health";
 import { adminScrape } from "~/server/lib/scraper/admin-scrape";
 import { describeRunStats } from "~/server/lib/scraper/describe-run-stats";
 import { runScraper } from "~/server/lib/scraper/live";
@@ -188,6 +190,21 @@ export const propertyManagementRouter = router({
       };
     });
 
+    const geocodeRows = await db
+      .select({
+        status: flat.addressImprovement,
+        cnt: count(),
+      })
+      .from(flat)
+      .where(and(isNull(flat.deleted), eq(flat.ignored, false)))
+      .groupBy(flat.addressImprovement);
+
+    const geocoding = { pending: 0, failed: 0 };
+    for (const row of geocodeRows) {
+      if (row.status === "pending") geocoding.pending = row.cnt;
+      else if (row.status === "failed") geocoding.failed = row.cnt;
+    }
+
     const recentRuns = await db
       .select({
         id: scraperRun.id,
@@ -198,10 +215,15 @@ export const propertyManagementRouter = router({
         createdAt: scraperRun.createdAt,
         durationMs: scraperRun.durationMs,
         statsJson: scraperRun.statsJson,
+        errorMessage: scraperRun.errorMessage,
       })
       .from(scraperRun)
       .orderBy(desc(scraperRun.createdAt))
       .limit(20);
+
+    const pipelineHealth = evaluateTaskHeartbeats({
+      scheduledTasksEnabled: env.SCHEDULED_TASKS !== "off",
+    });
 
     return {
       global: {
@@ -214,6 +236,8 @@ export const propertyManagementRouter = router({
             }
           : null,
       },
+      geocoding,
+      pipelineHealth,
       activity: {
         lastSuccessAdmin,
         lastSuccessSync,
@@ -228,6 +252,7 @@ export const propertyManagementRouter = router({
         trigger: r.trigger,
         createdAt: r.createdAt,
         durationMs: r.durationMs,
+        errorMessage: r.errorMessage,
         statsSummary: describeRunStats(r.statsJson),
       })),
     };
@@ -329,4 +354,26 @@ export const propertyManagementRouter = router({
       }
       return { url: updated[0]!.url };
     }),
+
+  /** Re-queue active, non-ignored flats whose geocoding failed and kick a batch. */
+  retryFailedGeocodes: protectedProcedure.mutation(async () => {
+    const reset = await db
+      .update(flat)
+      .set({ addressImprovement: "pending" })
+      .where(
+        and(
+          isNull(flat.deleted),
+          eq(flat.ignored, false),
+          isNull(flat.addressId),
+          eq(flat.addressImprovement, "failed"),
+        ),
+      )
+      .returning({ id: flat.id });
+
+    if (reset.length > 0) {
+      void runAddressImprovement().catch(() => {});
+    }
+
+    return { resetCount: reset.length };
+  }),
 });

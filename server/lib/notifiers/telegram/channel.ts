@@ -1,10 +1,13 @@
 import { GrammyError, InputFile } from "grammy";
+import { createLogger } from "~/lib/logger";
 import {
   type Channel,
   type NotifiableFlat,
 } from "~/server/lib/notifiers/types";
 import { getBot, isTelegramConfigured } from "./bot";
 import { loadFlatImage, renderNotification } from "./render";
+
+const log = createLogger("telegram:channel");
 
 /** Telegram API error codes/descriptions that mean the target is gone for good. */
 function isBlockedError(err: GrammyError): boolean {
@@ -27,9 +30,7 @@ function isBlockedError(err: GrammyError): boolean {
 export const telegramChannel: Channel = {
   async send(target, flat: NotifiableFlat) {
     if (!isTelegramConfigured) {
-      console.warn(
-        "[notify] telegram channel used but TELEGRAM_BOT_TOKEN is unset",
-      );
+      log.warn("telegram channel used while TELEGRAM_BOT_TOKEN is unset");
       return { ok: false, blocked: false };
     }
 
@@ -59,16 +60,20 @@ export const telegramChannel: Channel = {
     } catch (err) {
       if (err instanceof GrammyError) {
         const blocked = isBlockedError(err);
-        console.warn(
-          `[notify] telegram send failed (${target}, flat ${flat.id}): ` +
-            `${err.error_code} ${err.description}${blocked ? " [deactivating]" : ""}`,
-        );
+        log.warn("telegram send failed", {
+          target,
+          flatId: flat.id,
+          errorCode: err.error_code,
+          description: err.description,
+          deactivating: blocked,
+        });
         return { ok: false, blocked };
       }
-      console.error(
-        `[notify] telegram send error (${target}, flat ${flat.id}):`,
-        err,
-      );
+      log.error("telegram send error", {
+        target,
+        flatId: flat.id,
+        error: err,
+      });
       return { ok: false, blocked: false };
     }
   },

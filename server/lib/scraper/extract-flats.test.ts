@@ -244,8 +244,18 @@ test("drops jobs older than three days before picking work", async () => {
   const day = 24 * 60 * 60 * 1000;
   const stale = "https://degewo.example/flat/stale";
   const fresh = "https://degewo.example/flat/fresh";
+  const failedRecent = "https://degewo.example/flat/failed-recent";
   queueJob(stale, "degewo", new Date(Date.now() - 4 * day));
   queueJob(fresh, "degewo", new Date(Date.now() - 2 * day));
+  db.insert(flatUrlJob)
+    .values({
+      url: failedRecent,
+      propertyManagementId: "degewo",
+      createdAt: new Date(Date.now() - 5 * day),
+      status: "failed",
+      lastError: "HTTP 500",
+    })
+    .run();
   pages.set(stale, JSON.stringify(listing(stale)));
   pages.set(fresh, JSON.stringify(listing(fresh)));
 
@@ -253,6 +263,7 @@ test("drops jobs older than three days before picking work", async () => {
 
   expect(requests.map((r) => r.url)).toEqual([fresh]);
   expect(jobFor(stale)).toBeUndefined();
+  expect(jobFor(failedRecent)).toMatchObject({ status: "failed" });
 });
 
 test("works on several companies at once, but one job at a time per company", async () => {

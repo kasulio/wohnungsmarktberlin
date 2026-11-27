@@ -67,6 +67,42 @@ describe("describeRunStats", () => {
     ).toBe("5 extrahiert · 33 offen");
   });
 
+  test("an address-improvement run", () => {
+    expect(
+      describeRunStats(
+        JSON.stringify({
+          addressesImproved: 4,
+          addressesFailed: 1,
+          addressesTransientFailed: 2,
+          addressesPending: 3,
+        }),
+      ),
+    ).toBe(
+      "4 geocodiert · 1 nicht gefunden · 2 vorübergehend fehlgeschlagen · 3 offen",
+    );
+  });
+
+  test("a notify run", () => {
+    expect(
+      describeRunStats(
+        JSON.stringify({
+          stamped: 2,
+          subscribers: 5,
+          candidates: 3,
+          sent: 4,
+          failed: 1,
+          deactivated: 1,
+        }),
+      ),
+    ).toBe("4 gesendet · 2 neu sichtbar · 1 Fehler · 1 deaktiviert");
+  });
+
+  test("a map-preview run", () => {
+    expect(describeRunStats(JSON.stringify({ regenerated: true }))).toBe(
+      "Kartenbild aktualisiert",
+    );
+  });
+
   test("anything else is shown as it is, shortened", () => {
     expect(describeRunStats("not json")).toBe("not json");
     expect(describeRunStats(JSON.stringify({ foo: 1 }))).toBe('{"foo":1}');
