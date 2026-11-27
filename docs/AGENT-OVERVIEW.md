@@ -82,6 +82,7 @@ type PropertyManagement = {
 | -------------- | ----------------- | ---------------------------- |
 | `berlinovo`    | `berlinovo.ts`    | HTML listing pages           |
 | `degewo`       | `degewo.ts`       | POST paginated `/immosuche`  |
+| `gesobau`      | `gesobau.ts`      | HTML listing pages (Solr)    |
 | `gewobag`      | `gewobag.ts`      | HTML listing page            |
 | `howoge`       | `howoge.ts`       | JSON API `immoList`          |
 | `stadtundland` | `stadtundland.ts` | CloudFront JSON API          |
