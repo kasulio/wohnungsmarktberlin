@@ -7,6 +7,7 @@ import { stadtundland } from "./stadtundland";
 import { degewo } from "./degewo";
 import { howoge } from "./howoge";
 import { wbm } from "./wbm";
+import { gesobau } from "./gesobau";
 import { type PropertyManagementId } from "./configs";
 
 export const propertyManagements = {
@@ -18,4 +19,5 @@ export const propertyManagements = {
   degewo,
   howoge,
   wbm,
+  gesobau,
 } satisfies Record<PropertyManagementId, PropertyManagement>;

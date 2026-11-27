@@ -32,6 +32,11 @@ export const propertyManagementConfigs = {
     name: "degewo",
     website: "https://www.degewo.de/",
   },
+  gesobau: {
+    slug: "gesobau",
+    name: "GESOBAU",
+    website: "https://www.gesobau.de",
+  },
   howoge: {
     slug: "howoge",
     name: "HOWOGE",

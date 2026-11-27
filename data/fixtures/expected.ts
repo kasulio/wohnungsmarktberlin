@@ -76,6 +76,18 @@ export const expectedMissingRoomsArea: Record<string, ExpectedFlat> = {
     usableArea: null,
     addressText: "Sterndamm 80, 12487 Berlin",
   },
+  "gesobau--missing-rooms-area.html": {
+    slug: "gesobau",
+    title: "Stellplatz in Pankow",
+    coldRentPrice: 60,
+    warmRentPrice: 75,
+    roomCount: null,
+    usableArea: null,
+    addressText: "Musterstraße 3, 13187 Berlin",
+    floor: 0,
+    imageUrl:
+      "https://www.gesobau.de/fileadmin/_processed_/0/0/csm_example.jpg",
+  },
   "wbm--missing-rooms-area.html": {
     slug: "wbm",
     title: "Stellplatz in Friedrichshain",
@@ -173,6 +185,18 @@ export const expectedValues: Record<string, ExpectedFlat> = {
     floor: 3,
     imageUrl:
       "https://d2396ha8oiavw0.cloudfront.net/wohnungshelden/stadt_und_land_Bildimport1-2024-06-07_STADTUNDLAND_1001_WE_5127_GE_03_MO_00044_IMG_5902.JPG.jpg",
+  },
+  "gesobau--standard-listing.html": {
+    slug: "gesobau",
+    title: "Eleganz und Raffinesse – Erstklassiges Wohnen",
+    coldRentPrice: 1018.56,
+    warmRentPrice: 1266.83,
+    roomCount: 2,
+    usableArea: 63.66,
+    addressText: "Martin-Riesenburger-Straße 46, 12627 Berlin",
+    floor: 0,
+    imageUrl:
+      "https://www.gesobau.de/fileadmin/_processed_/3/1/csm_20260827_094339_ce2ef0cb86.jpg",
   },
   "wbm--standard-listing.html": {
     slug: "wbm",
